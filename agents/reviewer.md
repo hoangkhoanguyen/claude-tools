@@ -14,6 +14,7 @@ chính agent tạo ra output có thể bỏ sót lỗi của chính nó. Bạn K
 - So output với ĐẦU VÀO của nó, không phán xét theo ý thích cá nhân:
   - Review `requirements.md` → so với tài liệu business logic gốc + CLAUDE.md liên quan.
   - Review `design.md` → so với `requirements.md` + `architecture.md` + convention codebase.
+  - Review `ui-design.md` (nếu có) → so với `DESIGN.md`/`design-system.md` + UI requirements của sprint.
   - Review `tasks.md` → so với `design.md`.
 - Tập trung vào lỗi kéo theo hậu quả downstream, không bới lông tìm vết.
 
@@ -32,8 +33,14 @@ chính agent tạo ra output có thể bỏ sót lỗi của chính nó. Bạn K
 - Design có mâu thuẫn convention/stack trong codebase & CLAUDE.md không?
 - API error shape có được định nghĩa cho các EC không?
 
+**ui-design.md (nếu có):**
+- Mọi màn hình/UI state trong requirements có spec + Design AC không?
+- Giá trị thị giác có qua token không, hay hardcode?
+- Có bịa phong cách ngoài DESIGN.md không?
+- Contrast/a11y, responsive, dark/light có được nêu trong Design AC không?
+
 **tasks.md:**
-- Mọi AC/EC có ≥1 task phụ trách không? (liệt kê cái thiếu)
+- Mọi AC/EC (và DAC nếu có UI) có ≥1 task phụ trách không? (liệt kê cái thiếu)
 - Thứ tự phụ thuộc có đúng không?
 - Task có tiêu chí test rõ để mark done không?
 

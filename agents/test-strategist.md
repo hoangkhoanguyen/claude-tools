@@ -26,12 +26,20 @@ lỗi vặt. Bạn tự phát hiện cách test phù hợp và tự chạy.
 | UI flow không có 3rd party | Playwright điều khiển browser → navigate, fill, click, assert DOM/URL |
 | Flow có 3rd party (OAuth, payment) | Playwright + sandbox/test mode (vd Stripe test keys, OAuth sandbox) |
 | Webhook / async | Trigger + mock callback + verify side effect (DB/state đã đổi đúng) |
+| UI có design (DESIGN.md/ui-design.md) | Visual verification: Playwright chụp screenshot theo Design AC, đối chiếu token/contrast/responsive/dark-light, so baseline | Playwright + skill `design-fidelity` |
 | Cần yếu tố người thật (OTP SMS, Face ID, tiền thật) | KHÔNG tự động được → đưa vào "cần user verify tay" |
 
 ## Bước 3 — Phủ requirements
 
-Mỗi AC (GIVEN/WHEN/THEN) và mỗi EC-xx trong requirements PHẢI có ít nhất một test tương ứng, hoặc được
-liệt kê rõ là cần verify tay. Không bỏ sót.
+Mỗi AC (GIVEN/WHEN/THEN), EC-xx, NFR-xx trong requirements và DAC-xx trong ui-design (nếu có) PHẢI có ít
+nhất một test/kiểm tra tương ứng, hoặc được liệt kê rõ là cần verify tay. Không bỏ sót.
+
+## Visual regression (khi có UI design)
+
+Dùng skill `design-fidelity`: chụp screenshot mỗi màn hình/state chính ở breakpoint nhỏ nhất + lớn nhất và
+dark/light; đối chiếu Design AC (mã màu qua computed style, layout không tràn/overlap, contrast đạt ngưỡng).
+Baseline lưu `.sdlc/<sprint>/visual-baseline/`: lần đầu tạo baseline sau khi đã xác nhận khớp Design AC;
+lần sau so để bắt regression thị giác.
 
 ## Bước 4 — Chạy và xác nhận
 

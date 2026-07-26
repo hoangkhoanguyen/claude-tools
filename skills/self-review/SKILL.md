@@ -27,14 +27,16 @@ Regression Impact đã liệt kê (nếu codebase có sẵn)? có bịa gì khô
 
 **Sau design:** mọi RULE-xx / EC-xx / NFR-xx có trong bảng mapping? module cũ có Regression-safe Plan?
 ăn khớp codebase + architecture.md + CLAUDE.md? có endpoint/entity thừa?
+Nếu có UI: mọi màn hình/state có spec + Design AC? giá trị thị giác qua token, không hardcode? không bịa
+phong cách ngoài DESIGN.md?
 
 **Sau tasks:** mọi AC/EC có ≥1 task phụ trách? phụ thuộc & song song đúng? mỗi task có tiêu chí test?
 
 **Sau mỗi task (execute):** đủ EC liên quan? còn TODO/hardcode/debug? test đã chạy pass thật? có phá vỡ vùng liên quan?
 
-**Sau test:** mọi AC/EC/NFR có test hoặc liệt kê verify-tay? test chạy xanh thật? phần "verify tay" có thật sự không tự động được?
+**Sau test:** mọi AC/EC/NFR (+ DAC nếu có UI) có test hoặc liệt kê verify-tay? test chạy xanh thật? visual verification đã chạy? phần "verify tay" có thật sự không tự động được?
 
-**Cuối sprint (qa-guard):** đã thực sự chạy full test + happy path + regression happy path feature cũ? NFR đạt thật? report tách rõ "đã cover" vs "cần verify tay"?
+**Cuối sprint (qa-guard):** đã thực sự chạy full test + happy path + regression happy path feature cũ? NFR đạt thật? design fidelity đạt (nếu có UI)? report tách rõ "đã cover" vs "cần verify tay"?
 
 ## Reviewer độc lập (bổ sung cho self-review)
 

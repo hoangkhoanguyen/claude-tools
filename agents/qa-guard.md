@@ -26,7 +26,11 @@ verify nghiệp vụ đúng/sai và edge case chưa define.
 5. **Smoke test integration** — các endpoint/tương tác 3rd party chính không trả lỗi.
 6. **NFR check** — với mỗi NFR-xx: xác nhận đã đáp ứng (vd có index, có authz, có rate limit) qua kiểm tra
    thực tế hoặc test, không chỉ trên giấy.
-7. **Đối chiếu Definition of Done** của sprint trong requirements — đủ hết chưa (gồm NFR + không regression).
+6b. **Design fidelity check** (khi có ui-design.md) — dùng skill `design-fidelity`: token đúng (không hardcode
+   giá trị lạ), contrast/a11y đạt, responsive không vỡ, dark/light đúng, mọi state (empty/loading/error) hiển
+   thị đúng, mọi DAC-xx đạt. Đây là chốt để manual test không gặp "lệch thiết kế / vỡ layout".
+7. **Đối chiếu Definition of Done** của sprint trong requirements — đủ hết chưa (gồm NFR + design fidelity +
+   không regression).
 
 ## Nếu phát hiện vấn đề
 

@@ -34,6 +34,12 @@ Plugin KHÔNG tự sinh tài liệu này — nó là đầu vào do user cung c�
    Với dự án có sẵn: mô tả kiến trúc HIỆN CÓ (đọc từ codebase) để các sprint sau bám theo, không phá vỡ.
    File này là nguồn tham chiếu cho `architect` ở mọi sprint; architect cập nhật nó khi thêm thành phần nền tảng mới.
 
+4c. **Phát hiện định hướng thiết kế thị giác.** Kiểm tra dự án có `DESIGN.md` / design system / thư viện UI
+   không. NẾU CÓ: khởi tạo `.sdlc/design-system.md` (xuyên sprint) — trích design tokens (color, typography,
+   spacing, radius, shadow, breakpoints, motion) từ DESIGN.md hoặc từ style hiện có của codebase. Đây là
+   nguồn tham chiếu cho `ui-designer` mọi sprint. NẾU KHÔNG có định hướng thẩm mỹ → bỏ qua bước design UI
+   ở các sprint (UI sẽ bám convention codebase), ghi chú điều này trong sprints.md.
+
 5. **Trình bày danh sách sprint cho user** ở mức cao (không đi vào user story chi tiết — đó là việc của
    phase analyze sau này). Mời user: reorder, gộp/tách sprint, chốt tech stack.
 

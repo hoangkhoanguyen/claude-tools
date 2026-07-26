@@ -52,21 +52,26 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 - **TodoWrite**: dùng để track task trong session khi execute; đồng bộ ra `.sdlc/<sprint>/tasks.md`
   để persist qua session.
 - **Subagents (Agent tool)**: mỗi phase nên spawn agent chuyên biệt tương ứng
-  (product-analyst, architect, feature-builder, test-strategist, qa-guard); và `reviewer` để kiểm chéo
-  độc lập sau analyze/design. Chạy song song khi các phần độc lập; cô lập context của từng phase.
+  (product-analyst, architect, feature-builder, test-strategist, qa-guard); `ui-designer` cho nhánh giao
+  diện khi dự án có DESIGN.md; và `reviewer` để kiểm chéo độc lập sau analyze/design. Chạy song song khi
+  các phần độc lập; cô lập context của từng phase.
+- **Skill built-in cho thiết kế**: `artifact-design` (nguyên tắc giao diện), `dataviz` (biểu đồ/dashboard) —
+  dùng ở nhánh ui-designer.
 - **Bash**: ping port để phát hiện service đang chạy; chạy test runner; smoke test API bằng curl.
 - **Playwright** (đã cài sẵn trong môi trường): tự động hóa test UI. KHÔNG chạy `playwright install`.
 - **Skills**: load skill phù hợp theo phase (đã kèm trong plugin này).
-- **Hooks**: dùng cho auto-checkpoint / format sau khi ghi file (xem `hooks/`).
+- **Hooks**: `SessionStart` hook in tiến trình SDLC đang dở (`.sdlc/state.md`) để hỗ trợ resume (xem `hooks/`).
 
 ## Pre-flight trước khi execute (RẤT QUAN TRỌNG)
 
 Trước khi viết dòng code đầu tiên trong execute:
-1. Đọc design + tech stack → liệt kê mọi service/tool bên ngoài cần chạy (DB, cache, dev server,
-   3rd party sandbox...).
-2. Tự `ping`/check port xem cái nào đã chạy.
-3. CHỈ hỏi user bật những cái còn thiếu, kèm lệnh gợi ý để bật.
-4. Đợi user xác nhận ("ok"/"xong") RỒI mới tiếp tục. Không tự giả định service đã sẵn sàng.
+1. Phát hiện & ưu tiên dùng skill sẵn có trong repo (nguyên tắc 7).
+2. Suy ra service/tool bên ngoài cần chạy TỪ CONFIG dự án (docker-compose, .env.example, package.json
+   scripts, Procfile, Makefile, README) — không đoán mò. Liệt kê kèm port + lệnh khởi động chuẩn.
+3. Tự `ping`/check port xem cái nào đã chạy.
+4. CHỈ hỏi user bật những cái còn thiếu, kèm lệnh gợi ý (lấy từ config).
+5. Đợi user xác nhận ("ok"/"xong") RỒI mới tiếp tục. Không tự giả định service đã sẵn sàng. Ghi service
+   đã xác nhận vào `.sdlc/state.md`.
 
 ## Chọn chiến lược test (tự phát hiện)
 

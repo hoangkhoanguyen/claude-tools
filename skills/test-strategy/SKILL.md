@@ -22,6 +22,7 @@ xác nhận cảm quan UX). Mọi thứ khác phải được test tự động.
 | UI flow (không 3rd party) | Điều khiển browser: navigate/fill/click/assert | Playwright (đã cài sẵn) |
 | Flow có 3rd party (OAuth, payment) | Browser + sandbox/test mode | Playwright + Stripe test keys / OAuth sandbox |
 | Webhook / async | Trigger + mock callback + verify side effect | test runner + kiểm tra DB/state |
+| UI có design (DESIGN.md/ui-design.md) | Visual verification: screenshot đối chiếu Design AC + baseline | Playwright + skill `design-fidelity` |
 | Cần người thật (OTP SMS, Face ID, tiền thật) | Không tự động → liệt kê verify tay | — |
 
 ## Phối hợp môi trường

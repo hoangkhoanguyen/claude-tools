@@ -41,7 +41,7 @@ Sau đó các slash command `/sdlc:*` sẽ khả dụng trong mọi session.
 ## Luồng làm việc
 
 ```
-[Tài liệu business logic của bạn — plugin dùng làm ĐẦU VÀO, không tự sinh ra]
+[Tài liệu business logic của bạn (+ DESIGN.md nếu có) — plugin dùng làm ĐẦU VÀO, không tự sinh ra]
           │
           ▼
   /sdlc:sprint-plan          ← đọc tài liệu, chia thành các sprint
@@ -74,12 +74,15 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 .sdlc/
 ├── sprints.md               ← danh sách sprint + tech stack + dependency + trạng thái
 ├── architecture.md          ← kiến trúc nền tảng xuyên sprint (mọi sprint tham chiếu)
+├── design-system.md         ← design tokens xuyên sprint (chỉ khi dự án có DESIGN.md)
 ├── state.md                 ← con trỏ resume (schema cố định — xem templates/state.template.md)
 └── <sprint-slug>/
     ├── requirements.md      ← output analyze (gồm NFR + regression impact)
-    ├── design.md            ← output design (bảng mapping RULE/EC/NFR)
+    ├── design.md            ← output design hệ thống (bảng mapping RULE/EC/NFR)
+    ├── ui-design.md         ← output design giao diện (tokens, component spec, Design AC) — nếu có UI
     ├── tasks.md             ← task list + status (todo/doing/done)
-    └── test-report.md       ← kết quả test + việc cần bạn verify tay
+    ├── test-report.md       ← kết quả test + việc cần bạn verify tay
+    └── visual-baseline/     ← screenshot baseline cho visual regression — nếu có UI
 ```
 
 > Định dạng file (md/json/...) do agent chọn cho phù hợp — không cố định. Riêng `state.md` theo schema cố
@@ -101,15 +104,34 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 | Agent | `feature-builder` | Implement từng task (+ git commit mỗi task) |
 | Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test |
 | Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao |
-| Agent | `reviewer` | Kiểm chéo độc lập output analyze/design so với đầu vào |
+| Agent | `ui-designer` | DESIGN.md → design tokens, component spec, Design AC (chỉ khi có UI) |
+| Agent | `reviewer` | Kiểm chéo độc lập output analyze/design/ui-design so với đầu vào |
 | Skill | `requirements-analysis` | Chuẩn output của analyze |
 | Skill | `system-design` | Chuẩn output của design |
 | Skill | `task-breakdown` | Cách chia task đúng, không sót AC |
 | Skill | `test-strategy` | Bảng quyết định test theo loại feature |
+| Skill | `design-fidelity` | Đối chiếu UI với DESIGN.md: token, contrast, responsive, dark/light |
 | Skill | `self-review` | Checklist tự soi lại sau mỗi phase |
 | Hook | `SessionStart` | In tiến trình SDLC đang dở khi mở session (hỗ trợ resume) |
 
 ---
+
+## Dự án có thiết kế thị giác (DESIGN.md / design system)
+
+Khi dự án có `DESIGN.md` hoặc design system, UI trở thành "requirement" ngang hàng với nghiệp vụ. Plugin
+tự phát hiện và bật thêm nhánh thiết kế giao diện — **không tự chế thẩm mỹ, chỉ tuân theo DESIGN.md**:
+
+- **Phase design chạy 2 nhánh song song**: `architect` (hệ thống: API, DB) + `ui-designer` (giao diện:
+  design tokens, component spec, Design AC, state, responsive, dark/light).
+- **Design tokens chuẩn hóa** vào `.sdlc/design-system.md` (xuyên sprint). Execute build UI qua token,
+  KHÔNG hardcode màu/spacing/font.
+- **Phase test có visual verification**: Playwright chụp screenshot đối chiếu Design AC + baseline →
+  bắt "lệch màu / vỡ layout / mất tương phản" tự động.
+- **qa-guard có design fidelity check** trước khi bàn giao.
+
+→ Kết quả: khi manual test, bạn CHỈ xét *trải nghiệm/thẩm mỹ tổng thể*, không phải soi *đúng thiết kế chưa*.
+
+Nếu dự án KHÔNG có định hướng thẩm mỹ, nhánh này tự tắt — UI bám convention codebase.
 
 ## Nguyên tắc "không lỗi vặt khi manual test"
 

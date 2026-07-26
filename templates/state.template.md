@@ -13,12 +13,13 @@
 
 ## Phase status (sprint hiện tại)
 
-- analyze: <todo | doing | done>
-- design:  <todo | doing | done>
-- tasks:   <todo | doing | done>
-- execute: <todo | doing | done>
-- test:    <todo | doing | done>
-- qa:      <todo | doing | done>
+- analyze:       <todo | doing | done>
+- design_system: <todo | doing | done>              # nhánh architect
+- design_ui:     <todo | doing | done | n/a>         # nhánh ui-designer; n/a nếu dự án không có UI/DESIGN.md
+- tasks:         <todo | doing | done>
+- execute:       <todo | doing | done>
+- test:          <todo | doing | done>
+- qa:            <todo | doing | done>
 
 ## Con trỏ resume
 
@@ -30,3 +31,4 @@
 - claude_md_relevant: <danh sách CLAUDE.md liên quan đã đọc>
 - skills_used: <skill của repo đã phát hiện & dùng>
 - services_up: <service ngoài đã xác nhận đang chạy>
+- has_design: <yes | no>                            # dự án có DESIGN.md / design system không

@@ -18,8 +18,9 @@ vị hoàn chỉnh có thể checkpoint (để resume khi bị ngắt).
 
 ## Không bỏ sót AC
 
-Mỗi `AC-xx` và `EC-xx` trong requirements phải được ít nhất một task phụ trách. Kèm bảng
-**AC/EC → task** để chứng minh phủ đủ. Đây là chốt chặn: thiếu ánh xạ = sẽ có tính năng không được build.
+Mỗi `AC-xx`, `EC-xx`, `NFR-xx` trong requirements — và `DAC-xx` trong ui-design (nếu có UI) — phải được ít
+nhất một task phụ trách. Kèm bảng **AC/EC/NFR/DAC → task** để chứng minh phủ đủ. Đây là chốt chặn: thiếu
+ánh xạ = sẽ có tính năng/thiết kế không được build. Cân nhắc tách task UI và task hệ thống để chạy song song.
 
 ## Trạng thái task (để resume)
 

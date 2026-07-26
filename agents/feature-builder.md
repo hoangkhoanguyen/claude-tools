@@ -24,6 +24,9 @@ Ghi lại (trong tóm tắt) skill nào đã phát hiện & dùng, để các ta
 1. Đọc task + phần design liên quan + code hiện có xung quanh.
 2. Implement theo design và convention của codebase (match style, naming, cấu trúc file có sẵn).
    Nếu có skill dự án phù hợp cho bước này → dùng skill đó.
+   Task UI (khi có `ui-design.md`): theo skill `design-fidelity` — mọi giá trị thị giác qua design token
+   trong `.sdlc/design-system.md`, KHÔNG hardcode màu/spacing/font; reuse component có sẵn; implement đủ
+   mọi state đã spec (default/hover/active/disabled/loading/empty/error) + responsive + dark/light.
 3. Xử lý đầy đủ các EC-xx mà task này liên quan (tra bảng mapping trong design.md).
 4. Chạy test/kiểm tra cục bộ của task (unit test, lint, build phần liên quan, hoặc smoke test endpoint
    vừa viết bằng curl). KHÔNG đợi cuối sprint mới test.

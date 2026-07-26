@@ -29,11 +29,16 @@ Tự soi bằng skill `self-review`. Nếu có Open Questions không tự resolv
 **→ Reviewer gate**: spawn `reviewer` kiểm `requirements.md` so với tài liệu gốc. `NEEDS_FIX` → sửa rồi
 review lại; chỉ `PASS` mới sang Design.
 
-### Phase 2 — Design
-Spawn subagent `architect` (dùng skill `system-design`) → ghi `design.md`; cập nhật `.sdlc/architecture.md`
-nếu sprint thêm/đổi thành phần nền tảng dùng chung.
-Cross-check self-review: mọi RULE/EC đã có trong bảng mapping chưa. Thiếu → bổ sung.
-**→ Reviewer gate**: spawn `reviewer` kiểm `design.md` so với `requirements.md`. Chỉ `PASS` mới sang Tasks.
+### Phase 2 — Design (2 nhánh song song)
+- **Hệ thống**: spawn `architect` (skill `system-design`) → ghi `design.md`; cập nhật `.sdlc/architecture.md`
+  nếu thêm/đổi thành phần nền tảng.
+- **Giao diện** (CHỈ khi dự án có DESIGN.md / design system): spawn `ui-designer` (skill `design-fidelity` +
+  `artifact-design`) → ghi `ui-design.md` (tokens, component spec, Design AC, state, responsive, dark/light);
+  cập nhật `.sdlc/design-system.md`. Không có định hướng thẩm mỹ → bỏ nhánh này.
+
+Cross-check self-review: mọi RULE/EC/NFR có trong bảng mapping; mọi màn hình có Design AC (nếu có UI).
+**→ Reviewer gate**: spawn `reviewer` kiểm `design.md` (+ `ui-design.md`) so với `requirements.md`.
+Chỉ `PASS` mới sang Tasks.
 
 ### Phase 3 — Tasks
 Dùng skill `task-breakdown` → ghi `tasks.md` (status todo). Đồng bộ TodoWrite.
@@ -62,15 +67,19 @@ Cross-check: mọi AC/EC có task phụ trách chưa. (Reviewer optional ở pha
 **4b. Implement:**
 Spawn `feature-builder` chạy từng task (song song nếu độc lập). Mỗi task: implement → test cục bộ → pass →
 (nếu repo là git & user không tắt) commit task trên sprint branch → cập nhật `tasks.md` + TodoWrite +
-`state.md` → task tiếp. Self-review sau mỗi task (EC/TODO/hardcode).
+`state.md` → task tiếp. Self-review sau mỗi task (EC/TODO/hardcode). Task UI: theo skill `design-fidelity` —
+mọi giá trị thị giác qua design token, không hardcode; implement đủ mọi state đã spec.
 
 ### Phase 5 — Test
 Spawn `test-strategist` (dùng skill `test-strategy`) → tự chọn cách test theo stack, viết + chạy test,
-Playwright cho UI. Ghi `test-report.md`. Mọi AC/EC phải có test hoặc được liệt kê verify-tay.
+Playwright cho UI. Nếu có UI design: thêm **visual verification** (skill `design-fidelity`) — chụp screenshot
+mỗi màn hình/state ở breakpoint + dark/light, đối chiếu Design AC, tạo/so baseline trong
+`.sdlc/<sprint>/visual-baseline/`. Ghi `test-report.md`. Mọi AC/EC/NFR/DAC phải có test hoặc liệt kê verify-tay.
 
 ### Phase 6 — QA Gate
-Spawn `qa-guard`: chạy full test + đi happy path từng story + **regression happy path của feature cũ liên quan**
-+ quét hardcode/TODO/unhandled error. Chỉ khi sạch mới sang bàn giao.
+Spawn `qa-guard`: chạy full test + happy path từng story + **regression happy path feature cũ** + NFR check +
+**design fidelity check** (nếu có UI: token đúng, contrast/a11y, responsive, dark/light, state đầy đủ) +
+quét hardcode/TODO/unhandled error. Chỉ khi sạch mới sang bàn giao.
 
 ## Bàn giao
 
