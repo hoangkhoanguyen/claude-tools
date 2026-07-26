@@ -15,7 +15,7 @@
 
 - analyze:       <todo | doing | done>
 - design_system: <todo | doing | done>              # nhánh architect
-- design_ui:     <todo | doing | done | n/a>         # nhánh ui-designer; n/a nếu dự án không có UI/DESIGN.md
+- design_ui:     <todo | doing | waiting-external | done | n/a>   # nhánh ui-designer; waiting-external = chờ bản design từ Claude Design ngoài; n/a nếu dự án không có UI/DESIGN.md
 - tasks:         <todo | doing | done>
 - execute:       <todo | doing | done>
 - test:          <todo | doing | done>
@@ -32,3 +32,4 @@
 - skills_used: <skill của repo đã phát hiện & dùng>
 - services_up: <service ngoài đã xác nhận đang chạy>
 - has_design: <yes | no>                            # dự án có DESIGN.md / design system không
+- ui_design_source: <internal | external | none>   # internal = ui-designer tự sinh từ DESIGN.md; external = nhận bản design từ Claude Design ngoài (input tại .sdlc/<sprint>/ui-design.input.md); none = không có UI
