@@ -478,6 +478,29 @@ async function main() {
 
   if (prompter) prompter.close();
 
+  // 3b) Dọn file cũ (obsolete): có trong manifest trước nhưng không còn trong source.
+  // Xảy ra khi repo đổi cấu trúc (vd: commands/run.md → commands/sdlc/run.md).
+  // Chỉ xóa file mà user chưa sửa (installedHash khớp) để tránh mất dữ liệu.
+  const currentRelPaths = new Set(fileItems.map((it) => it.rel));
+  for (const [rel, meta] of Object.entries(manifest.files || {})) {
+    if (currentRelPaths.has(rel)) continue; // còn trong source → giữ
+    const dest = path.join(base, rel);
+    if (!fs.existsSync(dest)) {
+      delete newManifestFiles[rel]; // file đã mất tự nhiên, dọn manifest
+      continue;
+    }
+    const destHash = sha256(dest);
+    if (meta.installedHash && destHash === meta.installedHash) {
+      // User chưa sửa → xóa an toàn
+      console.log(`  ${c.yellow('remove  ')} ${c.dim(rel)} ${c.dim('(đã đổi path trong repo mới)')}`);
+      if (!opts.dryRun) fs.unlinkSync(dest);
+      delete newManifestFiles[rel];
+    } else {
+      // User đã sửa → cảnh báo, không xóa
+      console.log(`  ${c.dim('obsolete')} ${c.dim(rel)} ${c.yellow('← bạn đã sửa file này; xóa tay nếu không cần')}`);
+    }
+  }
+
   // 4) Hook registration
   if (hookPlan) {
     if (hookPlan.changed) {
