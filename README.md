@@ -28,20 +28,20 @@ Từ thư mục **dự án đích**, chạy:
 npx github:hoangkhoanguyen/claude-tools
 ```
 
-Lệnh này copy `agents/`, `commands/`, `skills/`, `templates/` và đăng ký `SessionStart`
-hook vào `.claude/` của dự án hiện tại. Xong là dùng được `/sdlc:*` ngay.
+Lệnh này tải installer từ branch `main`, copy `agents/`, `commands/`, `skills/`, `templates/`
+và đăng ký `SessionStart` hook vào `.claude/` của dự án hiện tại. Xong là dùng được `/sdlc:*` ngay.
 
 **Các tuỳ chọn:**
 
 ```bash
-npx github:hoangkhoanguyen/claude-tools --global          # cài vào ~/.claude (mọi dự án)
-npx github:hoangkhoanguyen/claude-tools --dir ./path       # cài vào .claude ở nơi khác
-npx github:hoangkhoanguyen/claude-tools --only skills      # chỉ cài một phần
-npx github:hoangkhoanguyen/claude-tools --skip hooks       # bỏ qua một phần
-npx github:hoangkhoanguyen/claude-tools --only claude-md   # thêm nguyên tắc SDLC vào CLAUDE.md
-npx github:hoangkhoanguyen/claude-tools --dry-run          # xem sẽ làm gì, không ghi gì
-npx github:hoangkhoanguyen/claude-tools --list             # liệt kê thành phần
-npx github:hoangkhoanguyen/claude-tools --help             # đầy đủ tuỳ chọn
+npx github:hoangkhoanguyen/claude-tools --global           # cài vào ~/.claude (mọi dự án)
+npx github:hoangkhoanguyen/claude-tools --dir ./path        # cài vào .claude ở nơi khác
+npx github:hoangkhoanguyen/claude-tools --only skills       # chỉ cài một phần
+npx github:hoangkhoanguyen/claude-tools --skip hooks        # bỏ qua một phần
+npx github:hoangkhoanguyen/claude-tools --only claude-md    # thêm nguyên tắc SDLC vào CLAUDE.md
+npx github:hoangkhoanguyen/claude-tools --dry-run           # xem sẽ làm gì, không ghi gì
+npx github:hoangkhoanguyen/claude-tools --list              # liệt kê thành phần
+npx github:hoangkhoanguyen/claude-tools --help              # đầy đủ tuỳ chọn
 ```
 
 Thành phần: `agents`, `commands`, `skills`, `templates`, `hooks` (mặc định) và
@@ -52,14 +52,14 @@ Thành phần: `agents`, `commands`, `skills`, `templates`, `hooks` (mặc đị
 - **Merge, không đè mù.** `settings.json` được merge (giữ nguyên permissions/hooks của bạn,
   chỉ thêm 1 SessionStart hook); `CLAUDE.md` chỉ cập nhật phần giữa 2 marker `sdlc-workflow`,
   không đụng nội dung khác của bạn.
-- **Update idempotent.** Sau khi bạn `npx` update repo rồi chạy lại: file bạn **chưa sửa**
-  được cập nhật tự động; file bạn **đã chỉnh tay** sẽ được hỏi
+- **Update idempotent.** Chạy lại lệnh sau khi repo có bản mới: file bạn **chưa sửa** được
+  cập nhật tự động; file bạn **đã chỉnh tay** sẽ được hỏi
   (`--on-conflict ask|overwrite|skip|backup`, mặc định hỏi từng file khi có bàn phím).
   Installer theo dõi qua `.claude/.sdlc-install.json` (checksum lúc cài) để biết file nào bạn đã đổi.
 - **Backup được.** `--on-conflict backup` giữ bản cũ thành `*.bak` trước khi ghi đè.
 
 > **Repo private:** đặt `GITHUB_TOKEN` trong môi trường trước khi chạy, hoặc dùng
-> `npx git+https://<token>@github.com/hoangkhoanguyen/claude-tools`.
+> `GITHUB_TOKEN=xxx npx github:hoangkhoanguyen/claude-tools`.
 
 ### Cách 2 — plugin đọc trực tiếp (không copy file, update bằng `git pull`)
 
