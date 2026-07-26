@@ -1,0 +1,35 @@
+{
+  "name": "sdlc-workflow",
+  "version": "0.1.0",
+  "description": "Installer cho SDLC Workflow plugin: copy agents/commands/skills/hooks vào .claude của dự án đích, merge an toàn, update idempotent.",
+  "bin": {
+    "sdlc-install": "bin/install.js"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=16"
+  },
+  "files": [
+    "bin/",
+    "agents/",
+    "commands/",
+    "skills/",
+    "hooks/",
+    "templates/",
+    "CLAUDE.md",
+    ".claude-plugin/",
+    "README.md"
+  ],
+  "keywords": [
+    "claude-code",
+    "sdlc",
+    "installer",
+    "skills",
+    "agents",
+    "workflow"
+  ],
+  "author": {
+    "name": "hoangkhoanguyen"
+  },
+  "license": "MIT"
+}
