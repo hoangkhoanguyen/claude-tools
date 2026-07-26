@@ -15,16 +15,19 @@ Chạy 2 nhánh (song song nếu độc lập):
 CLAUDE.md liên quan. Ghi `.sdlc/<sprint>/design.md` với 2 tầng + bảng mapping phủ 100% RULE/EC/NFR +
 Regression-safe Plan. Cập nhật `.sdlc/architecture.md` nếu đổi thành phần nền tảng.
 
-**Nhánh giao diện** (CHỈ khi dự án có UI) — spawn `ui-designer`, dùng skill `design-fidelity` + `artifact-design`.
-Ghi `.sdlc/<sprint>/ui-design.md` (tokens, component spec, Design AC, state, responsive, dark/light). Cập nhật
-`.sdlc/design-system.md`. Nhánh này có 2 mode (ui-designer tự phát hiện):
-- **INTERNAL**: dự án có DESIGN.md / design system → ui-designer tự sinh spec. Ghi `ui_design_source: internal`.
-- **EXTERNAL**: bản design được sinh ở NGOÀI (ví dụ Claude Design lấy `requirements.md` làm input) và drop vào
-  `.sdlc/<sprint>/ui-design.input.md`. Nếu file input CHƯA có → set `design_ui: waiting-external` + blocker trỏ
-  tới đường dẫn đó, báo user drop bản design vào rồi reply, KHÔNG tự chế thẩm mỹ. Khi có input → ui-designer
-  ingest + chuẩn hóa thành `ui-design.md`. Ghi `ui_design_source: external`.
+**Nhánh giao diện** — spawn `ui-designer`, dùng skill `design-fidelity` + `artifact-design`. ui-designer quyết định
+mode theo **UI scope trong `requirements.md`** (KHÔNG theo file có sẵn):
+- **Requirements KHÔNG có màn hình** → `design_ui: n/a`, bỏ nhánh này, UI bám convention codebase.
+- **Requirements CÓ màn hình** → cần `ui-design.md`, chọn nguồn thẩm mỹ:
+  - **EXTERNAL**: có bản ngoài tại `.sdlc/<sprint>/ui-design.input.md` (Claude Design lấy `requirements.md` làm
+    input) → ingest + chuẩn hóa thành `ui-design.md`. Ghi `ui_design_source: external`.
+  - **INTERNAL**: có DESIGN.md / design system → ui-designer tự sinh spec. Ghi `ui_design_source: internal`.
+  - **Chưa có nguồn nào** (chưa DESIGN.md, bản ngoài chưa về): KHÔNG im lặng bỏ nhánh. Set `design_ui:
+    waiting-external` + blocker trỏ tới `.sdlc/<sprint>/ui-design.input.md`, báo user drop bản design vào rồi
+    reply — hoặc user chọn tự sinh từ DESIGN.md / bám convention codebase.
 
-Nếu dự án KHÔNG có định hướng thẩm mỹ (không DESIGN.md, không bản ngoài) → bỏ nhánh này, UI bám convention codebase.
+Ghi `.sdlc/<sprint>/ui-design.md` (tokens, component spec, Design AC, state, responsive, dark/light); cập nhật
+`.sdlc/design-system.md`.
 
 **Quan trọng — 2 nhánh độc lập:** nhánh hệ thống (architect) chỉ cần `requirements.md`, KHÔNG chờ UI design.
 Nó cứ chạy tới `done` bình thường kể cả khi nhánh UI đang `waiting-external`. Chỉ các phase SAU (Tasks trở đi)

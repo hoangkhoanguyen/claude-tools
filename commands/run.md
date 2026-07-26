@@ -33,14 +33,16 @@ review lại; chỉ `PASS` mới sang Design.
 - **Hệ thống**: spawn `architect` (skill `system-design`) → ghi `design.md`; cập nhật `.sdlc/architecture.md`
   nếu thêm/đổi thành phần nền tảng. Nhánh này chỉ cần `requirements.md` — **KHÔNG chờ UI design**, cứ chạy tới
   `done` kể cả khi nhánh giao diện đang chờ input ngoài.
-- **Giao diện** (CHỈ khi dự án có UI): spawn `ui-designer` (skill `design-fidelity` + `artifact-design`) → ghi
-  `ui-design.md` (tokens, component spec, Design AC, state, responsive, dark/light); cập nhật `.sdlc/design-system.md`.
-  ui-designer tự phát hiện mode:
-  - **INTERNAL** — có DESIGN.md / design system: tự sinh spec.
-  - **EXTERNAL** — bản design sinh ở ngoài (ví dụ Claude Design lấy `requirements.md` làm input) drop vào
-    `.sdlc/<sprint>/ui-design.input.md`. Chưa có file → set `design_ui: waiting-external` + blocker, báo user drop
-    bản design vào rồi reply; có file → ingest + chuẩn hóa thành `ui-design.md`.
-  Không có định hướng thẩm mỹ (không DESIGN.md, không bản ngoài) → bỏ nhánh này.
+- **Giao diện**: spawn `ui-designer` (skill `design-fidelity` + `artifact-design`). ui-designer quyết định mode
+  theo **UI scope trong `requirements.md`**, KHÔNG theo file có sẵn (tránh nhầm "UI ngoài chưa về" với "không có UI"):
+  - Requirements **không có màn hình** → `design_ui: n/a`, bỏ nhánh.
+  - Requirements **có màn hình** → cần `ui-design.md`:
+    - **EXTERNAL** — có bản ngoài tại `.sdlc/<sprint>/ui-design.input.md` (Claude Design lấy `requirements.md` làm
+      input) → ingest + chuẩn hóa.
+    - **INTERNAL** — có DESIGN.md / design system → tự sinh.
+    - **Chưa có nguồn** → set `design_ui: waiting-external` + blocker, báo user drop bản design vào rồi reply
+      (hoặc chọn tự sinh từ DESIGN.md / bám convention). KHÔNG im lặng bỏ nhánh.
+  Ghi `ui-design.md`; cập nhật `.sdlc/design-system.md`.
 
 **Đồng bộ trước khi sang Tasks**: system design có thể `done` sớm, nhưng chỉ chuyển Phase 3 khi nhánh UI đã có
 `ui-design.md` hoàn chỉnh (thoát trạng thái `waiting-external`) — vì Tasks/Execute/Test tiêu thụ nó.
