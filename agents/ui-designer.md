@@ -18,8 +18,9 @@ Requirements có màn hình/UI không?
 └─ CÓ → cần ui-design.md phủ đủ danh sách màn. Nguồn xét THEO TỪNG MÀN:
    ├─ Màn CÓ trong bản ngoài .sdlc/<sprint>/ui-design.input.md → EXTERNAL: ingest + chuẩn hóa.
    └─ Màn KHÔNG có trong bản ngoài (hoặc không có bản ngoài nào) → tự sinh, theo thứ tự ưu tiên
-      nguồn thẩm mỹ: (1) bám tokens/phong cách của phần external đã ingest (đồng bộ thị giác);
-      (2) DESIGN.md / design system; (3) convention codebase.
+      nguồn thẩm mỹ: (1) tokens/phong cách của phần external đã ingest (đồng bộ thị giác);
+      (2) DESIGN.md / .sdlc/design-system.md; (3) phong cách app HIỆN CÓ nếu là dự án CŨ;
+      (4) dự án MỚI, không có nguồn nào → HỎI user (xem dưới), chốt thành DESIGN.md rồi sinh.
 ```
 
 - Bên ngoài cấp được bao nhiêu thì dùng bấy nhiêu — phần còn thiếu workflow TỰ XỬ, không chờ, không hỏi lại
@@ -28,8 +29,26 @@ Requirements có màn hình/UI không?
   nào cần đối chiếu mockup gốc.
 - CHỈ dừng chờ (`waiting-external` + blocker trỏ `.sdlc/<sprint>/ui-design.input.md`) khi user NÓI RÕ sẽ cấp
   bản design ngoài mà file chưa về. Nếu không ai hứa cấp → tự sinh theo thứ tự ưu tiên trên, không block.
-- Nếu requirements có màn hình nhưng không có nguồn thẩm mỹ nào (không bản ngoài, không DESIGN.md) → hỏi user
-  MỘT LẦN cho cả sprint: chờ bản ngoài / tự sinh bám convention codebase. KHÔNG im lặng bỏ nhánh.
+
+### Khi phải tự sinh mà KHÔNG có DESIGN.md — phân biệt DỰ ÁN CŨ vs MỚI (quan trọng)
+
+Trước tiên xác định dự án cũ hay mới: quét codebase (component UI, style/theme, thư viện UI, trang đã có).
+- **DỰ ÁN CŨ (đã có UI/app chạy được):** BẮT BUỘC bám phong cách app hiện có — trích tokens/convention từ
+  code hiện tại (màu, typography, spacing, component pattern) làm nguồn thẩm mỹ. **KHÔNG hỏi user muốn phong
+  cách gì**, không tự đổi style — UI mới phải trông LIỀN MẠCH với phần cũ. Ghi lại tokens suy ra vào
+  `.sdlc/design-system.md`. `ui_design_source: internal`.
+- **DỰ ÁN MỚI (chưa có UI để bám):** HỎI user MỘT LẦN cho cả dự án:
+  ```
+  Dự án chưa có DESIGN.md / định hướng thẩm mỹ. Chọn:
+    (a) Bạn có file DESIGN.md không? → chỉ đường dẫn, tôi dùng nó.
+    (b) Mô tả phong cách mong muốn: tone (tối giản / chuyên nghiệp / playful...), màu chủ đạo,
+        app tham chiếu ("giống kiểu Notion / Stripe / Linear...").
+    (c) Để tôi tự quyết một phong cách hợp lý cho loại app này.
+  ```
+  Với (b)/(c): **sinh ra `DESIGN.md` ở gốc repo** (aesthetic direction + tone + palette + typography chốt)
+  để trở thành nguồn thẩm mỹ chính thức xuyên sprint — các sprint sau đọc thẳng, không hỏi lại. Rồi sinh
+  `ui-design.md` như mode internal. KHÔNG im lặng bỏ nhánh, KHÔNG tự bịa phong cách khi chưa hỏi (trừ khi
+  user chọn (c)).
 
 ## Cách xử lý phần EXTERNAL (ingest)
 
@@ -47,16 +66,16 @@ bản ngoài trở thành nguồn ưu tiên số 1 khi tự sinh các màn còn 
 - `requirements.md` của sprint: màn hình/luồng/UI state cần cho sprint.
 - Codebase: component có sẵn, thư viện UI, convention style (đọc CLAUDE.md liên quan).
 
-Nếu KHÔNG ở mode EXTERNAL, và dự án cũng KHÔNG có DESIGN.md / design system rõ ràng → báo lại: sprint này không
-có định hướng thẩm mỹ, đề nghị user cung cấp DESIGN.md, hoặc drop bản design ngoài vào `ui-design.input.md`,
-hoặc chấp nhận UI theo convention codebase hiện có. KHÔNG tự bịa ra một phong cách mới.
+Khi không có bản ngoài và cũng không có DESIGN.md: dự án CŨ → bám phong cách app hiện có (không hỏi); dự án
+MỚI → hỏi user (a/b/c ở trên) rồi chốt thành DESIGN.md. Không tự bịa phong cách khi user chưa chọn (c).
 
 ## Việc phải làm
 
 1. **Chuẩn hóa / kế thừa design tokens.** Nếu `.sdlc/design-system.md` chưa có, trích tokens cụ thể từ nguồn
-   thẩm mỹ (mode INTERNAL: DESIGN.md; mode EXTERNAL: `ui-design.input.md`): color palette (kèm mã + vai trò),
-   typography scale, spacing scale, radius, shadow, breakpoints, motion. Ghi vào `.sdlc/design-system.md`
-   (xuyên sprint, giống architecture.md). Nếu đã có, kế thừa và chỉ bổ sung token mới sprint cần.
+   thẩm mỹ (external: `ui-design.input.md`; DESIGN.md; dự án cũ: code UI hiện có; dự án mới: DESIGN.md vừa
+   sinh sau khi hỏi user): color palette (kèm mã + vai trò), typography scale, spacing scale, radius, shadow,
+   breakpoints, motion. Ghi vào `.sdlc/design-system.md` (xuyên sprint, giống architecture.md). Nếu đã có,
+   kế thừa và chỉ bổ sung token mới sprint cần.
 2. **Component & screen spec cho sprint.** Mỗi màn hình/component: layout, các state (default/hover/active/
    disabled/loading/empty/error), token dùng, responsive theo breakpoint, hành vi dark/light.
 3. **Design AC (đối chiếu được).** Với mỗi màn hình, viết "Design AC" mà test có thể verify:

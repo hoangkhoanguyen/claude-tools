@@ -22,11 +22,16 @@ Regression-safe Plan. Cập nhật `.sdlc/architecture.md` nếu đổi thành p
   - Màn CÓ trong bản ngoài `.sdlc/<sprint>/ui-design.input.md` (từ Claude Design / designer — input của họ có
     thể lấy từ `requirements.md` hoặc ý tưởng riêng) → **ingest + chuẩn hóa**.
   - Màn KHÔNG được bản ngoài cấp → **tự sinh**, ưu tiên nguồn: tokens của phần external đã ingest (đồng bộ
-    thị giác) → DESIGN.md / design system → convention codebase. Bên ngoài cấp bao nhiêu dùng bấy nhiêu,
-    phần thiếu workflow tự xử — không chờ.
+    thị giác) → DESIGN.md / design system → **dự án CŨ: phong cách app hiện có** → **dự án MỚI không nguồn
+    nào: hỏi user**. Bên ngoài cấp bao nhiêu dùng bấy nhiêu, phần thiếu workflow tự xử — không chờ.
+  - **Không có DESIGN.md khi phải tự sinh** — phân biệt cũ/mới:
+    - **Dự án cũ** (đã có UI chạy được) → BẮT BUỘC bám phong cách app hiện có, KHÔNG hỏi phong cách, không
+      đổi style — UI mới phải liền mạch với phần cũ.
+    - **Dự án mới** (chưa có UI) → hỏi user MỘT LẦN: (a) có DESIGN.md không? (b) mô tả phong cách (tone / màu
+      chủ đạo / app tham chiếu) (c) để Claude tự quyết. Với (b)/(c) → **sinh `DESIGN.md` ở gốc repo** làm
+      nguồn thẩm mỹ chính thức xuyên sprint, rồi sinh spec.
   - Ghi `ui_design_source: external | mixed | internal`; mỗi màn đánh dấu `[external]`/`[generated]`.
   - CHỈ `waiting-external` (+ blocker trỏ file input) khi user nói rõ SẼ cấp bản ngoài mà file chưa về.
-    Không nguồn thẩm mỹ nào và không ai hứa cấp → hỏi user MỘT LẦN; KHÔNG im lặng bỏ nhánh.
 
 Ghi `.sdlc/<sprint>/ui-design.md` (tokens, component spec, Design AC, state, responsive, dark/light); cập nhật
 `.sdlc/design-system.md`.

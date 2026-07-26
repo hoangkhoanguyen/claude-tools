@@ -38,10 +38,11 @@ review lại; chỉ `PASS` mới sang Design.
   - Requirements **không có màn hình** → `design_ui: n/a`, bỏ nhánh.
   - Requirements **có màn hình** → `ui-design.md` phải phủ đủ mọi màn/state:
     - Màn có trong bản ngoài `.sdlc/<sprint>/ui-design.input.md` → ingest + chuẩn hóa `[external]`.
-    - Màn không được cấp → tự sinh `[generated]` (ưu tiên: tokens phần external → DESIGN.md → convention
-      codebase). Bên ngoài cấp bao nhiêu dùng bấy nhiêu, phần thiếu tự xử — không chờ.
+    - Màn không được cấp → tự sinh `[generated]`, ưu tiên nguồn: tokens phần external → DESIGN.md → **dự án
+      CŨ: phong cách app hiện có (bắt buộc bám, không hỏi)** → **dự án MỚI không nguồn nào: hỏi user MỘT LẦN**
+      (a) có DESIGN.md? (b) mô tả phong cách? (c) Claude tự quyết → (b)/(c) sinh `DESIGN.md` gốc repo rồi sinh spec.
     - `ui_design_source: external | mixed | internal`. CHỈ `waiting-external` khi user nói rõ sẽ cấp bản
-      ngoài mà file chưa về; không nguồn nào + không ai hứa cấp → hỏi user MỘT LẦN, KHÔNG im lặng bỏ nhánh.
+      ngoài mà file chưa về. KHÔNG im lặng bỏ nhánh.
   Ghi `ui-design.md`; cập nhật `.sdlc/design-system.md`.
 
 **Đồng bộ trước khi sang Tasks**: system design có thể `done` sớm, nhưng chỉ chuyển Phase 3 khi nhánh UI đã có
