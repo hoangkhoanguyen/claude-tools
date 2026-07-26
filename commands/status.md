@@ -27,7 +27,16 @@ Sprint hiện tại: sprint-2-orders
   Tasks: 3 done, 1 doing, 3 todo
   Đang làm: TASK-04 (tạo endpoint GET /orders)
 
-Tiếp theo: /sdlc:run sprint-2-orders  (để làm tiếp)
+▶ Resume:
+  /sdlc:run sprint-2-orders
+  └─ Sẽ tiếp tục từ: execute › TASK-04 (tạo endpoint GET /orders)
+```
+
+Nếu chưa có sprint nào đang dở, in thêm sprint tiếp theo có thể bắt đầu:
+
+```
+▶ Bắt đầu sprint tiếp theo:
+  /sdlc:run sprint-3-reports
 ```
 
 Nếu chưa có `.sdlc/`, gợi ý chạy `/sdlc:sprint-plan` trước.
