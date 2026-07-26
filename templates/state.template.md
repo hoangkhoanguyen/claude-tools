@@ -32,4 +32,4 @@
 - skills_used: <skill của repo đã phát hiện & dùng>
 - services_up: <service ngoài đã xác nhận đang chạy>
 - has_design: <yes | no>                            # dự án có DESIGN.md / design system không
-- ui_design_source: <internal | external | none>   # internal = ui-designer tự sinh từ DESIGN.md; external = nhận bản design từ Claude Design ngoài (input tại .sdlc/<sprint>/ui-design.input.md); none = không có UI
+- ui_design_source: <internal | external | mixed | none>   # internal = workflow tự sinh toàn bộ; external = 100% màn từ bản ngoài (input tại .sdlc/<sprint>/ui-design.input.md); mixed = bản ngoài cấp một phần, màn thiếu workflow tự sinh; none = sprint không có UI

@@ -15,16 +15,18 @@ Chạy 2 nhánh (song song nếu độc lập):
 CLAUDE.md liên quan. Ghi `.sdlc/<sprint>/design.md` với 2 tầng + bảng mapping phủ 100% RULE/EC/NFR +
 Regression-safe Plan. Cập nhật `.sdlc/architecture.md` nếu đổi thành phần nền tảng.
 
-**Nhánh giao diện** — spawn `ui-designer`, dùng skill `design-fidelity` + `artifact-design`. ui-designer quyết định
-mode theo **UI scope trong `requirements.md`** (KHÔNG theo file có sẵn):
-- **Requirements KHÔNG có màn hình** → `design_ui: n/a`, bỏ nhánh này, UI bám convention codebase.
-- **Requirements CÓ màn hình** → cần `ui-design.md`, chọn nguồn thẩm mỹ:
-  - **EXTERNAL**: có bản ngoài tại `.sdlc/<sprint>/ui-design.input.md` (Claude Design lấy `requirements.md` làm
-    input) → ingest + chuẩn hóa thành `ui-design.md`. Ghi `ui_design_source: external`.
-  - **INTERNAL**: có DESIGN.md / design system → ui-designer tự sinh spec. Ghi `ui_design_source: internal`.
-  - **Chưa có nguồn nào** (chưa DESIGN.md, bản ngoài chưa về): KHÔNG im lặng bỏ nhánh. Set `design_ui:
-    waiting-external` + blocker trỏ tới `.sdlc/<sprint>/ui-design.input.md`, báo user drop bản design vào rồi
-    reply — hoặc user chọn tự sinh từ DESIGN.md / bám convention codebase.
+**Nhánh giao diện** — spawn `ui-designer`, dùng skill `design-fidelity` + `artifact-design`. ui-designer xét
+**UI scope trong `requirements.md`** (KHÔNG theo file có sẵn), rồi chọn nguồn design **theo từng màn hình**:
+- **Requirements KHÔNG có màn hình** → `design_ui: n/a`, bỏ nhánh này.
+- **Requirements CÓ màn hình** → cần `ui-design.md` phủ đủ mọi màn/state. Từng màn:
+  - Màn CÓ trong bản ngoài `.sdlc/<sprint>/ui-design.input.md` (từ Claude Design / designer — input của họ có
+    thể lấy từ `requirements.md` hoặc ý tưởng riêng) → **ingest + chuẩn hóa**.
+  - Màn KHÔNG được bản ngoài cấp → **tự sinh**, ưu tiên nguồn: tokens của phần external đã ingest (đồng bộ
+    thị giác) → DESIGN.md / design system → convention codebase. Bên ngoài cấp bao nhiêu dùng bấy nhiêu,
+    phần thiếu workflow tự xử — không chờ.
+  - Ghi `ui_design_source: external | mixed | internal`; mỗi màn đánh dấu `[external]`/`[generated]`.
+  - CHỈ `waiting-external` (+ blocker trỏ file input) khi user nói rõ SẼ cấp bản ngoài mà file chưa về.
+    Không nguồn thẩm mỹ nào và không ai hứa cấp → hỏi user MỘT LẦN; KHÔNG im lặng bỏ nhánh.
 
 Ghi `.sdlc/<sprint>/ui-design.md` (tokens, component spec, Design AC, state, responsive, dark/light); cập nhật
 `.sdlc/design-system.md`.
