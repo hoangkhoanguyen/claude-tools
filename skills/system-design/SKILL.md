@@ -8,10 +8,12 @@ description: Chuẩn cấu trúc và chất lượng cho output của phase desi
 Kỹ năng thiết kế hệ thống cho MỘT sprint từ `requirements.md`, đủ chi tiết để feature-builder implement
 mà không phải tự quyết kiến trúc.
 
-## Trước khi thiết kế: đọc codebase
+## Trước khi thiết kế: đọc context
 
-Grep/Glob codebase hiện có để nắm convention, stack, module sẵn có. Thiết kế phải ăn khớp — không áp
-kiến trúc lạ. Với dự án thêm-feature-vào-codebase-sẵn-có, điều này tối quan trọng.
+Grep/Glob codebase hiện có để nắm convention, stack, module sẵn có. Đọc `.sdlc/architecture.md`
+(foundational, xuyên sprint) và các `CLAUDE.md` liên quan. Thiết kế phải ăn khớp — không áp kiến trúc lạ.
+Với dự án thêm-feature-vào-codebase-sẵn-có, điều này tối quan trọng. Nếu sprint thêm/đổi thành phần nền
+tảng dùng chung → cập nhật `.sdlc/architecture.md`.
 
 ## Bố cục 2 tầng
 
@@ -25,14 +27,16 @@ kiến trúc lạ. Với dự án thêm-feature-vào-codebase-sẵn-có, điều
 5. Data Model (schema cụ thể: field, type, index, constraint, relationship)
 6. API Contracts (method, path, request, response success + error, status, auth)
 7. UI / Interaction Flow (màn hình, state, empty/loading/error)
-8. **Rule & Edge-case Mapping** (bảng: mỗi RULE-xx / EC-xx → xử lý ở đâu)
-9. File Change Plan (file tạo mới / sửa)
+8. **Rule & Edge-case Mapping** (bảng: mỗi RULE-xx / EC-xx / NFR-xx → xử lý ở đâu)
+9. NFR Design (cách đáp ứng từng NFR-xx: index, authz, cache, rate limit...)
+10. Regression-safe Plan (cách đổi module cũ mà không phá behavior — backward compatible)
+11. File Change Plan (file tạo mới / sửa)
 
 ## Quy tắc then chốt: phủ 100% rule & edge case
 
-Section 8 là bằng chứng thiết kế đã cover requirements. MỌI `RULE-xx` và `EC-xx` phải xuất hiện trong
-bảng, ánh xạ tới một điểm xử lý cụ thể (validation ở đâu, error response nào, state nào). Đây là chốt
-chặn quan trọng nhất để tránh lỗi vặt khi execute/test.
+Section 8 là bằng chứng thiết kế đã cover requirements. MỌI `RULE-xx`, `EC-xx` và `NFR-xx` phải xuất hiện
+trong bảng, ánh xạ tới một điểm xử lý cụ thể (validation ở đâu, error response nào, state nào, index/authz
+nào). Đây là chốt chặn quan trọng nhất để tránh lỗi vặt khi execute/test.
 
 ## API error phải được thiết kế, không để ngẫu nhiên
 

@@ -11,12 +11,16 @@ Yêu cầu `tasks.md` của sprint đã tồn tại (chạy `/sdlc:tasks` trư�
 
 ## Pre-flight (BẮT BUỘC trước khi code)
 
+0. **Nạp context**: đọc các `CLAUDE.md` liên quan (nguyên tắc 0) + `.sdlc/architecture.md`.
 1. **Phát hiện skill dùng được trong repo.** Quét `.claude/skills`, `.claude/agents`, `.claude/commands`
    của dự án, skill từ `pluginDirs`, và skill built-in đang khả dụng. Skill nào khớp việc sắp làm
    (test, migration, sinh code theo convention riêng...) → ưu tiên dùng qua tool Skill thay vì tự chế.
-2. Đọc design + tech stack → liệt kê service/tool ngoài cần chạy (DB, cache, dev server, sandbox 3rd party).
+2. **Suy ra service ngoài từ config dự án, KHÔNG đoán mò**: đọc `docker-compose.yml`, `.env.example`,
+   `package.json` scripts, `Procfile`, `Makefile`, README → liệt kê DB/cache/dev server/sandbox 3rd party
+   kèm port + lệnh khởi động chuẩn của dự án.
 3. Bash ping/check port xem cái nào đang chạy.
-4. CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý. ĐỢI user xác nhận "ok" rồi mới tiếp tục.
+4. CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý (lấy từ config). ĐỢI user xác nhận "ok" rồi mới tiếp tục.
+   Ghi service đã xác nhận vào `.sdlc/state.md`.
 
 ## Implement
 

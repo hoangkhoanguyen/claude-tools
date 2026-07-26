@@ -1,0 +1,15 @@
+{
+  "//": "Hooks của plugin SDLC. SessionStart: nếu dự án có .sdlc/state.md thì in ra để nhắc chỗ đang làm dở (hỗ trợ resume). Chỉ đọc, không sửa gì.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sdlc-session-start.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -47,9 +47,17 @@ Trước khi mark done, tự hỏi:
 - "Test của task đã chạy và pass thật chưa (không phải giả định)?"
 - "Có phá vỡ gì ở code liên quan đang chạy không?" → chạy lại test vùng ảnh hưởng.
 
+## Git checkpoint mỗi task (nếu repo là git)
+
+Nếu dự án là git repo và user KHÔNG tắt tính năng này: sau khi một task pass test, tạo một commit riêng
+cho task đó trên nhánh sprint (vd `sdlc/<sprint-slug>`), message dạng `feat(<sprint>): <task> [TASK-xx]`.
+Mỗi task = một commit → dễ review, dễ rollback từng phần nếu về sau phát hiện sai. Tuân theo convention
+commit của dự án nếu có (đọc CLAUDE.md / lịch sử git). KHÔNG tự push hay tạo PR trừ khi user yêu cầu.
+
 ## State (để resume)
 
-Sau mỗi task, cập nhật `.sdlc/<sprint>/tasks.md` (đánh dấu done) và `.sdlc/state.md` (task hiện tại,
-phase). Nếu bị ngắt giữa chừng, lần chạy sau đọc state và tiếp tục task đang dở — không làm lại task done.
+Sau mỗi task, cập nhật `.sdlc/<sprint>/tasks.md` (đánh dấu done) và `.sdlc/state.md` theo schema
+`templates/state.template.md` (task hiện tại, phase). Nếu bị ngắt giữa chừng, lần chạy sau đọc state và
+tiếp tục task đang dở — không làm lại task done.
 
 Kết thúc bằng tóm tắt: task nào done, task nào còn lại, blocker (nếu có).

@@ -33,15 +33,24 @@ feature-builder implement mà không phải tự quyết định kiến trúc.
 6. **API Contracts** — mỗi endpoint: method, path, request (params/body), response (success + error shape),
    status codes, auth. Bao gồm cả error responses cho các EC liên quan.
 7. **UI / Interaction Flow** (nếu có FE) — các màn hình/state, luồng chuyển, empty/loading/error state.
-8. **Rule & Edge-case Mapping** — BẢNG ánh xạ: mỗi RULE-xx / EC-xx → được xử lý ở đâu (component/endpoint/validation).
-   Đây là bằng chứng thiết kế đã cover hết requirements.
-9. **File Change Plan** — dự kiến file nào tạo mới / sửa, để task-breakdown chia việc.
+8. **Rule & Edge-case Mapping** — BẢNG ánh xạ: mỗi RULE-xx / EC-xx / NFR-xx → được xử lý ở đâu
+   (component/endpoint/validation/middleware). Đây là bằng chứng thiết kế đã cover hết requirements.
+9. **NFR Design** — với mỗi NFR-xx liên quan: cách đáp ứng cụ thể (index cho performance, middleware authz
+   cho security, caching, rate limit...). Không để NFR treo lơ lửng.
+10. **Regression-safe Plan** (khi có Regression Impact trong requirements) — với mỗi module cũ bị ảnh hưởng:
+   cách thay đổi mà không phá behavior cũ (mở rộng thay vì sửa đè, backward-compatible API/schema migration...).
+11. **File Change Plan** — dự kiến file nào tạo mới / sửa, để task-breakdown chia việc. Đây cũng là căn cứ
+   để chọn đúng các `CLAUDE.md` lồng cần tuân theo.
+
+Đọc `.sdlc/architecture.md` (foundational) trước để bám kiến trúc nền dùng chung. Nếu sprint thêm/đổi
+thành phần nền tảng dùng chung (auth, schema lõi, convention mới) → cập nhật `.sdlc/architecture.md`.
 
 ## Self-review trước khi ghi file (BẮT BUỘC)
 
-- "Mọi RULE-xx trong requirements có mặt trong bảng Rule & Edge-case Mapping chưa?"
+- "Mọi RULE-xx / NFR-xx trong requirements có mặt trong bảng mapping chưa?"
 - "Mọi EC-xx có error handling tương ứng trong API Contracts / UI Flow chưa?"
-- "Design này có mâu thuẫn với convention/stack hiện có của codebase không?"
+- "Mỗi module cũ trong Regression Impact có Regression-safe Plan chưa?"
+- "Design này có mâu thuẫn với convention/stack hiện có (codebase + architecture.md + CLAUDE.md) không?"
 - "Có endpoint/entity nào tôi thêm mà requirements không yêu cầu không?" → cân nhắc bỏ.
 
 Chỉ ghi file khi bảng mapping ở section 8 đã phủ 100% RULE và EC. Kết thúc bằng tóm tắt: số endpoint,

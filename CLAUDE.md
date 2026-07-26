@@ -52,8 +52,8 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 - **TodoWrite**: dùng để track task trong session khi execute; đồng bộ ra `.sdlc/<sprint>/tasks.md`
   để persist qua session.
 - **Subagents (Agent tool)**: mỗi phase nên spawn agent chuyên biệt tương ứng
-  (product-analyst, architect, feature-builder, test-strategist, qa-guard). Chạy song song khi
-  các phần độc lập.
+  (product-analyst, architect, feature-builder, test-strategist, qa-guard); và `reviewer` để kiểm chéo
+  độc lập sau analyze/design. Chạy song song khi các phần độc lập; cô lập context của từng phase.
 - **Bash**: ping port để phát hiện service đang chạy; chạy test runner; smoke test API bằng curl.
 - **Playwright** (đã cài sẵn trong môi trường): tự động hóa test UI. KHÔNG chạy `playwright install`.
 - **Skills**: load skill phù hợp theo phase (đã kèm trong plugin này).

@@ -1,0 +1,32 @@
+<!--
+  SCHEMA state.md — con trỏ tiến trình SDLC. Đặt tại .sdlc/state.md trong dự án.
+  Agent PHẢI giữ ĐÚNG cấu trúc này (các key, thứ tự) để resume đáng tin cậy.
+  Cập nhật sau MỖI phase và MỖI task. Giá trị trong <...> là placeholder.
+-->
+
+# SDLC State
+
+- **current_sprint**: <sprint-slug | none>
+- **current_phase**: <analyze | design | tasks | execute | test | qa | done | none>
+- **current_task**: <TASK-id | none>          # chỉ có nghĩa khi phase = execute
+- **updated_at**: <YYYY-MM-DD HH:MM>
+
+## Phase status (sprint hiện tại)
+
+- analyze: <todo | doing | done>
+- design:  <todo | doing | done>
+- tasks:   <todo | doing | done>
+- execute: <todo | doing | done>
+- test:    <todo | doing | done>
+- qa:      <todo | doing | done>
+
+## Con trỏ resume
+
+- **next_action**: <mô tả 1 dòng bước tiếp theo cần làm khi resume>
+- **blockers**: <none | mô tả blocker + việc cần user làm>
+
+## Context đã nạp lần chạy này (để lần sau biết cần đọc lại gì)
+
+- claude_md_relevant: <danh sách CLAUDE.md liên quan đã đọc>
+- skills_used: <skill của repo đã phát hiện & dùng>
+- services_up: <service ngoài đã xác nhận đang chạy>

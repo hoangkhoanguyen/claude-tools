@@ -32,8 +32,10 @@ xác nhận cảm quan UX). Mọi thứ khác phải được test tự động.
 
 ## Phủ requirements
 
-Mỗi `AC-xx` (GIVEN/WHEN/THEN) và `EC-xx` phải có ≥1 test, hoặc được liệt kê rõ là verify-tay. Kèm bảng
-**AC/EC → test** trong report.
+Mỗi `AC-xx` (GIVEN/WHEN/THEN), `EC-xx` và `NFR-xx` phải có ≥1 test/kiểm tra, hoặc được liệt kê rõ là
+verify-tay. Kèm bảng **AC/EC/NFR → test** trong report. NFR test tùy loại: performance (đo thời gian/tải),
+security (thử truy cập trái phép, injection), a11y (kiểm tra role/label). Nếu có Regression Impact trong
+requirements → thêm test/đi lại happy path của feature cũ bị ảnh hưởng.
 
 ## Chạy thật, không giả định
 

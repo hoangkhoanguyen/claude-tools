@@ -27,7 +27,12 @@ Plugin KHÔNG tự sinh tài liệu này — nó là đầu vào do user cung c�
    - Tech stack đề xuất (để user chốt) — nếu dự án đã có stack thì kế thừa
    - Trạng thái: `planned`
 
-4. **Khởi tạo `.sdlc/state.md`**: chưa bắt đầu sprint nào.
+4. **Khởi tạo `.sdlc/state.md`** theo schema `templates/state.template.md`: chưa bắt đầu sprint nào.
+
+4b. **Khởi tạo `.sdlc/architecture.md`** (foundational, xuyên sprint): ghi các quyết định nền tảng dùng
+   chung nhiều sprint — stack tổng thể, cấu trúc thư mục, cơ chế auth, mô hình dữ liệu lõi, convention chung.
+   Với dự án có sẵn: mô tả kiến trúc HIỆN CÓ (đọc từ codebase) để các sprint sau bám theo, không phá vỡ.
+   File này là nguồn tham chiếu cho `architect` ở mọi sprint; architect cập nhật nó khi thêm thành phần nền tảng mới.
 
 5. **Trình bày danh sách sprint cho user** ở mức cao (không đi vào user story chi tiết — đó là việc của
    phase analyze sau này). Mời user: reorder, gộp/tách sprint, chốt tech stack.

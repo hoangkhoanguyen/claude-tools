@@ -41,7 +41,14 @@ không cần đoán.
    ```
 8. **Integration Touchpoints** — external API/service/module khác mà sprint phụ thuộc: cần gì, ai gọi ai,
    error case cần handle.
-9. **Definition of Done** — điều kiện cấp sprint để coi là xong (khác AC per-story).
+9. **Non-functional Requirements (NFR)** — yêu cầu phi chức năng áp cho sprint: performance (ngưỡng nếu có),
+   security (authz/authn, dữ liệu nhạy cảm, validation), accessibility (nếu có UI), i18n, giới hạn tải.
+   Chỉ ghi cái THỰC SỰ liên quan sprint; đánh số `NFR-01`... để design/test tham chiếu.
+10. **Regression Impact** (CHỈ khi thêm feature vào codebase có sẵn) — liệt kê feature/module CŨ mà sprint
+   này có thể ảnh hưởng (chung DB table, chung endpoint, chung component, đổi shared logic). Mỗi mục ghi rõ
+   "cần đảm bảo không vỡ" để qa-guard chạy regression happy path. Đọc codebase để phát hiện, đừng đoán.
+11. **Definition of Done** — điều kiện cấp sprint để coi là xong (khác AC per-story), bao gồm cả NFR + không
+   regression feature cũ.
 
 ## Self-review trước khi ghi file (BẮT BUỘC)
 

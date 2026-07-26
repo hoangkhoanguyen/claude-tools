@@ -15,8 +15,8 @@ CHẠY thật đến khi xanh. Mọi AC/EC phải có test hoặc được liệ
 Nếu cần app/service chạy để test → yêu cầu user bật (như pre-flight), đợi xác nhận.
 
 ## QA Gate
-Spawn subagent `qa-guard`: chạy full test + đi happy path từng story + quét hardcode/TODO/unhandled error.
-Chỉ khi sạch mới trình bày Pre-manual Report:
+Spawn subagent `qa-guard`: chạy full test + happy path từng story + regression happy path feature cũ liên
+quan + NFR check + quét hardcode/TODO/unhandled error. Chỉ khi sạch mới trình bày Pre-manual Report:
 - Đã tự động cover (không cần user kiểm)
 - Cần user verify tay (chỉ nghiệp vụ)
 - Edge case chưa define (nếu có)

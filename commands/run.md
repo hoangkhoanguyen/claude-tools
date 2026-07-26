@@ -11,26 +11,33 @@ Lệnh chính. Chạy toàn bộ vòng đời cho MỘT sprint và tự lưu sta
 
 Sprint cần chạy: `$1`. Nếu trống, đọc `.sdlc/state.md` để lấy sprint đang dở, hoặc hỏi user.
 
-## BƯỚC 0 — Resume check (LUÔN làm đầu tiên)
+## BƯỚC 0 — Context + Resume + Dependency check (LUÔN làm đầu tiên)
 
-Đọc `.sdlc/state.md` và `.sdlc/<sprint>/`:
-- Xác định phase đang ở (analyze / design / tasks / execute / test) và task đang dở.
-- **Bỏ qua** mọi phase/task đã done. Chỉ làm phần chưa xong.
-- Nếu là lần chạy đầu (chưa có gì) → bắt đầu từ analyze.
+1. **Nạp context dự án** (nguyên tắc 0 trong CLAUDE.md của plugin): Glob mọi `CLAUDE.md`, tự đánh giá &
+   đọc các file liên quan tới sprint này; đọc `.sdlc/architecture.md` (foundational, nếu có).
+2. **Dependency check**: đọc `.sdlc/sprints.md`. Nếu sprint này phụ thuộc sprint khác mà sprint đó CHƯA
+   `done` → CẢNH BÁO user và dừng, đề nghị chạy sprint phụ thuộc trước (trừ khi user yêu cầu vẫn tiếp).
+3. **Resume check**: đọc `.sdlc/state.md` (theo schema `templates/state.template.md`) + `.sdlc/<sprint>/`.
+   Xác định phase & task đang dở. **Bỏ qua** mọi phase/task đã done. Lần chạy đầu → bắt đầu từ analyze.
 
 ## Chạy tuần tự các phase (bỏ qua phase đã done)
 
 ### Phase 1 — Analyze
-Spawn subagent `product-analyst` (dùng skill `requirements-analysis`) → ghi `requirements.md`.
+Spawn subagent `product-analyst` (dùng skill `requirements-analysis`) → ghi `requirements.md`
+(bao gồm cả Non-functional requirements + Regression impact nếu là codebase có sẵn).
 Tự soi bằng skill `self-review`. Nếu có Open Questions không tự resolve an toàn → hỏi user rồi mới đi tiếp.
+**→ Reviewer gate**: spawn `reviewer` kiểm `requirements.md` so với tài liệu gốc. `NEEDS_FIX` → sửa rồi
+review lại; chỉ `PASS` mới sang Design.
 
 ### Phase 2 — Design
-Spawn subagent `architect` (dùng skill `system-design`) → ghi `design.md`.
-Cross-check: mọi RULE/EC đã có trong bảng mapping chưa (self-review). Thiếu → bổ sung.
+Spawn subagent `architect` (dùng skill `system-design`) → ghi `design.md`; cập nhật `.sdlc/architecture.md`
+nếu sprint thêm/đổi thành phần nền tảng dùng chung.
+Cross-check self-review: mọi RULE/EC đã có trong bảng mapping chưa. Thiếu → bổ sung.
+**→ Reviewer gate**: spawn `reviewer` kiểm `design.md` so với `requirements.md`. Chỉ `PASS` mới sang Tasks.
 
 ### Phase 3 — Tasks
 Dùng skill `task-breakdown` → ghi `tasks.md` (status todo). Đồng bộ TodoWrite.
-Cross-check: mọi AC/EC có task phụ trách chưa.
+Cross-check: mọi AC/EC có task phụ trách chưa. (Reviewer optional ở phase này.)
 
 ### Phase 4 — Execute (quan trọng nhất)
 
@@ -38,29 +45,32 @@ Cross-check: mọi AC/EC có task phụ trách chưa.
 - **Phát hiện skill dùng được trong repo:** quét `.claude/skills`, `.claude/agents`, `.claude/commands`
   của dự án, skill từ `pluginDirs`, và skill built-in đang khả dụng. Skill nào khớp việc sắp làm →
   ưu tiên dùng qua tool Skill thay vì tự chế. Ưu tiên skill của DỰ ÁN vì nó mã hóa convention riêng.
-- Đọc design + tech stack → liệt kê mọi service/tool ngoài cần chạy (DB, cache, dev server, sandbox 3rd party).
+- **Suy ra service ngoài cần chạy từ config dự án**, KHÔNG đoán mò: đọc `docker-compose.yml`, `.env.example`,
+  `package.json` (scripts), `Procfile`, `Makefile`, README → liệt kê DB, cache, dev server, sandbox 3rd party
+  + port + lệnh khởi động chuẩn của dự án.
 - Bash ping/check port xem cái nào đã chạy.
-- CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý. VÍ DỤ trình bày:
+- CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý (lấy từ config, không tự chế). VÍ DỤ:
   ```
   ⚠️ Cần bật trước khi execute:
-    [ ] PostgreSQL  → port 5432
-    [ ] Dev server  → port 3000 (chạy: npm run dev)
+    [ ] PostgreSQL  → port 5432 (docker compose up -d db)
+    [ ] Dev server  → port 3000 (npm run dev)
   Đang chạy sẵn: Redis (6379)
   Bật xong reply "ok" để tiếp tục.
   ```
-- ĐỢI user xác nhận rồi mới tiếp. Không giả định service đã sẵn sàng.
+- ĐỢI user xác nhận rồi mới tiếp. Không giả định service đã sẵn sàng. Ghi service đã xác nhận vào `state.md`.
 
 **4b. Implement:**
 Spawn `feature-builder` chạy từng task (song song nếu độc lập). Mỗi task: implement → test cục bộ → pass →
-cập nhật `tasks.md` + TodoWrite + `state.md` → task tiếp. Self-review sau mỗi task (EC/TODO/hardcode).
+(nếu repo là git & user không tắt) commit task trên sprint branch → cập nhật `tasks.md` + TodoWrite +
+`state.md` → task tiếp. Self-review sau mỗi task (EC/TODO/hardcode).
 
 ### Phase 5 — Test
 Spawn `test-strategist` (dùng skill `test-strategy`) → tự chọn cách test theo stack, viết + chạy test,
 Playwright cho UI. Ghi `test-report.md`. Mọi AC/EC phải có test hoặc được liệt kê verify-tay.
 
 ### Phase 6 — QA Gate
-Spawn `qa-guard`: chạy full test + đi happy path từng story + quét hardcode/TODO/unhandled error.
-Chỉ khi sạch mới sang bàn giao.
+Spawn `qa-guard`: chạy full test + đi happy path từng story + **regression happy path của feature cũ liên quan**
++ quét hardcode/TODO/unhandled error. Chỉ khi sạch mới sang bàn giao.
 
 ## Bàn giao
 
@@ -71,6 +81,15 @@ Cập nhật trạng thái sprint = `done` trong `.sdlc/sprints.md`. Trình bày
 
 Nhắc user: manual test giờ chỉ nên gặp vấn đề nghiệp vụ, không lỗi vặt. Sprint tiếp theo: `/sdlc:run <slug>`.
 
+## Quản lý context / checkpoint (chống tràn giữa chừng)
+
+- Cập nhật `.sdlc/state.md` (theo schema) sau MỖI phase và MỖI task — đây là điều kiện để resume.
+- Nếu context sắp đầy: hoàn tất task/phase HIỆN TẠI cho tới điểm checkpoint sạch (test pass + state ghi
+  xong + commit nếu có), rồi DỪNG và báo user chạy lại `/sdlc:run <slug>` để tiếp — KHÔNG bỏ dở giữa một
+  task với code chưa test.
+- Ưu tiên spawn subagent cho từng phase để cô lập context; kết quả chốt lại qua file trong `.sdlc/`, không
+  giữ hết trong hội thoại chính.
+
 ## Lưu ý resume
-Cập nhật `.sdlc/state.md` sau MỖI phase và MỖI task. Nếu hết limit / bị ngắt, lần chạy sau `/sdlc:run <slug>`
-tự đọc state và tiếp tục — tuyệt đối không làm lại phần đã done.
+Nếu hết limit / bị ngắt, lần chạy sau `/sdlc:run <slug>` tự đọc state và tiếp tục — tuyệt đối không làm
+lại phần đã done.

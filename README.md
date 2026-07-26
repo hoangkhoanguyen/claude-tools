@@ -61,7 +61,8 @@ Sau đó các slash command `/sdlc:*` sẽ khả dụng trong mọi session.
 Ngoài `run`, mỗi phase cũng có command riêng nếu bạn muốn chạy từng bước:
 `/sdlc:analyze`, `/sdlc:design`, `/sdlc:tasks`, `/sdlc:execute`, `/sdlc:test`.
 
-Và `/sdlc:status` để xem tiến độ tổng thể bất cứ lúc nào.
+`/sdlc:status` để xem tiến độ bất cứ lúc nào. `/sdlc:replan` để cập nhật sprint khi business logic đổi
+giữa chừng mà không mất state.
 
 ---
 
@@ -71,16 +72,18 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 
 ```
 .sdlc/
-├── sprints.md               ← danh sách sprint + tech stack + trạng thái
-├── state.md                 ← con trỏ: đang ở sprint nào, phase nào, task nào
+├── sprints.md               ← danh sách sprint + tech stack + dependency + trạng thái
+├── architecture.md          ← kiến trúc nền tảng xuyên sprint (mọi sprint tham chiếu)
+├── state.md                 ← con trỏ resume (schema cố định — xem templates/state.template.md)
 └── <sprint-slug>/
-    ├── requirements.md      ← output của analyze
-    ├── design.md            ← output của design
+    ├── requirements.md      ← output analyze (gồm NFR + regression impact)
+    ├── design.md            ← output design (bảng mapping RULE/EC/NFR)
     ├── tasks.md             ← task list + status (todo/doing/done)
     └── test-report.md       ← kết quả test + việc cần bạn verify tay
 ```
 
-> Định dạng file (md/json/...) do agent chọn cho phù hợp — không cố định. Cấu trúc trên là mặc định gợi ý.
+> Định dạng file (md/json/...) do agent chọn cho phù hợp — không cố định. Riêng `state.md` theo schema cố
+> định (`templates/state.template.md`) để resume đáng tin cậy.
 
 ---
 
@@ -88,20 +91,23 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 
 | Loại | Tên | Vai trò |
 |------|-----|---------|
-| Command | `sprint-plan` | Chia sprint từ tài liệu business logic |
+| Command | `sprint-plan` | Chia sprint + tạo architecture.md nền tảng |
 | Command | `run` | Chạy trọn 1 sprint, resume được |
 | Command | `analyze` / `design` / `tasks` / `execute` / `test` | Chạy từng phase riêng lẻ |
 | Command | `status` | Xem tiến độ |
-| Agent | `product-analyst` | Requirements → user stories, AC, business rules, edge cases |
-| Agent | `architect` | System design: API, DB, architecture, UI flow |
-| Agent | `feature-builder` | Implement từng task |
+| Command | `replan` | Cập nhật sprint khi business logic đổi, giữ state |
+| Agent | `product-analyst` | Requirements → user stories, AC, business rules, edge cases, NFR, regression |
+| Agent | `architect` | System design: API, DB, architecture, UI flow, NFR, regression-safe |
+| Agent | `feature-builder` | Implement từng task (+ git commit mỗi task) |
 | Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test |
-| Agent | `qa-guard` | Soát lỗi vặt, xác nhận sạch trước khi bàn giao |
+| Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao |
+| Agent | `reviewer` | Kiểm chéo độc lập output analyze/design so với đầu vào |
 | Skill | `requirements-analysis` | Chuẩn output của analyze |
 | Skill | `system-design` | Chuẩn output của design |
 | Skill | `task-breakdown` | Cách chia task đúng, không sót AC |
 | Skill | `test-strategy` | Bảng quyết định test theo loại feature |
 | Skill | `self-review` | Checklist tự soi lại sau mỗi phase |
+| Hook | `SessionStart` | In tiến trình SDLC đang dở khi mở session (hỗ trợ resume) |
 
 ---
 

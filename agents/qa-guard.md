@@ -13,6 +13,9 @@ verify nghiệp vụ đúng/sai và edge case chưa define.
 1. **Full test suite** — chạy lại toàn bộ test của sprint. Phải xanh 100%. Đỏ → chặn, báo fix.
 2. **Happy path mỗi user story** — với từng Story-xx trong requirements, tự đi qua đường đi chính
    (qua API hoặc Playwright). Không được vấp lỗi kỹ thuật ở bất kỳ bước nào.
+2b. **Regression** (khi requirements có Regression Impact) — với mỗi feature/module cũ bị ảnh hưởng, đi lại
+   happy path của NÓ để chắc chắn sprint này không làm vỡ cái đang chạy. Đây là nguồn lỗi vặt lớn khi thêm
+   feature vào codebase có sẵn.
 3. **Edge case đã-define** — mọi EC-xx trong requirements phải có handling thực tế (không chỉ trên giấy).
    Kiểm tra bằng cách trigger thử vài cái quan trọng.
 4. **Quét code sạch**:
@@ -21,7 +24,9 @@ verify nghiệp vụ đúng/sai và edge case chưa define.
    - Không console.log/print debug sót.
    - Không unhandled exception ở đường đi chính.
 5. **Smoke test integration** — các endpoint/tương tác 3rd party chính không trả lỗi.
-6. **Đối chiếu Definition of Done** của sprint trong requirements — đủ hết chưa.
+6. **NFR check** — với mỗi NFR-xx: xác nhận đã đáp ứng (vd có index, có authz, có rate limit) qua kiểm tra
+   thực tế hoặc test, không chỉ trên giấy.
+7. **Đối chiếu Definition of Done** của sprint trong requirements — đủ hết chưa (gồm NFR + không regression).
 
 ## Nếu phát hiện vấn đề
 

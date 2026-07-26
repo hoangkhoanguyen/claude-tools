@@ -22,17 +22,24 @@ Triết lý: "làm xong" ≠ "đạt". Luôn tự kiểm tra và tự sửa trư
 
 ## Checklist theo từng phase
 
-**Sau analyze:** architect đọc có đủ thiết kế không? mọi story có AC testable? mọi rule có EC? có bịa gì không?
+**Sau analyze:** architect đọc có đủ thiết kế không? mọi story có AC testable? mọi rule có EC? NFR đã ghi?
+Regression Impact đã liệt kê (nếu codebase có sẵn)? có bịa gì không?
 
-**Sau design:** mọi RULE-xx & EC-xx có trong bảng mapping? ăn khớp codebase hiện có? có endpoint/entity thừa?
+**Sau design:** mọi RULE-xx / EC-xx / NFR-xx có trong bảng mapping? module cũ có Regression-safe Plan?
+ăn khớp codebase + architecture.md + CLAUDE.md? có endpoint/entity thừa?
 
 **Sau tasks:** mọi AC/EC có ≥1 task phụ trách? phụ thuộc & song song đúng? mỗi task có tiêu chí test?
 
 **Sau mỗi task (execute):** đủ EC liên quan? còn TODO/hardcode/debug? test đã chạy pass thật? có phá vỡ vùng liên quan?
 
-**Sau test:** mọi AC/EC có test hoặc liệt kê verify-tay? test chạy xanh thật? phần "verify tay" có thật sự không tự động được?
+**Sau test:** mọi AC/EC/NFR có test hoặc liệt kê verify-tay? test chạy xanh thật? phần "verify tay" có thật sự không tự động được?
 
-**Cuối sprint (qa-guard):** đã thực sự chạy full test + đi happy path? happy path có chỗ nào vỡ? report tách rõ "đã cover" vs "cần verify tay"?
+**Cuối sprint (qa-guard):** đã thực sự chạy full test + happy path + regression happy path feature cũ? NFR đạt thật? report tách rõ "đã cover" vs "cần verify tay"?
+
+## Reviewer độc lập (bổ sung cho self-review)
+
+Self-review là tự-chấm nên có điểm mù. Sau analyze và design, ngoài self-review còn spawn agent `reviewer`
+(read-only) kiểm chéo output so với đầu vào. Chỉ khi reviewer trả `PASS` mới sang phase sau.
 
 ## Quy tắc
 

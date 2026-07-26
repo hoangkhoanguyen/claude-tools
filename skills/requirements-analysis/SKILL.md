@@ -21,7 +21,9 @@ Mục tiêu: user chỉ cần review vài section đầu, phần còn lại đ�
 6. Data Entities & Constraints
 7. Edge Cases Registry
 8. Integration Touchpoints
-9. Definition of Done
+9. Non-functional Requirements (NFR-xx): performance / security / a11y / i18n — chỉ cái liên quan sprint
+10. Regression Impact (chỉ khi thêm vào codebase có sẵn): feature/module cũ có thể bị ảnh hưởng
+11. Definition of Done (gồm NFR + không regression)
 
 ## Quy tắc chất lượng
 
