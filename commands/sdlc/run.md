@@ -30,7 +30,18 @@ Spawn subagent `product-analyst` (dùng skill `requirements-analysis`) → ghi `
 (bao gồm cả Non-functional requirements + Regression impact nếu là codebase có sẵn).
 Tự soi bằng skill `self-review`. Nếu có Open Questions không tự resolve an toàn → hỏi user rồi mới đi tiếp.
 **→ Reviewer gate**: spawn `reviewer` kiểm `requirements.md` so với tài liệu gốc. `NEEDS_FIX` → sửa rồi
-review lại; chỉ `PASS` mới sang Design.
+review lại; chỉ `PASS` mới sang bước tiếp.
+
+**→ Human approval gate (BẮT BUỘC)**: Trình bày tóm tắt phần "Human Review" của `requirements.md` cho user,
+sau đó **DỪNG và hỏi user có approve không** trước khi chạy Design. Ví dụ:
+
+> ✅ Analyze xong. Tóm tắt requirements:
+> - [liệt kê ngắn user stories / scope chính]
+> - [số AC, số edge case, NFR đáng chú ý]
+>
+> Reply **"ok"** hoặc **"approve"** để tiếp tục Design, hoặc feedback để điều chỉnh requirements trước.
+
+Chỉ tiếp tục Phase 2 khi user xác nhận. Ghi `analyze_approved: true` vào `state.md`.
 
 ### Phase 2 — Design (2 nhánh song song, ĐỘC LẬP)
 - **Hệ thống**: spawn `architect` (skill `system-design`) → ghi `design.md`; cập nhật `.sdlc/architecture.md`
@@ -53,7 +64,19 @@ review lại; chỉ `PASS` mới sang Design.
 
 Cross-check self-review: mọi RULE/EC/NFR có trong bảng mapping; mọi màn hình có Design AC (nếu có UI).
 **→ Reviewer gate**: spawn `reviewer` kiểm `design.md` (+ `ui-design.md`) so với `requirements.md`.
-Chỉ `PASS` mới sang Tasks.
+Chỉ `PASS` mới sang bước tiếp.
+
+**→ Human approval gate (BẮT BUỘC)**: Trình bày tóm tắt phần "Human Review" của `design.md` (và
+`ui-design.md` nếu có) cho user, sau đó **DỪNG và hỏi user có approve không** trước khi chạy Tasks. Ví dụ:
+
+> ✅ Design xong. Tóm tắt:
+> - [kiến trúc, data model chính, API contracts đáng chú ý]
+> - [màn hình UI / design tokens nếu có]
+> - [Regression-safe plan / breaking change nếu có]
+>
+> Reply **"ok"** hoặc **"approve"** để tiếp tục Tasks & Execute, hoặc feedback để điều chỉnh design trước.
+
+Chỉ tiếp tục Phase 3 khi user xác nhận. Ghi `design_approved: true` vào `state.md`.
 
 ### Phase 3 — Tasks
 Dùng skill `task-breakdown` → ghi `tasks.md` (status todo). Đồng bộ TodoWrite.

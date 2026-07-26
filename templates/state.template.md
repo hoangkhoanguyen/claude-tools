@@ -21,6 +21,11 @@
 - test:          <todo | doing | done>
 - qa:            <todo | doing | done>
 
+## Human approval gates
+
+- analyze_approved:  <pending | true>   # true khi user đã xác nhận requirements trước khi Design
+- design_approved:   <pending | true>   # true khi user đã xác nhận design trước khi Tasks
+
 ## Con trỏ resume
 
 - **next_action**: <mô tả 1 dòng bước tiếp theo cần làm khi resume>
