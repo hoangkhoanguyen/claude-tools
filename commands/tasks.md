@@ -1,0 +1,18 @@
+---
+description: Chạy riêng phase chia tasks cho một sprint — từ design tạo danh sách task thực thi được, có phụ thuộc, checkpoint-able, phủ đủ AC/EC.
+argument-hint: <sprint-slug>
+---
+
+# /sdlc:tasks
+
+Chạy riêng phase chia task cho sprint `$1` (nếu trống, lấy từ `.sdlc/state.md`).
+
+Yêu cầu `design.md` của sprint đã tồn tại (chạy `/sdlc:design` trước nếu chưa).
+
+Dùng skill `task-breakdown`. Ghi `.sdlc/<sprint>/tasks.md` với các task (status `todo`), phụ thuộc,
+đánh dấu task chạy song song được, và bảng AC/EC → task. Đồng bộ TodoWrite.
+
+Kết thúc: chạy skill `self-review` (checklist sau tasks) — mọi AC/EC phải có task phụ trách.
+Cập nhật `.sdlc/state.md`.
+
+Đây là phase con của `/sdlc:run`; dùng khi muốn chạy/rà lại riêng phase chia task.

@@ -1,0 +1,6 @@
+{
+  "//": "Copy nội dung này vào .claude/settings.json của DỰ ÁN bạn muốn dùng plugin. Sửa đường dẫn cho đúng nơi bạn đặt claude-tools.",
+  "pluginDirs": [
+    "/đường/dẫn/tuyệt/đối/tới/claude-tools"
+  ]
+}
