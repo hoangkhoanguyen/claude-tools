@@ -30,6 +30,12 @@ Plugin KHÔNG tự sinh tài liệu này — nó là đầu vào do user cung c�
 
 4. **Khởi tạo `.sdlc/state.md`** theo schema `templates/state.template.md`: chưa bắt đầu sprint nào.
 
+4a. **Thiết lập gitignore**: thêm vào `.gitignore` của dự án (tạo nếu chưa có) dòng:
+    ```
+    .sdlc/*/visual-baseline/
+    ```
+    Toàn bộ `.sdlc/` còn lại được commit — đây là tài liệu sống của dự án, cả team theo dõi qua git.
+
 4b. **Khởi tạo `.sdlc/architecture.md`** (foundational, xuyên sprint): ghi các quyết định nền tảng dùng
    chung nhiều sprint — stack tổng thể, cấu trúc thư mục, cơ chế auth, mô hình dữ liệu lõi, convention chung.
    Với dự án có sẵn: mô tả kiến trúc HIỆN CÓ (đọc từ codebase) để các sprint sau bám theo, không phá vỡ.
