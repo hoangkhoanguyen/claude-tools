@@ -20,7 +20,8 @@ Plugin KHÔNG tự sinh tài liệu này — nó là đầu vào do user cung c�
    Cân nhắc phụ thuộc giữa các feature để xếp thứ tự sprint hợp lý (nền tảng trước, tính năng phụ thuộc sau).
 
 3. **Ghi `.sdlc/sprints.md`** với, cho mỗi sprint:
-   - Slug ngắn (dùng làm tên thư mục, vd `sprint-1-auth`)
+   - Slug ngắn, **bắt buộc theo pattern `sprint-<số>-<tên>`** (vd `sprint-1-auth`, `sprint-2-orders`).
+     Số thứ tự tăng dần liên tục — `/sdlc:replan` sẽ tiếp nối từ số cuối này khi thêm sprint mới.
    - Tên & mô tả 1-2 dòng (deliver gì)
    - Feature chính nằm trong sprint
    - Phụ thuộc vào sprint nào

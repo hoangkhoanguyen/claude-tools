@@ -16,7 +16,10 @@ Tài liệu business logic mới/đã cập nhật: `$1` (nếu trống, dùng t
    Đọc CLAUDE.md liên quan (nguyên tắc 0).
 
 2. **Diff nghiệp vụ**: so tài liệu mới với sprint hiện có. Phân loại thay đổi:
-   - Feature MỚI chưa có sprint → tạo sprint mới (status `planned`).
+   - Feature MỚI chưa có sprint → tạo sprint mới (status `planned`). **Slug phải tiếp nối số thứ tự
+     của sprint cuối cùng trong `sprints.md`** (kể cả sprint đã `cancelled`), KHÔNG đánh số lại từ 1.
+     Ví dụ: hiện có `sprint-1-auth` đến `sprint-3-reports` thì sprint mới bắt đầu từ `sprint-4-...`.
+     Điều này đảm bảo slug luôn unique và folder `.sdlc/<slug>/` không bao giờ bị ghi đè.
    - Feature ĐỔI thuộc sprint CHƯA làm (`planned`) → cập nhật mô tả sprint đó.
    - Feature ĐỔI thuộc sprint ĐÃ done/đang làm → KHÔNG sửa đè. Tạo sprint "change request" mới tham
      chiếu sprint gốc, để xử lý như một thay đổi có kiểm soát (giữ lịch sử + tránh phá state cũ).
