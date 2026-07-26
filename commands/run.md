@@ -19,6 +19,9 @@ Sprint cần chạy: `$1`. Nếu trống, đọc `.sdlc/state.md` để lấy sp
    `done` → CẢNH BÁO user và dừng, đề nghị chạy sprint phụ thuộc trước (trừ khi user yêu cầu vẫn tiếp).
 3. **Resume check**: đọc `.sdlc/state.md` (theo schema `templates/state.template.md`) + `.sdlc/<sprint>/`.
    Xác định phase & task đang dở. **Bỏ qua** mọi phase/task đã done. Lần chạy đầu → bắt đầu từ analyze.
+   - **Nếu `design_ui: waiting-external`**: kiểm tra `.sdlc/<sprint>/ui-design.input.md` đã về chưa. CÓ →
+     ingest + chuẩn hóa, chuyển design_ui sang done. CHƯA → nhắc lại blocker (đường dẫn cần drop) và dừng,
+     không chạy tiếp Tasks. Lưu ý: nhánh system design có thể đã `done` từ trước — không làm lại.
 
 ## Chạy tuần tự các phase (bỏ qua phase đã done)
 
@@ -75,6 +78,8 @@ Cross-check: mọi AC/EC có task phụ trách chưa. (Reviewer optional ở pha
   Bật xong reply "ok" để tiếp tục.
   ```
 - ĐỢI user xác nhận rồi mới tiếp. Không giả định service đã sẵn sàng. Ghi service đã xác nhận vào `state.md`.
+- **Migration/seed**: nếu sprint đổi schema → chạy lệnh migrate của dự án (từ config) trước khi test; schema
+  chưa migrate là nguồn lỗi vặt (API 500) khi manual test. Ghi vào state.
 
 **4b. Implement:**
 Spawn `feature-builder` chạy từng task (song song nếu độc lập). Mỗi task: implement → test cục bộ → pass →

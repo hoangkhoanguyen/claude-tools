@@ -53,8 +53,9 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
   để persist qua session.
 - **Subagents (Agent tool)**: mỗi phase nên spawn agent chuyên biệt tương ứng
   (product-analyst, architect, feature-builder, test-strategist, qa-guard); `ui-designer` cho nhánh giao
-  diện khi dự án có DESIGN.md; và `reviewer` để kiểm chéo độc lập sau analyze/design. Chạy song song khi
-  các phần độc lập; cô lập context của từng phase.
+  diện khi sprint có màn hình (nguồn thiết kế: bản ngoài / DESIGN.md / phong cách app cũ / hỏi user);
+  và `reviewer` để kiểm chéo độc lập sau analyze/design. Chạy song song khi các phần độc lập; cô lập
+  context của từng phase.
 - **Skill built-in cho thiết kế**: `artifact-design` (nguyên tắc giao diện), `dataviz` (biểu đồ/dashboard) —
   dùng ở nhánh ui-designer.
 - **Bash**: ping port để phát hiện service đang chạy; chạy test runner; smoke test API bằng curl.
@@ -72,6 +73,9 @@ Trước khi viết dòng code đầu tiên trong execute:
 4. CHỈ hỏi user bật những cái còn thiếu, kèm lệnh gợi ý (lấy từ config).
 5. Đợi user xác nhận ("ok"/"xong") RỒI mới tiếp tục. Không tự giả định service đã sẵn sàng. Ghi service
    đã xác nhận vào `.sdlc/state.md`.
+6. **DB migration/seed**: nếu sprint đổi schema (model/migration mới), xác định lệnh migrate của dự án (từ
+   config: `package.json`, `Makefile`, framework CLI) và CHẠY nó trước khi test — schema chưa migrate là
+   nguồn "lỗi vặt" kinh điển (API 500) khi manual test. Ghi migration đã chạy vào state.
 
 ## Chọn chiến lược test (tự phát hiện)
 
@@ -82,6 +86,9 @@ thực sự không thể tự động (OTP SMS thật, Face ID, thanh toán ti�
 
 - Danh sách sprint sau `sprint-plan` (để user reorder/chốt tech stack).
 - Open Questions trong analyze mà bạn không thể tự resolve an toàn.
+- Design UI, **dự án MỚI chưa có nguồn thẩm mỹ nào**: hỏi 1 lần định hướng phong cách (có DESIGN.md? / mô tả
+  tone-màu-app tham chiếu / để Claude tự quyết) rồi chốt thành `DESIGN.md`. Dự án CŨ thì KHÔNG hỏi — bám app
+  hiện có. Nếu sprint nhận bản design từ ngoài mà file chưa về → hỏi/chờ (`waiting-external`).
 - Pre-flight: yêu cầu bật service ngoài.
 - Ngoài các điểm trên, trong `/sdlc:run` hãy chạy tự động hết mức có thể; báo cáo gọn sau mỗi
   phase và tiếp tục.

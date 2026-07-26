@@ -21,6 +21,8 @@ Yêu cầu `tasks.md` của sprint đã tồn tại (chạy `/sdlc:tasks` trư�
 3. Bash ping/check port xem cái nào đang chạy.
 4. CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý (lấy từ config). ĐỢI user xác nhận "ok" rồi mới tiếp tục.
    Ghi service đã xác nhận vào `.sdlc/state.md`.
+5. **Migration**: nếu sprint đổi schema → xác định lệnh migrate của dự án (từ config) và chạy trước khi test.
+   Schema chưa migrate là nguồn lỗi vặt (API 500) khi manual test.
 
 ## Implement
 

@@ -24,6 +24,10 @@ Ghi lại (trong tóm tắt) skill nào đã phát hiện & dùng, để các ta
 1. Đọc task + phần design liên quan + code hiện có xung quanh.
 2. Implement theo design và convention của codebase (match style, naming, cấu trúc file có sẵn).
    Nếu có skill dự án phù hợp cho bước này → dùng skill đó.
+   **Nếu phát hiện design THIẾU/SAI/mâu thuẫn khi implement** (endpoint chưa định nghĩa, EC chưa có trong
+   mapping, data model không đủ): KHÔNG tự ý lệch design trong im lặng. Dừng task, ghi rõ khoảng trống, và
+   hoặc cập nhật `design.md` cho nhất quán rồi tiếp, hoặc báo lại để design/replan xử — tránh mỗi task tự
+   quyết một kiểu làm lệch nhau.
    Task UI (khi có `ui-design.md`): theo skill `design-fidelity` — mọi giá trị thị giác qua design token
    trong `.sdlc/design-system.md`, KHÔNG hardcode màu/spacing/font; reuse component có sẵn; implement đủ
    mọi state đã spec (default/hover/active/disabled/loading/empty/error) + responsive + dark/light.
@@ -56,6 +60,10 @@ Nếu dự án là git repo và user KHÔNG tắt tính năng này: sau khi mộ
 cho task đó trên nhánh sprint (vd `sdlc/<sprint-slug>`), message dạng `feat(<sprint>): <task> [TASK-xx]`.
 Mỗi task = một commit → dễ review, dễ rollback từng phần nếu về sau phát hiện sai. Tuân theo convention
 commit của dự án nếu có (đọc CLAUDE.md / lịch sử git). KHÔNG tự push hay tạo PR trừ khi user yêu cầu.
+
+**Khi chạy task song song (nhiều subagent):** implement có thể song song, nhưng **commit phải tuần tự** trên
+cùng branch — không cho 2 agent `git commit`/`git add` đồng thời (dễ hỏng index/conflict). Gom điểm commit về
+tuần tự, hoặc chỉ song song hóa các task đụng file tách biệt rồi commit lần lượt theo thứ tự hoàn thành.
 
 ## State (để resume)
 

@@ -27,8 +27,9 @@ Regression Impact đã liệt kê (nếu codebase có sẵn)? có bịa gì khô
 
 **Sau design:** mọi RULE-xx / EC-xx / NFR-xx có trong bảng mapping? module cũ có Regression-safe Plan?
 ăn khớp codebase + architecture.md + CLAUDE.md? có endpoint/entity thừa?
-Nếu có UI: mọi màn hình/state có spec + Design AC? giá trị thị giác qua token, không hardcode? không bịa
-phong cách ngoài DESIGN.md?
+Nếu có UI: mọi màn hình/state có spec + Design AC (phủ đủ dù nguồn external hay tự sinh)? giá trị thị giác
+qua token, không hardcode? bám đúng nguồn thẩm mỹ (bản ngoài / DESIGN.md / phong cách app cũ), không bịa?
+màn `[generated]` đồng bộ thị giác với `[external]`?
 
 **Sau tasks:** mọi AC/EC có ≥1 task phụ trách? phụ thuộc & song song đúng? mỗi task có tiêu chí test?
 

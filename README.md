@@ -41,7 +41,8 @@ Sau đó các slash command `/sdlc:*` sẽ khả dụng trong mọi session.
 ## Luồng làm việc
 
 ```
-[Tài liệu business logic của bạn (+ DESIGN.md nếu có) — plugin dùng làm ĐẦU VÀO, không tự sinh ra]
+[Tài liệu business logic của bạn — plugin dùng làm ĐẦU VÀO, không tự sinh ra]
+[Thiết kế UI (tùy chọn): DESIGN.md có sẵn / bản design ngoài đưa vào phase design / hoặc để plugin tự lo]
           │
           ▼
   /sdlc:sprint-plan          ← đọc tài liệu, chia thành các sprint
@@ -74,11 +75,12 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 .sdlc/
 ├── sprints.md               ← danh sách sprint + tech stack + dependency + trạng thái
 ├── architecture.md          ← kiến trúc nền tảng xuyên sprint (mọi sprint tham chiếu)
-├── design-system.md         ← design tokens xuyên sprint (chỉ khi dự án có DESIGN.md)
+├── design-system.md         ← design tokens xuyên sprint (khi có UI — từ DESIGN.md, bản ngoài, hoặc suy ra)
 ├── state.md                 ← con trỏ resume (schema cố định — xem templates/state.template.md)
 └── <sprint-slug>/
     ├── requirements.md      ← output analyze (gồm NFR + regression impact)
     ├── design.md            ← output design hệ thống (bảng mapping RULE/EC/NFR)
+    ├── ui-design.input.md   ← (tùy chọn) bản design từ ngoài đưa vào — ui-designer ingest thành ui-design.md
     ├── ui-design.md         ← output design giao diện (tokens, component spec, Design AC) — nếu có UI
     ├── tasks.md             ← task list + status (todo/doing/done)
     ├── test-report.md       ← kết quả test + việc cần bạn verify tay
@@ -104,7 +106,7 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 | Agent | `feature-builder` | Implement từng task (+ git commit mỗi task) |
 | Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test |
 | Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao |
-| Agent | `ui-designer` | DESIGN.md → design tokens, component spec, Design AC (chỉ khi có UI) |
+| Agent | `ui-designer` | Nguồn thiết kế (bản ngoài / DESIGN.md / app cũ / hỏi user) → tokens, component spec, Design AC (khi có UI) |
 | Agent | `reviewer` | Kiểm chéo độc lập output analyze/design/ui-design so với đầu vào |
 | Skill | `requirements-analysis` | Chuẩn output của analyze |
 | Skill | `system-design` | Chuẩn output của design |
@@ -116,22 +118,29 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 
 ---
 
-## Dự án có thiết kế thị giác (DESIGN.md / design system)
+## Dự án có UI — nguồn thiết kế đến từ đâu cũng được
 
-Khi dự án có `DESIGN.md` hoặc design system, UI trở thành "requirement" ngang hàng với nghiệp vụ. Plugin
-tự phát hiện và bật thêm nhánh thiết kế giao diện — **không tự chế thẩm mỹ, chỉ tuân theo DESIGN.md**:
+Khi sprint có màn hình, UI là "requirement" ngang hàng nghiệp vụ. Phase design chạy 2 nhánh song song:
+`architect` (hệ thống: API, DB) + `ui-designer` (giao diện). ui-designer **không tự chế thẩm mỹ** — nó
+xác định nguồn thiết kế **theo từng màn hình** (bên ngoài cấp được bao nhiêu dùng bấy nhiêu, phần thiếu tự xử):
 
-- **Phase design chạy 2 nhánh song song**: `architect` (hệ thống: API, DB) + `ui-designer` (giao diện:
-  design tokens, component spec, Design AC, state, responsive, dark/light).
+| Tình huống | ui-designer làm gì |
+|---|---|
+| Có bản design ngoài (`.sdlc/<sprint>/ui-design.input.md` — từ Claude Design / designer) | **Ingest + chuẩn hóa** thành `ui-design.md` (thêm Design AC/state/token nếu bản ngoài thiếu). Nguồn `external` |
+| Bản ngoài chỉ cấp một phần màn | Màn có → ingest; màn thiếu → **tự sinh** bám tokens của phần external. Nguồn `mixed` |
+| Có `DESIGN.md` / design system | Tự sinh spec từ đó. Nguồn `internal` |
+| **Dự án CŨ** (đã có UI chạy được), không DESIGN.md | Bám phong cách app hiện có — không hỏi, không đổi style |
+| **Dự án MỚI**, không nguồn nào | Hỏi bạn 1 lần (có DESIGN.md? / mô tả phong cách / để Claude tự quyết) → **sinh `DESIGN.md`** làm nguồn xuyên sprint |
+
 - **Design tokens chuẩn hóa** vào `.sdlc/design-system.md` (xuyên sprint). Execute build UI qua token,
-  KHÔNG hardcode màu/spacing/font.
+  KHÔNG hardcode màu/spacing/font. Mỗi màn đánh dấu `[external]`/`[generated]` để biết phần nào cần đối chiếu mockup gốc.
 - **Phase test có visual verification**: Playwright chụp screenshot đối chiếu Design AC + baseline →
   bắt "lệch màu / vỡ layout / mất tương phản" tự động.
 - **qa-guard có design fidelity check** trước khi bàn giao.
 
 → Kết quả: khi manual test, bạn CHỈ xét *trải nghiệm/thẩm mỹ tổng thể*, không phải soi *đúng thiết kế chưa*.
 
-Nếu dự án KHÔNG có định hướng thẩm mỹ, nhánh này tự tắt — UI bám convention codebase.
+Nếu sprint không có màn hình nào, nhánh này tự tắt.
 
 ## Nguyên tắc "không lỗi vặt khi manual test"
 

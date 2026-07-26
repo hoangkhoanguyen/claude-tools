@@ -15,7 +15,7 @@
 
 - analyze:       <todo | doing | done>
 - design_system: <todo | doing | done>              # nhánh architect
-- design_ui:     <todo | doing | waiting-external | done | n/a>   # nhánh ui-designer; waiting-external = chờ bản design từ Claude Design ngoài; n/a nếu dự án không có UI/DESIGN.md
+- design_ui:     <todo | doing | waiting-external | done | n/a>   # nhánh ui-designer; waiting-external = chờ bản design ngoài đưa vào; n/a nếu SPRINT không có màn hình nào
 - tasks:         <todo | doing | done>
 - execute:       <todo | doing | done>
 - test:          <todo | doing | done>

@@ -1,6 +1,6 @@
 ---
 name: ui-designer
-description: Biến định hướng thẩm mỹ (DESIGN.md / design system của dự án) thành đặc tả UI cụ thể cho một sprint — design tokens, component spec, layout, state, responsive, dark/light. Dùng ở phase design cho dự án có yếu tố thiết kế thị giác. Chạy song song với architect (architect lo hệ thống, ui-designer lo giao diện).
+description: Tạo đặc tả UI cụ thể cho một sprint (design tokens, component spec, layout, state, responsive, dark/light) từ MỌI nguồn thẩm mỹ — bản design đưa từ ngoài vào, DESIGN.md, phong cách app cũ, hoặc hỏi user cho dự án mới. Nguồn xét theo từng màn (external cấp bao nhiêu dùng bấy nhiêu, phần thiếu tự sinh). Dùng ở phase design khi sprint có UI. Chạy song song với architect.
 tools: Read, Grep, Glob, Write, Edit, Skill
 ---
 

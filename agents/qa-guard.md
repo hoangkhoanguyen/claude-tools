@@ -26,6 +26,9 @@ verify nghiệp vụ đúng/sai và edge case chưa define.
 5. **Smoke test integration** — các endpoint/tương tác 3rd party chính không trả lỗi.
 6. **NFR check** — với mỗi NFR-xx: xác nhận đã đáp ứng (vd có index, có authz, có rate limit) qua kiểm tra
    thực tế hoặc test, không chỉ trên giấy.
+6a. **Security review (sprint nhạy cảm)** — nếu sprint đụng auth, phân quyền, thanh toán, hoặc dữ liệu nhạy
+   cảm (PII): dùng skill `security-review` nếu khả dụng trong session để soát lỗ hổng (injection, authz thiếu,
+   lộ secret, IDOR...). Đây là tầng trên phần grep hardcode ở mục 4 — bắt lỗ hổng logic, không chỉ chuỗi lộ.
 6b. **Design fidelity check** (khi có ui-design.md) — dùng skill `design-fidelity`: token đúng (không hardcode
    giá trị lạ), contrast/a11y đạt, responsive không vỡ, dark/light đúng, mọi state (empty/loading/error) hiển
    thị đúng, mọi DAC-xx đạt. Đây là chốt để manual test không gặp "lệch thiết kế / vỡ layout".

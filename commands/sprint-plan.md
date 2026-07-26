@@ -34,11 +34,18 @@ Plugin KHÔNG tự sinh tài liệu này — nó là đầu vào do user cung c�
    Với dự án có sẵn: mô tả kiến trúc HIỆN CÓ (đọc từ codebase) để các sprint sau bám theo, không phá vỡ.
    File này là nguồn tham chiếu cho `architect` ở mọi sprint; architect cập nhật nó khi thêm thành phần nền tảng mới.
 
-4c. **Phát hiện định hướng thiết kế thị giác.** Kiểm tra dự án có `DESIGN.md` / design system / thư viện UI
-   không. NẾU CÓ: khởi tạo `.sdlc/design-system.md` (xuyên sprint) — trích design tokens (color, typography,
-   spacing, radius, shadow, breakpoints, motion) từ DESIGN.md hoặc từ style hiện có của codebase. Đây là
-   nguồn tham chiếu cho `ui-designer` mọi sprint. NẾU KHÔNG có định hướng thẩm mỹ → bỏ qua bước design UI
-   ở các sprint (UI sẽ bám convention codebase), ghi chú điều này trong sprints.md.
+4c. **Phát hiện định hướng thiết kế thị giác.** Xác định dự án CŨ (đã có UI chạy được) hay MỚI, và có nguồn
+   thẩm mỹ nào không (`DESIGN.md` / design system / thư viện UI / style hiện có). Ghi kết luận vào sprints.md
+   để `ui-designer` mọi sprint bám theo:
+   - **Có DESIGN.md / design system** → khởi tạo `.sdlc/design-system.md` (xuyên sprint), trích design tokens
+     (color, typography, spacing, radius, shadow, breakpoints, motion). Nguồn tham chiếu cho ui-designer.
+   - **Dự án CŨ, không DESIGN.md** → ghi chú: UI các sprint bám phong cách app hiện có (ui-designer suy tokens
+     từ code). KHÔNG hỏi phong cách.
+   - **Dự án MỚI, chưa có nguồn thẩm mỹ** → KHÔNG bỏ qua UI. Ghi chú: sprint đầu tiên có màn hình sẽ hỏi user
+     định hướng phong cách rồi sinh `DESIGN.md` (trừ khi sprint đó nhận bản design từ ngoài). Có thể hỏi ngay
+     ở đây 1 lần cho cả dự án nếu tiện, để các sprint sau khỏi bị ngắt.
+   Lưu ý: bản design cũng có thể được đưa từ NGOÀI vào ở phase design từng sprint (`ui-design.input.md`) — không
+   bắt buộc phải có DESIGN.md từ đầu.
 
 5. **Trình bày danh sách sprint cho user** ở mức cao (không đi vào user story chi tiết — đó là việc của
    phase analyze sau này). Mời user: reorder, gộp/tách sprint, chốt tech stack.
