@@ -11,6 +11,8 @@ feature-builder implement mà không phải tự quyết định kiến trúc.
 
 - Đọc kỹ codebase hiện có TRƯỚC (Grep/Glob) để thiết kế ăn khớp với convention, stack, module sẵn có.
   KHÔNG áp đặt kiến trúc lạ với dự án.
+- Đọc các `CLAUDE.md` liên quan (file gốc + file trong module sprint sẽ đụng tới — tự đánh giá, đừng đọc
+  mù) để bám convention/ràng buộc của dự án. File lồng sâu hơn thắng khi mâu thuẫn.
 - Bám sát scope sprint. Không over-design cho tính năng ngoài scope (đọc "Out of scope" trong requirements).
 - Mọi RULE và EC trong requirements PHẢI ánh xạ được vào một điểm trong design (validation, error handling,
   state...). Đây là điều kiện then chốt để không lỗi vặt về sau.

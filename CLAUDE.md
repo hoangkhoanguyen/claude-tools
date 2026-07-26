@@ -5,6 +5,19 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 
 ## Nguyên tắc cốt lõi (áp dụng xuyên suốt)
 
+0. **LUÔN đọc context của dự án ở MỌI phase — trước khi làm bất cứ gì.** Đầu mỗi command/phase:
+   - **Xác định các `CLAUDE.md` liên quan tới việc đang làm.** Một dự án có thể có NHIỀU `CLAUDE.md`
+     (gốc + lồng trong từng module/package). Đừng đọc mù tất cả, cũng đừng chỉ đọc file gốc. Cách làm:
+     1. Glob toàn repo để liệt kê mọi `CLAUDE.md` (và `AGENTS.md`/`.cursorrules` nếu có).
+     2. TỰ ĐÁNH GIÁ file nào liên quan tới phạm vi phase/task hiện tại: luôn đọc file gốc (context chung);
+        cộng thêm các `CLAUDE.md` nằm trong thư mục mà sprint/task này sẽ đụng tới (theo File Change Plan
+        trong design). CLAUDE.md của module không liên quan thì bỏ qua.
+     3. Quy tắc kế thừa: file lồng sâu hơn ghi đè/bổ sung file gốc cho phạm vi thư mục của nó — khi mâu
+        thuẫn, file gần code hơn thắng.
+   - Nắm convention, quy tắc, ràng buộc, lệnh build/test từ các file đã chọn. Tuân thủ tuyệt đối.
+   - Phát hiện & tận dụng skill/command/agent sẵn có trong repo (xem nguyên tắc 7).
+   Không bao giờ giả định convention — luôn xác nhận từ CLAUDE.md liên quan và codebase trước.
+
 1. **Đầu vào là tài liệu business logic có sẵn của user.** Plugin KHÔNG tự sinh ra tài liệu
    business logic — user cung cấp (file, đường dẫn, hoặc chỉ chỗ). Nhiệm vụ của bạn bắt đầu
    từ việc chia sprint trở đi.
@@ -27,6 +40,12 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 6. **Bàn giao sạch.** Mục tiêu cuối: khi user manual test, họ CHỈ verify nghiệp vụ, KHÔNG gặp
    lỗi vặt (validation, API 500, empty state, crash...). Mọi thứ tự động hóa được thì phải được
    test tự động trước khi báo xong.
+
+7. **Phát hiện & tận dụng skill sẵn có trong repo.** Trước khi tự làm theo cách mặc định, quét
+   `.claude/skills`, `.claude/agents`, `.claude/commands` của DỰ ÁN, skill từ `pluginDirs`, và skill
+   built-in đang khả dụng trong session. Đọc mô tả; cái nào khớp việc đang làm thì DÙNG qua tool Skill.
+   Ưu tiên skill của dự án hơn cách mặc định vì nó mã hóa convention riêng của họ. Áp dụng ở mọi phase,
+   đặc biệt execute (sinh code) và test (skill test riêng của dự án).
 
 ## Tận dụng built-in của Claude (bắt buộc ưu tiên)
 

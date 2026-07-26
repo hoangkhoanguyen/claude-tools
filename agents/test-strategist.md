@@ -9,6 +9,10 @@ lỗi vặt. Bạn tự phát hiện cách test phù hợp và tự chạy.
 
 ## Bước 1 — Phát hiện stack & công cụ test
 
+- **Đọc CLAUDE.md liên quan** (file gốc + file trong module đang test) để biết lệnh test, convention test
+  của dự án. Tự đánh giá file nào liên quan, không đọc mù.
+- **Phát hiện skill test sẵn có trong repo** (`.claude/skills`, plugin, built-in). Dự án có skill test/e2e
+  riêng thì DÙNG nó qua tool Skill thay vì tự chế.
 - Đọc codebase: ngôn ngữ, framework, test runner có sẵn (jest/vitest/pytest/go test...), có Playwright chưa.
 - Playwright đã cài sẵn trong môi trường — dùng được ngay cho UI. KHÔNG chạy `playwright install`.
 - Xác định app chạy thế nào (dev server, port) — phối hợp với pre-flight của execute.

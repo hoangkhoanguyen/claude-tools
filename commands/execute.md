@@ -11,9 +11,12 @@ Yêu cầu `tasks.md` của sprint đã tồn tại (chạy `/sdlc:tasks` trư�
 
 ## Pre-flight (BẮT BUỘC trước khi code)
 
-1. Đọc design + tech stack → liệt kê service/tool ngoài cần chạy (DB, cache, dev server, sandbox 3rd party).
-2. Bash ping/check port xem cái nào đang chạy.
-3. CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý. ĐỢI user xác nhận "ok" rồi mới tiếp tục.
+1. **Phát hiện skill dùng được trong repo.** Quét `.claude/skills`, `.claude/agents`, `.claude/commands`
+   của dự án, skill từ `pluginDirs`, và skill built-in đang khả dụng. Skill nào khớp việc sắp làm
+   (test, migration, sinh code theo convention riêng...) → ưu tiên dùng qua tool Skill thay vì tự chế.
+2. Đọc design + tech stack → liệt kê service/tool ngoài cần chạy (DB, cache, dev server, sandbox 3rd party).
+3. Bash ping/check port xem cái nào đang chạy.
+4. CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý. ĐỢI user xác nhận "ok" rồi mới tiếp tục.
 
 ## Implement
 

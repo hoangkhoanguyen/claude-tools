@@ -35,6 +35,9 @@ Cross-check: mọi AC/EC có task phụ trách chưa.
 ### Phase 4 — Execute (quan trọng nhất)
 
 **4a. Pre-flight (BẮT BUỘC trước khi code):**
+- **Phát hiện skill dùng được trong repo:** quét `.claude/skills`, `.claude/agents`, `.claude/commands`
+  của dự án, skill từ `pluginDirs`, và skill built-in đang khả dụng. Skill nào khớp việc sắp làm →
+  ưu tiên dùng qua tool Skill thay vì tự chế. Ưu tiên skill của DỰ ÁN vì nó mã hóa convention riêng.
 - Đọc design + tech stack → liệt kê mọi service/tool ngoài cần chạy (DB, cache, dev server, sandbox 3rd party).
 - Bash ping/check port xem cái nào đã chạy.
 - CHỈ hỏi user bật cái còn thiếu, kèm lệnh gợi ý. VÍ DỤ trình bày:
