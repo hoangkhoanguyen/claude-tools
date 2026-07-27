@@ -83,6 +83,9 @@ Chỉ tiếp tục Phase 3 khi user xác nhận. Ghi `design_approved: true` và
 ### Phase 3 — Tasks
 Dùng skill `task-breakdown` → ghi `.sdlc/<version>/<sprint>/tasks.md` (status todo). Đồng bộ TodoWrite.
 Cross-check: mọi AC/EC có task phụ trách chưa. (Reviewer optional ở phase này.)
+Sinh `.sdlc/<version>/<sprint>/commands.md` (giống `/sdlc:tasks`): liệt kê lệnh chạy từng task
+`/sdlc:task <version> <sprint> <task-id>` và lệnh chạy cả sprint `/sdlc:execute <version> <sprint>` —
+để sau này user chạy/rà lại thủ công từng task.
 
 ### Phase 4 — Execute (quan trọng nhất)
 
