@@ -32,6 +32,7 @@ theo mẫu sau (điền đúng version, sprint, task IDs và mô tả ngắn t�
 # Sprint Commands — <sprint-slug>
 
 ## Chạy từng task (thủ công)
+# Gõ /sdlc:task (không tham số) để chọn task từ list; hoặc chỉ đích danh:
 /sdlc:task <version> <sprint> TASK-01   # <mô tả ngắn task 01>
 /sdlc:task <version> <sprint> TASK-02   # <mô tả ngắn task 02>
 ...
