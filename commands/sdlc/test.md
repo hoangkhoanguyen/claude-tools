@@ -8,6 +8,9 @@ argument-hint: <version-slug> <sprint-slug>
 Chạy riêng phase test + QA gate cho sprint `$2` thuộc version `$1`
 (nếu trống, lấy từ `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
 
+**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
+`CLAUDE.md` liên quan. Đọc `.sdlc/architecture.md`. Nắm lệnh test, convention của dự án.
+
 ## Test
 Spawn subagent `test-strategist`, dùng skill `test-strategy`. Tự phát hiện stack & công cụ, chọn cách
 test theo loại feature (unit / API / Playwright UI / 3rd party sandbox / mock webhook). Nếu có UI design →

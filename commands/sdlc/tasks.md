@@ -10,6 +10,10 @@ Chạy riêng phase chia task cho sprint `$2` thuộc version `$1`
 
 Yêu cầu `.sdlc/<version>/<sprint>/design.md` đã tồn tại (chạy `/sdlc:design` trước nếu chưa).
 
+**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
+`CLAUDE.md` trong thư mục mà sprint này sẽ đụng tới (dựa vào File Change Plan trong `design.md`).
+Đọc `.sdlc/architecture.md`. Tuân thủ convention tuyệt đối khi chia task (naming, cấu trúc file...).
+
 ## Chỉ tạo tài liệu — KHÔNG execute
 
 Phase này **chỉ chia task và ghi tài liệu**. Không implement code, không pre-flight service.

@@ -10,6 +10,9 @@ Chạy riêng phase thiết kế cho sprint `$2` thuộc version `$1`
 
 Yêu cầu `.sdlc/<version>/<sprint>/requirements.md` đã tồn tại (chạy `/sdlc:analyze` trước nếu chưa).
 
+**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
+`CLAUDE.md` liên quan đến sprint. Đọc `.sdlc/architecture.md`. Truyền context này khi spawn agent.
+
 Chạy 2 nhánh (song song nếu độc lập):
 
 **Nhánh hệ thống** — spawn `architect`, dùng skill `system-design`. Đọc codebase +

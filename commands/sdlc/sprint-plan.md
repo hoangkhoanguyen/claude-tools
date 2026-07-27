@@ -18,8 +18,9 @@ Plugin KHÔNG tự sinh tài liệu business logic — đây là đầu vào do 
 
 ## Các bước
 
-1. **Đọc toàn bộ** tài liệu business logic. Nếu có codebase sẵn, Grep/Glob để hiểu hiện trạng.
-   Đọc `.sdlc/architecture.md` (nếu đã có từ version trước) để nắm nền tảng kế thừa.
+1. **Nạp context & đọc tài liệu**: Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
+   `CLAUDE.md` liên quan. Đọc `.sdlc/architecture.md` (nếu đã có từ version trước) để nắm nền tảng
+   kế thừa. Nếu có codebase sẵn, Grep/Glob để hiểu hiện trạng. Đọc toàn bộ tài liệu business logic.
 
 2. **Nhóm feature thành sprint.** Mỗi sprint là một khối feature khép kín, có thể deliver độc lập.
    Cân nhắc phụ thuộc giữa các feature để xếp thứ tự sprint hợp lý (nền tảng trước, tính năng phụ thuộc sau).
