@@ -35,6 +35,9 @@ Ghi lại (trong tóm tắt) skill nào đã phát hiện & dùng, để các ta
 ## Quy trình mỗi task
 
 1. Đọc task + phần design liên quan + code hiện có xung quanh.
+   Nếu task có trường `Skill gợi ý` (khác trống) → gọi tool `Skill` để nạp skill đó **trước khi
+   implement**. Skill đó mã hóa convention riêng của dự án cho loại việc này — ưu tiên làm theo
+   skill thay vì cách mặc định. Nếu skill không tồn tại hoặc không khớp thực tế → bỏ qua, làm theo cách thông thường.
 2. Implement theo design và convention của codebase (match style, naming, cấu trúc file có sẵn).
    Nếu có skill dự án phù hợp cho bước này → dùng skill đó.
    **Nếu phát hiện design THIẾU/SAI/mâu thuẫn khi implement** (endpoint chưa định nghĩa, EC chưa có trong

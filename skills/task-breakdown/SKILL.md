@@ -37,8 +37,14 @@ Mỗi task có status: `todo` / `doing` / `done` (+ `blocked` kèm lý do nếu 
   Design ref: API Contracts §POST /orders, Data Model §Order
   File dự kiến: src/routes/orders.ts, src/services/order.ts
   Phụ thuộc: TASK-01 (Order schema)
+  Skill gợi ý: <tên skill nếu có — vd migration, component-gen, e2e-test; để trống nếu không>
   Test: unit cho service + smoke POST endpoint
 ```
+
+Trường `Skill gợi ý`: điền tên skill của dự án (trong `.claude/skills/`, plugin, hoặc built-in) mà
+task này nên dùng. Căn cứ vào loại việc (migration DB → skill migration; sinh component → skill
+component-gen; test E2E → skill e2e; ...). Để trống nếu không có skill nào phù hợp hơn cách mặc định.
+Đây là gợi ý cho feature-builder — không bắt buộc dùng nếu skill không khớp thực tế.
 
 ## Checklist tự soi trước khi chốt
 
