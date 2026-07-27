@@ -1,11 +1,12 @@
 <!--
-  SCHEMA state.md — con trỏ tiến trình SDLC. Đặt tại .sdlc/state.md trong dự án.
+  SCHEMA state.md — con trỏ tiến trình SDLC. Đặt tại .sdlc/<version>/state.md trong dự án.
   Agent PHẢI giữ ĐÚNG cấu trúc này (các key, thứ tự) để resume đáng tin cậy.
   Cập nhật sau MỖI phase và MỖI task. Giá trị trong <...> là placeholder.
 -->
 
 # SDLC State
 
+- **version**: <version-slug>                 # vd: v1, v2, phase-2
 - **current_sprint**: <sprint-slug | none>
 - **current_phase**: <analyze | design | tasks | execute | test | qa | done | none>
 - **current_task**: <TASK-id | none>          # chỉ có nghĩa khi phase = execute
@@ -21,6 +22,11 @@
 - test:          <todo | doing | done>
 - qa:            <todo | doing | done>
 
+## Human approval gates
+
+- analyze_approved:  <pending | true>   # true khi user đã xác nhận requirements trước khi Design
+- design_approved:   <pending | true>   # true khi user đã xác nhận design trước khi Tasks
+
 ## Con trỏ resume
 
 - **next_action**: <mô tả 1 dòng bước tiếp theo cần làm khi resume>
@@ -32,4 +38,4 @@
 - skills_used: <skill của repo đã phát hiện & dùng>
 - services_up: <service ngoài đã xác nhận đang chạy>
 - has_design: <yes | no>                            # dự án có DESIGN.md / design system không
-- ui_design_source: <internal | external | mixed | none>   # internal = workflow tự sinh toàn bộ; external = 100% màn từ bản ngoài (input tại .sdlc/<sprint>/ui-design.input.md); mixed = bản ngoài cấp một phần, màn thiếu workflow tự sinh; none = sprint không có UI
+- ui_design_source: <internal | external | mixed | none>   # internal = workflow tự sinh toàn bộ; external = 100% màn từ bản ngoài (input tại .sdlc/<version>/<sprint>/ui-design.input.md); mixed = bản ngoài cấp một phần, màn thiếu workflow tự sinh; none = sprint không có UI

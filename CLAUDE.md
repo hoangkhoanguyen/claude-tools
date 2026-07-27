@@ -33,6 +33,21 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
    để biết đang ở đâu. Sau MỖI đơn vị công việc (mỗi task, mỗi phase), CẬP NHẬT state ngay.
    Nếu bị ngắt, lần chạy sau phải tiếp tục đúng chỗ — không làm lại việc đã done.
 
+4a. **Vị trí `.sdlc/` — luôn ở thư mục gốc repo.** Không đặt lồng trong sub-package hay app con.
+    Cấu trúc: `.sdlc/versions.md`, `.sdlc/architecture.md`, `.sdlc/design-system.md` ở gốc (xuyên version);
+    mọi thứ còn lại theo version: `.sdlc/<version>/state.md`, `.sdlc/<version>/<sprint>/`.
+    Với monorepo nhiều app: vẫn một `.sdlc/` duy nhất ở gốc; slug sprint phản ánh app liên quan
+    (vd `sprint-1-web-auth`, `sprint-2-api-orders`) để phân biệt.
+
+4b. **`.sdlc/` luôn được commit lên git — cả team cùng thấy.** Khi khởi tạo lần đầu (`/sdlc:sprint-plan`),
+    thêm vào `.gitignore` của dự án dòng sau để loại phần nặng/không cần thiết:
+    ```
+    .sdlc/*/*/visual-baseline/
+    ```
+    Còn lại (`versions.md`, `sprints.md`, `state.md`, `architecture.md`, `design-system.md`, mọi
+    `requirements.md`, `design.md`, `ui-design.md`, `tasks.md`, `test-report.md`) đều commit — đây là
+    tài liệu sống của dự án, team review được qua PR, lịch sử rõ ràng.
+
 5. **Tự soi lại (self-review) — không cần user nhắc.** Sau mỗi phase, tự chạy checklist trong
    skill `self-review`. Không coi "làm xong = đạt". Luôn hỏi: "output này có đủ cho bước sau
    không? có mâu thuẫn với phase trước không?". Thiếu thì bổ sung TRƯỚC khi ghi file / báo xong.
