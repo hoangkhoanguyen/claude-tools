@@ -25,6 +25,11 @@ Mọi file output trong lệnh này đều nằm dưới `.sdlc/<version>/`.
 3. **Resume check**: đọc `.sdlc/<version>/state.md` (theo schema `templates/state.template.md`) +
    `.sdlc/<version>/<sprint>/`. Xác định phase & task đang dở. **Bỏ qua** mọi phase/task đã done.
    Lần chạy đầu → bắt đầu từ analyze.
+   - **Approval gate chưa qua**: một phase có thể `done` nhưng approval của nó vẫn `pending` (bị ngắt ngay
+     tại gate). Trước khi sang phase sau, kiểm tra: `analyze: done` mà `analyze_approved: pending`,
+     `design_system` + `design_ui` xong mà `design_approved: pending`, hoặc `tasks: done` mà
+     `tasks_approved: pending` → **trình bày lại đúng gate đó và đợi user approve**, KHÔNG nhảy sang
+     phase sau. Chỉ khi approval = `true` mới đi tiếp.
    - **Nếu `design_ui: waiting-external`**: kiểm tra `.sdlc/<version>/<sprint>/ui-design.input.md` đã về chưa.
      CÓ → ingest + chuẩn hóa, chuyển design_ui sang done. CHƯA → nhắc lại blocker và dừng.
 
