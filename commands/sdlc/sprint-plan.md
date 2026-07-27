@@ -18,9 +18,14 @@ Plugin KHÔNG tự sinh tài liệu business logic — đây là đầu vào do 
 
 ## Các bước
 
-1. **Nạp context & đọc tài liệu**: Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
-   `CLAUDE.md` liên quan. Đọc `.sdlc/architecture.md` (nếu đã có từ version trước) để nắm nền tảng
-   kế thừa. Nếu có codebase sẵn, Grep/Glob để hiểu hiện trạng. Đọc toàn bộ tài liệu business logic.
+1. **Nạp context & đọc tài liệu**: đây thường là lệnh CHẠY ĐẦU TIÊN của version — nơi bản chưng cất
+   context được tạo lần đầu. Glob toàn repo liệt kê mọi `CLAUDE.md` (và `AGENTS.md`/`.cursorrules`);
+   đọc file gốc + các file liên quan; quét `.claude/skills|agents|commands` + `pluginDirs`; đọc
+   `package.json`/`Makefile`/`docker-compose.yml`/`.env.example`.
+   → **Ghi `.sdlc/<version>/context.md`** theo schema `templates/context.template.md` (≤150 dòng, kèm bảng
+   Fingerprint). Từ đây trở đi mọi lệnh & subagent dùng file này thay vì quét lại repo.
+   Đọc `.sdlc/architecture.md` (nếu đã có từ version trước) để nắm nền tảng kế thừa.
+   Đọc toàn bộ tài liệu business logic.
 
 2. **Nhóm feature thành sprint.** Mỗi sprint là một khối feature khép kín, có thể deliver độc lập.
    Cân nhắc phụ thuộc giữa các feature để xếp thứ tự sprint hợp lý (nền tảng trước, tính năng phụ thuộc sau).

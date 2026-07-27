@@ -17,8 +17,14 @@ Mọi file output trong lệnh này đều nằm dưới `.sdlc/<version>/`.
 
 ## BƯỚC 0 — Context + Resume + Dependency check (LUÔN làm đầu tiên)
 
-1. **Nạp context dự án** (nguyên tắc 0 trong CLAUDE.md của plugin): Glob mọi `CLAUDE.md`, tự đánh giá &
-   đọc các file liên quan tới sprint này; đọc `.sdlc/architecture.md` (foundational, nếu có).
+1. **Nạp context dự án — MỘT LẦN, qua `.sdlc/<version>/context.md`** (nguyên tắc 0):
+   - File tồn tại + bảng Fingerprint khớp thực tế (bytes/mtime các file nguồn) → **đọc nó, hết**.
+     KHÔNG Glob repo, KHÔNG đọc lại `CLAUDE.md`.
+   - Thiếu / fingerprint lệch → chưng cất lại theo schema `templates/context.template.md`, rồi đọc.
+   - Đọc `.sdlc/architecture.md` (foundational, nếu có).
+   - **Mọi subagent spawn ở các phase dưới đây đều nhận đường dẫn `.sdlc/<version>/context.md`** và bị
+     cấm tự Glob repo tìm `CLAUDE.md`. Đây là chốt chặn token chính của lệnh này: 1 sprint ~15 subagent,
+     mỗi agent tự quét lại repo là nhân context lên 15 lần.
 2. **Dependency check**: đọc `.sdlc/<version>/sprints.md`. Nếu sprint này phụ thuộc sprint khác mà sprint đó
    CHƯA `done` → CẢNH BÁO user và dừng, đề nghị chạy sprint phụ thuộc trước (trừ khi user yêu cầu vẫn tiếp).
    Nếu sprint phụ thuộc vào sprint ở version trước, đọc `.sdlc/<version-trước>/sprints.md` để xác nhận.
@@ -87,6 +93,8 @@ Chỉ tiếp tục Phase 3 khi user xác nhận. Ghi `design_approved: true` và
 
 ### Phase 3 — Tasks
 Dùng skill `task-breakdown` → ghi `.sdlc/<version>/<sprint>/tasks.md` (status todo). Đồng bộ TodoWrite.
+Mỗi task PHẢI có `Design ref` dạng `design.md §<heading> (L..-..)` — `Grep -n` heading trong `design.md`
+để lấy khoảng dòng. Đây là điều kiện để feature-builder đọc đúng đoạn cần thay vì cả file.
 Cross-check: mọi AC/EC có task phụ trách chưa. (Reviewer optional ở phase này.)
 Sinh `.sdlc/<version>/<sprint>/commands.md` (giống `/sdlc:tasks`): liệt kê lệnh chạy từng task
 `/sdlc:task <version> <sprint> <task-id>` và lệnh thực thi đến hết `/sdlc:execute <version> <sprint>`
@@ -107,11 +115,10 @@ Chỉ tiếp tục Phase 4 khi user xác nhận. Ghi `tasks_approved: true` vào
 ### Phase 4 — Execute (quan trọng nhất)
 
 **4a. Pre-flight (BẮT BUỘC trước khi code):**
-- **Phát hiện skill dùng được trong repo:** quét `.claude/skills`, `.claude/agents`, `.claude/commands`
-  của dự án, skill từ `pluginDirs`, và skill built-in đang khả dụng.
-- **Suy ra service ngoài từ config dự án**: đọc `docker-compose.yml`, `.env.example`, `package.json`
-  scripts, `Procfile`, `Makefile`, README → liệt kê DB, cache, dev server, sandbox 3rd party + port +
-  lệnh khởi động chuẩn.
+- **Skill dùng được + service ngoài: đọc từ `.sdlc/<version>/context.md`** (đã chưng cất ở BƯỚC 0).
+  KHÔNG quét lại `.claude/skills` hay config dự án.
+- Chỉ khi `context.md` thiếu/`n/a` mà sprint rõ ràng cần → suy ra từ `docker-compose.yml`, `.env.example`,
+  `package.json` scripts, `Procfile`, `Makefile`, README, rồi **bổ sung ngược vào `context.md`**.
 - Bash ping/check port xem cái nào đã chạy.
 - CHỈ hỏi user bật cái còn thiếu. ĐỢI user xác nhận rồi mới tiếp. Ghi vào `.sdlc/<version>/state.md`.
 - **Migration/seed**: nếu sprint đổi schema → chạy lệnh migrate trước khi test. Ghi vào state.

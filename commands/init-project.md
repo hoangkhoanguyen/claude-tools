@@ -205,6 +205,12 @@ Anti-pattern:
 
 Nếu CLAUDE.md đã có nội dung → merge: giữ nội dung cũ còn giá trị, bổ sung section còn thiếu, cập nhật section lỗi thời. Không overwrite toàn bộ.
 
+### Làm mới bản chưng cất context
+
+Lệnh này tạo/sửa `CLAUDE.md` → mọi `.sdlc/*/context.md` đã có đều **stale**. Với mỗi file đó, đặt
+`context_digest: stale` trong `.sdlc/<version>/state.md`. Lệnh `/sdlc:*` chạy sau sẽ tự đối chiếu
+fingerprint và chưng cất lại — không cần làm ngay tại đây.
+
 ## Báo cáo cuối
 
 ```

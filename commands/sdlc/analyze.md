@@ -8,8 +8,9 @@ argument-hint: <version-slug> <sprint-slug>
 Chạy riêng phase phân tích requirements cho sprint `$2` thuộc version `$1`
 (nếu trống, lấy từ `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
 
-Nạp context trước (nguyên tắc 0): đọc CLAUDE.md liên quan + tài liệu business logic gốc +
-`.sdlc/architecture.md`.
+**Nạp context trước (nguyên tắc 0):** đọc `.sdlc/<version>/context.md` — khớp fingerprint thì dùng luôn,
+lệch/thiếu thì chưng cất lại theo `templates/context.template.md`. Đọc tài liệu business logic gốc +
+`.sdlc/architecture.md`. Truyền đường dẫn `context.md` khi spawn agent (agent KHÔNG tự Glob repo).
 
 Spawn subagent `product-analyst`, dùng skill `requirements-analysis`. Ghi kết quả vào
 `.sdlc/<version>/<sprint>/requirements.md` với 2 tầng: Human Review (đầu file) + Agent Reference

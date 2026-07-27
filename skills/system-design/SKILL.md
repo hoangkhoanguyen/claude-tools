@@ -10,8 +10,9 @@ mà không phải tự quyết kiến trúc.
 
 ## Trước khi thiết kế: đọc context
 
-Grep/Glob codebase hiện có để nắm convention, stack, module sẵn có. Đọc `.sdlc/architecture.md`
-(foundational, xuyên sprint) và các `CLAUDE.md` liên quan. Thiết kế phải ăn khớp — không áp kiến trúc lạ.
+Đọc `.sdlc/<version>/context.md` (bản chưng cất: stack, convention CONV-xx, ràng buộc, module map) và
+`.sdlc/architecture.md` (foundational, xuyên sprint). Grep/Glob codebase ở phạm vi sprint sẽ đụng tới để
+nắm module sẵn có — KHÔNG quét lại toàn repo tìm `CLAUDE.md`. Thiết kế phải ăn khớp — không áp kiến trúc lạ.
 Với dự án thêm-feature-vào-codebase-sẵn-có, điều này tối quan trọng. Nếu sprint thêm/đổi thành phần nền
 tảng dùng chung → cập nhật `.sdlc/architecture.md`.
 

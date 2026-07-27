@@ -33,10 +33,10 @@
 - **next_action**: <mô tả 1 dòng bước tiếp theo cần làm khi resume>
 - **blockers**: <none | mô tả blocker + việc cần user làm>
 
-## Context đã nạp lần chạy này (để lần sau biết cần đọc lại gì)
+## Context (chi tiết nằm ở .sdlc/<version>/context.md — đừng chép lại vào đây)
 
-- claude_md_relevant: <danh sách CLAUDE.md liên quan đã đọc>
-- skills_used: <skill của repo đã phát hiện & dùng>
+- context_digest: <ok | stale | missing>   # ok = fingerprint trong context.md còn khớp repo
+- context_checked_at: <YYYY-MM-DD HH:MM>   # lần cuối lệnh cha đối chiếu fingerprint
 - services_up: <service ngoài đã xác nhận đang chạy>
 - has_design: <yes | no>                            # dự án có DESIGN.md / design system không
 - ui_design_source: <internal | external | mixed | none>   # internal = workflow tự sinh toàn bộ; external = 100% màn từ bản ngoài (input tại .sdlc/<version>/<sprint>/ui-design.input.md); mixed = bản ngoài cấp một phần, màn thiếu workflow tự sinh; none = sprint không có UI

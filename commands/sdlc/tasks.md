@@ -10,9 +10,10 @@ Chạy riêng phase chia task cho sprint `$2` thuộc version `$1`
 
 Yêu cầu `.sdlc/<version>/<sprint>/design.md` đã tồn tại (chạy `/sdlc:design` trước nếu chưa).
 
-**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
-`CLAUDE.md` trong thư mục mà sprint này sẽ đụng tới (dựa vào File Change Plan trong `design.md`).
-Đọc `.sdlc/architecture.md`. Tuân thủ convention tuyệt đối khi chia task (naming, cấu trúc file...).
+**Nạp context trước (nguyên tắc 0):** đọc `.sdlc/<version>/context.md` — khớp fingerprint thì dùng luôn,
+lệch/thiếu thì chưng cất lại theo `templates/context.template.md`. Module trong File Change Plan của
+`design.md` có `CLAUDE.md` riêng (xem "Module map") → mở ĐÚNG file đó. Đọc `.sdlc/architecture.md`.
+Tuân thủ convention tuyệt đối khi chia task (naming, cấu trúc file...).
 
 ## Chỉ tạo tài liệu — KHÔNG execute
 
@@ -24,7 +25,11 @@ Thực thi bắt đầu từ `/sdlc:task` (từng task thủ công) hoặc `/sdl
 Dùng skill `task-breakdown`. Ghi `.sdlc/<version>/<sprint>/tasks.md` với các task (status `todo`),
 phụ thuộc, đánh dấu task chạy song song được, và bảng AC/EC → task. Đồng bộ TodoWrite.
 
-Kết thúc: chạy skill `self-review` — mọi AC/EC phải có task phụ trách.
+**Con trỏ design cho từng task (BẮT BUỘC):** `Grep -n '^#{2,3} ' design.md` để lấy dòng của mọi heading,
+rồi điền `Design ref` dạng `design.md §<heading> (L<đầu>-<cuối>)` cho từng task — chỉ những mục task đó
+thực sự cần. Nhờ vậy feature-builder đọc đúng đoạn thay vì cả `design.md` (nhân với số task).
+
+Kết thúc: chạy skill `self-review` — mọi AC/EC phải có task phụ trách, mọi `Design ref` có khoảng dòng.
 Cập nhật `.sdlc/<version>/state.md`.
 
 ## Sinh command shortcuts

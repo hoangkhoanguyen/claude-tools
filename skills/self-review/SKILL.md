@@ -26,7 +26,7 @@ Triết lý: "làm xong" ≠ "đạt". Luôn tự kiểm tra và tự sửa trư
 Regression Impact đã liệt kê (nếu codebase có sẵn)? có bịa gì không?
 
 **Sau design:** mọi RULE-xx / EC-xx / NFR-xx có trong bảng mapping? module cũ có Regression-safe Plan?
-ăn khớp codebase + architecture.md + CLAUDE.md? có endpoint/entity thừa?
+ăn khớp codebase + architecture.md + convention trong context.md? có endpoint/entity thừa?
 Nếu có UI: mọi màn hình/state có spec + Design AC (phủ đủ dù nguồn external hay tự sinh)? giá trị thị giác
 qua token, không hardcode? bám đúng nguồn thẩm mỹ (bản ngoài / DESIGN.md / phong cách app cũ), không bịa?
 màn `[generated]` đồng bộ thị giác với `[external]`?

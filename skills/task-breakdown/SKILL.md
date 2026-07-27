@@ -16,6 +16,27 @@ vị hoàn chỉnh có thể checkpoint (để resume khi bị ngắt).
 - **Task có phụ thuộc** thì ghi rõ thứ tự (task B cần task A xong trước).
 - **Mỗi task trỏ về**: story/AC nó phục vụ, phần design liên quan, file dự kiến đụng tới, EC cần handle.
 
+## `Design ref` phải là con trỏ ĐỌC ĐƯỢC, không phải mô tả chung chung
+
+Mỗi feature-builder là một subagent cold-start. Nếu `Design ref` chỉ ghi "xem phần API" thì agent sẽ đọc
+CẢ `design.md` — nhân với số task, đây là khoản token lãng phí lớn nhất của phase execute.
+Vì vậy `Design ref` phải cho phép đọc CHÍNH XÁC đoạn cần, dạng:
+
+```
+Design ref: design.md §6. API Contracts › POST /orders (L142-186)
+            design.md §5. Data Model › Order (L88-113)
+```
+
+Cách lấy số dòng: sau khi `design.md` đã chốt, `Grep -n` các heading (`^#{2,3} `) để lấy dòng bắt đầu
+mỗi mục; dòng cuối = dòng trước heading kế tiếp. Ghi kèm **cả tên heading lẫn khoảng dòng**:
+số dòng để đọc thẳng, tên heading để feature-builder tự Grep sửa lại nếu `design.md` bị chỉnh sau đó.
+
+Quy tắc:
+- Mỗi task trỏ tới **những mục nó thực sự cần** — thường 2-4 mục, không phải cả file.
+- Task UI: trỏ thêm `ui-design.md §<màn hình> (L..-..)` theo đúng cách trên.
+- Không trỏ tới mục "Rule & Edge-case Mapping" — feature-builder tự Grep theo EC-xx của nó.
+- `design.md` thay đổi (vd sau `/sdlc:replan`) → chạy lại `Grep -n` và cập nhật khoảng dòng trong `tasks.md`.
+
 ## Không bỏ sót AC
 
 Mỗi `AC-xx`, `EC-xx`, `NFR-xx` trong requirements — và `DAC-xx` trong ui-design (nếu có UI) — phải được ít
@@ -34,7 +55,8 @@ Mỗi task có status: `todo` / `doing` / `done` (+ `blocked` kèm lý do nếu 
 - [ ] TASK-03  (todo)
   Mô tả: Tạo endpoint POST /orders với validation stock
   Phục vụ: Story-02 (AC-02.1, AC-02.2), EC-01, EC-04
-  Design ref: API Contracts §POST /orders, Data Model §Order
+  Design ref: design.md §6. API Contracts › POST /orders (L142-186)
+             design.md §5. Data Model › Order (L88-113)
   File dự kiến: src/routes/orders.ts, src/services/order.ts
   Phụ thuộc: TASK-01 (Order schema)
   Skill gợi ý: <tên skill nếu có — vd migration, component-gen, e2e-test; để trống nếu không>
@@ -52,3 +74,5 @@ component-gen; test E2E → skill e2e; ...). Để trống nếu không có skil
 - [ ] Task nào chạy song song được đã đánh dấu?
 - [ ] Phụ thuộc giữa task đã ghi đúng thứ tự?
 - [ ] Mỗi task có tiêu chí test rõ để mark done?
+- [ ] Mỗi `Design ref` có **cả tên heading lẫn khoảng dòng** `(L..-..)`, và khoảng dòng khớp `design.md` hiện tại?
+- [ ] Không task nào trỏ "cả design.md" hoặc trỏ mục nó không thực sự cần?

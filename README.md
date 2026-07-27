@@ -15,6 +15,7 @@ Thiết kế cho dự án lớn, nhiều feature, hoặc thêm feature vào code
 4. **Bàn giao sạch.** Khi xong, mọi lỗi vặt (validation, API error, empty state...) đã được test tự động catch. Bạn chỉ verify *trải nghiệm nghiệp vụ*, không debug.
 5. **Tự soi lại mình.** Mỗi phase tự review output của chính nó và cross-check với phase trước — không cần bạn nhắc.
 6. **Tận dụng built-in Claude.** Subagents, TodoWrite, Bash, Playwright, Skills, Hooks — dùng cái có sẵn thay vì tự chế.
+7. **Tiết kiệm token của bạn.** Context dự án nạp một lần rồi dùng chung; mỗi agent đọc đúng phần nó cần; việc cơ học chạy model rẻ hơn. Xem [Token & chi phí](#token--chi-phí).
 
 ---
 
@@ -131,6 +132,7 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 └── <version>/               ← vd v1, v2
     ├── sprints.md           ← danh sách sprint + tech stack + dependency + trạng thái
     ├── state.md             ← con trỏ resume (schema cố định — xem templates/state.template.md)
+    ├── context.md           ← bản chưng cất context dự án, nạp 1 lần & mọi agent dùng chung (xem bên dưới)
     └── <sprint-slug>/
         ├── requirements.md      ← output analyze (gồm NFR + regression impact)
         ├── design.md            ← output design hệ thống (bảng mapping RULE/EC/NFR)
@@ -171,7 +173,8 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 | Skill | `test-strategy` | Bảng quyết định test theo loại feature |
 | Skill | `design-fidelity` | Đối chiếu UI với DESIGN.md: token, contrast, responsive, dark/light |
 | Skill | `self-review` | Checklist tự soi lại sau mỗi phase |
-| Hook | `SessionStart` | In tiến trình SDLC đang dở khi mở session (hỗ trợ resume) |
+| Hook | `SessionStart` | In con trỏ resume khi mở session (5 dòng, không đổ cả state) |
+| Template | `context.template.md` | Schema bản chưng cất context — nạp 1 lần, mọi agent dùng chung |
 
 ---
 
@@ -198,6 +201,44 @@ xác định nguồn thiết kế **theo từng màn hình** (bên ngoài cấp 
 → Kết quả: khi manual test, bạn CHỈ xét *trải nghiệm/thẩm mỹ tổng thể*, không phải soi *đúng thiết kế chưa*.
 
 Nếu sprint không có màn hình nào, nhánh này tự tắt.
+
+## Token & chi phí
+
+Một `/sdlc:run` cho sprint 8 task spawn khoảng **15 subagent**. Mỗi subagent bắt đầu cold — nếu agent nào
+cũng tự quét lại repo và đọc cả `design.md` thì cùng một context bị nạp lại 15 lần. Plugin xử lý bằng 4 cơ chế:
+
+**1. Context nạp một lần — `.sdlc/<version>/context.md`**
+
+Lệnh cha quét repo **một lần** ở BƯỚC 0 và chưng cất ra một file ≤150 dòng: stack, lệnh build/test/migrate,
+module map (kèm đường dẫn mọi `CLAUDE.md`), convention bắt buộc, skill riêng của repo, service ngoài + port.
+Mọi subagent đọc file này và **bị cấm Glob repo tìm `CLAUDE.md`**.
+
+File có bảng **Fingerprint** (bytes + mtime của các file nguồn). Lệnh cha đối chiếu ở mỗi lần chạy:
+khớp → dùng luôn; lệch (bạn vừa sửa `CLAUDE.md`) → tự chưng cất lại. Không cần bạn nhớ refresh.
+
+> Đánh đổi: đây là bản **chưng cất**, không phải bản copy. Quy tắc nào quá chi tiết để tóm tắt thì
+> `context.md` trỏ tới đúng file trong "Module map" để agent mở riêng file đó.
+
+**2. Mỗi task đọc đúng đoạn design nó cần**
+
+`tasks.md` ghi `Design ref` dạng con trỏ đọc được — `design.md §6. API Contracts › POST /orders (L142-186)` —
+nên feature-builder `Read` đúng khoảng dòng đó thay vì cả `design.md`. Ghi kèm **cả tên heading lẫn số dòng**:
+nếu `design.md` bị sửa sau đó, agent `Grep` lại heading để tự chỉnh, không phải đọc lại toàn file.
+
+**3. Model theo loại việc**
+
+| Agent | Model | Vì sao |
+|---|---|---|
+| `architect`, `feature-builder`, `ui-designer` | `inherit` (model chính) | Ra quyết định kiến trúc / sinh code |
+| `product-analyst`, `reviewer`, `test-strategist`, `qa-guard` | `sonnet` | Việc theo checklist, cấu trúc đầu ra đã cố định sẵn |
+
+Muốn đổi: sửa `model:` trong frontmatter của agent tương ứng (`.claude/agents/<tên>.md`).
+`product-analyst` là cái đáng cân nhắc nhất — output của nó chảy xuống mọi phase sau, nên nếu thấy
+requirements bị hời hợt thì đây là agent đầu tiên nên nâng lại về `inherit`.
+
+**4. Hook chỉ in cái cần**
+
+`SessionStart` in 5 dòng con trỏ resume, không đổ cả `state.md` vào context của mọi session.
 
 ## Nguyên tắc "không lỗi vặt khi manual test"
 

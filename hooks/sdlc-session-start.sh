@@ -24,11 +24,13 @@ for f in "${candidates[@]}"; do
 done
 
 if [[ -f "$STATE_FILE" ]]; then
-  echo "── SDLC: phát hiện tiến trình đang dở ($STATE_FILE) ──"
-  # In tối đa 40 dòng đầu của state để không làm ngập context.
-  head -n 40 "$STATE_FILE"
-  echo "────────────────────────────────────────"
-  echo "Gợi ý: chạy /sdlc:status để xem tiến độ, hoặc /sdlc:run <version> <sprint> để làm tiếp."
+  # Chỉ in các trường cần để resume. In cả state (40 dòng) là lãng phí context ở MỌI session —
+  # /sdlc:status và /sdlc:run tự đọc đủ file khi thực sự cần.
+  echo "── SDLC: tiến trình đang dở ($STATE_FILE) ──"
+  grep -E '^\s*-\s+\*\*(current_sprint|current_phase|current_task|next_action|blockers)\*\*' "$STATE_FILE" \
+    | sed 's/^[[:space:]]*-[[:space:]]*/  /' \
+    || true
+  echo "  → /sdlc:status (tiến độ) | /sdlc:run <version> <sprint> (làm tiếp)"
 fi
 
 exit 0

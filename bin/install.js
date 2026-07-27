@@ -43,7 +43,7 @@ const COMPONENTS = {
   agents:    { type: 'files', dir: 'agents',   label: 'Custom agents' },
   commands:  { type: 'files', dir: 'commands', label: 'Slash commands (/sdlc:*)' },
   skills:    { type: 'files', dir: 'skills',   label: 'Skills' },
-  templates: { type: 'files', dir: 'templates', label: 'Templates (state.template.md — commands tham chiếu)' },
+  templates: { type: 'files', dir: 'templates', label: 'Templates (state/context template — commands tham chiếu)' },
   hooks:     { type: 'hooks', dir: 'hooks',    label: 'SessionStart hook + đăng ký vào settings.json' },
   'claude-md': { type: 'claude-md',            label: 'Nguyên tắc SDLC (managed block trong CLAUDE.md)' },
 };

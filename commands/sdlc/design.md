@@ -10,15 +10,17 @@ Chạy riêng phase thiết kế cho sprint `$2` thuộc version `$1`
 
 Yêu cầu `.sdlc/<version>/<sprint>/requirements.md` đã tồn tại (chạy `/sdlc:analyze` trước nếu chưa).
 
-**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
-`CLAUDE.md` liên quan đến sprint. Đọc `.sdlc/architecture.md`. Truyền context này khi spawn agent.
+**Nạp context trước (nguyên tắc 0):** đọc `.sdlc/<version>/context.md` — khớp fingerprint thì dùng luôn,
+lệch/thiếu thì chưng cất lại theo `templates/context.template.md`. Đọc `.sdlc/architecture.md`.
+Truyền **đường dẫn** `context.md` cho cả 2 nhánh agent; agent KHÔNG tự Glob repo tìm `CLAUDE.md`.
 
 Chạy 2 nhánh (song song nếu độc lập):
 
-**Nhánh hệ thống** — spawn `architect`, dùng skill `system-design`. Đọc codebase +
-`.sdlc/architecture.md` + CLAUDE.md liên quan. Ghi `.sdlc/<version>/<sprint>/design.md` với 2 tầng +
-bảng mapping phủ 100% RULE/EC/NFR + Regression-safe Plan. Cập nhật `.sdlc/architecture.md` nếu đổi
-thành phần nền tảng.
+**Nhánh hệ thống** — spawn `architect`, dùng skill `system-design`. Đọc codebase (phạm vi sprint) +
+`.sdlc/architecture.md` + `context.md`. Ghi `.sdlc/<version>/<sprint>/design.md` với 2 tầng +
+bảng mapping phủ 100% RULE/EC/NFR + Regression-safe Plan. Heading phải theo dạng ổn định
+`## <số>. <Tên mục>` / `### <định danh>` để `tasks.md` trỏ được tới từng đoạn. Cập nhật
+`.sdlc/architecture.md` nếu đổi thành phần nền tảng.
 
 **Nhánh giao diện** — spawn `ui-designer`, dùng skill `design-fidelity` + `artifact-design`.
 ui-designer xét UI scope trong `requirements.md`, rồi chọn nguồn design theo từng màn hình:

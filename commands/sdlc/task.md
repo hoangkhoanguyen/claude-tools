@@ -29,17 +29,20 @@ Task đã chọn phải có status `todo` hoặc `doing`. Nếu đã `done` → 
 
 Đọc `.sdlc/<version>/state.md`, xem `services_up` đã liệt kê service cần cho task này chưa.
 
-**Chưa đủ**: suy ra service ngoài cần thiết từ config dự án (docker-compose, .env.example,
-package.json scripts, Makefile, Procfile). Bash ping/check port từng cái. Hỏi user bật cái còn
-thiếu kèm lệnh gợi ý, đợi xác nhận "ok". Ghi service đã xác nhận vào `services_up` trong state.
-Migration nếu sprint đổi schema.
+**Chưa đủ**: lấy danh sách service + lệnh khởi động từ bảng "Service ngoài" trong
+`.sdlc/<version>/context.md` (chỉ khi thiếu ở đó mới đọc config dự án, rồi bổ sung ngược vào `context.md`).
+Bash ping/check port từng cái. Hỏi user bật cái còn thiếu kèm lệnh gợi ý, đợi xác nhận "ok".
+Ghi service đã xác nhận vào `services_up` trong state. Migration nếu sprint đổi schema.
 
 **Đã đủ**: bỏ qua, không hỏi lại.
 
 ## Implement
 
-Nạp context: đọc các `CLAUDE.md` liên quan (nguyên tắc 0) + `.sdlc/architecture.md` + design của sprint.
-Đọc chi tiết task đã chọn từ `tasks.md` (mô tả, AC/EC phục vụ, design ref, file dự kiến, tiêu chí test).
+Nạp context (nguyên tắc 0): đọc `.sdlc/<version>/context.md` — khớp fingerprint thì dùng luôn,
+lệch/thiếu thì chưng cất lại theo `templates/context.template.md`.
+Đọc chi tiết task đã chọn từ `tasks.md` (mô tả, AC/EC phục vụ, `Design ref`, file dự kiến, tiêu chí test).
+**KHÔNG đọc cả `design.md`** — chỉ các đoạn `Design ref` của task trỏ tới (`Read` theo `offset`/`limit`).
+`.sdlc/architecture.md` chỉ đọc khi task đụng thành phần nền tảng.
 
 Trước khi code: đặt task đã chọn = `doing` trong `tasks.md`; trong state đặt
 `current_phase: execute`, `current_task: <task-id>`, `execute: doing`.

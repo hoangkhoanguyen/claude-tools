@@ -19,7 +19,8 @@ argument-hint: <version-slug> [đường dẫn tài liệu business logic mới/
 
 1. **Đọc state hiện tại**: `.sdlc/versions.md` + `.sdlc/<version>/sprints.md` +
    `.sdlc/<version>/state.md` + các thư mục `.sdlc/<version>/<sprint>/` đã có.
-   Đọc CLAUDE.md liên quan (nguyên tắc 0).
+   Đọc `.sdlc/<version>/context.md` (nguyên tắc 0) — khớp fingerprint thì dùng luôn, lệch/thiếu thì
+   chưng cất lại theo `templates/context.template.md`.
 
 2. **Diff nghiệp vụ**: so tài liệu mới với sprint hiện có trong version này. Phân loại thay đổi:
    - Feature MỚI chưa có sprint → tạo sprint mới (status `planned`). **Slug phải tiếp nối số thứ tự
@@ -35,6 +36,10 @@ argument-hint: <version-slug> [đường dẫn tài liệu business logic mới/
    đã done/đang làm. Cập nhật dependency nếu thứ tự đổi.
 
 4. **KHÔNG đụng** vào `.sdlc/<version>/<sprint>/` của sprint đã done/đang làm, trừ khi user yêu cầu rõ.
+
+4a. **Nếu có sửa `design.md` của một sprint chưa done** → khoảng dòng trong `Design ref` của `tasks.md`
+   sprint đó đã lệch. `Grep -n '^#{2,3} ' design.md` lấy lại dòng heading và cập nhật `Design ref`.
+   Bỏ qua bước này sẽ khiến feature-builder phải Grep sửa lại từng lần — vẫn chạy đúng, nhưng tốn thêm.
 
 5. **Self-review** (skill self-review): mọi feature trong tài liệu mới đều có sprint phụ trách?
    Thứ tự tôn trọng dependency? Không sprint đang-làm nào bị phá state?
