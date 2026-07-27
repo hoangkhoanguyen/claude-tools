@@ -34,7 +34,7 @@ trong codebase. Không có → bỏ qua, UI bám convention codebase.
 
 - Chụp screenshot mỗi màn hình/state chính ở các breakpoint + dark/light.
 - Đối chiếu với Design AC (mã màu qua computed style, layout không tràn/overlap).
-- Nếu có baseline trước (`.sdlc/<sprint>/visual-baseline/`): so sánh phát hiện regression thị giác.
+- Nếu có baseline trước (`.sdlc/<version>/<sprint>/visual-baseline/`): so sánh phát hiện regression thị giác.
   Lần đầu chưa có baseline → tạo baseline sau khi đã xác nhận khớp Design AC.
 - Playwright đã cài sẵn trong môi trường; KHÔNG chạy `playwright install`.
 

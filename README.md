@@ -93,12 +93,12 @@ Sau đó các slash command `/sdlc:*` sẽ khả dụng trong mọi session.
   /sdlc:sprint-plan          ← đọc tài liệu, chia thành các sprint
           │                     bạn review danh sách sprint + chốt tech stack mỗi sprint
           ▼
-  /sdlc:run <sprint>         ← MỘT lệnh làm tất cả cho 1 sprint:
+  /sdlc:run <version> <sprint>         ← MỘT lệnh làm tất cả cho 1 sprint:
           │                     analyze → design → tasks → execute → test
           │                     (tự lưu state sau mỗi bước)
           ▼
   (hết limit / ngắt giữa chừng?)
-  /sdlc:run <sprint>         ← chạy lại y lệnh cũ → tự đọc state, làm tiếp
+  /sdlc:run <version> <sprint>         ← chạy lại y lệnh cũ → tự đọc state, làm tiếp
           │
           ▼
   Bạn manual test            ← chỉ verify nghiệp vụ, không gặp lỗi vặt
@@ -125,18 +125,21 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 
 ```
 .sdlc/
-├── sprints.md               ← danh sách sprint + tech stack + dependency + trạng thái
-├── architecture.md          ← kiến trúc nền tảng xuyên sprint (mọi sprint tham chiếu)
-├── design-system.md         ← design tokens xuyên sprint (khi có UI — từ DESIGN.md, bản ngoài, hoặc suy ra)
-├── state.md                 ← con trỏ resume (schema cố định — xem templates/state.template.md)
-└── <sprint-slug>/
-    ├── requirements.md      ← output analyze (gồm NFR + regression impact)
-    ├── design.md            ← output design hệ thống (bảng mapping RULE/EC/NFR)
-    ├── ui-design.input.md   ← (tùy chọn) bản design từ ngoài đưa vào — ui-designer ingest thành ui-design.md
-    ├── ui-design.md         ← output design giao diện (tokens, component spec, Design AC) — nếu có UI
-    ├── tasks.md             ← task list + status (todo/doing/done)
-    ├── test-report.md       ← kết quả test + việc cần bạn verify tay
-    └── visual-baseline/     ← screenshot baseline cho visual regression — nếu có UI
+├── versions.md              ← registry các version (v1, v2...) + trạng thái
+├── architecture.md          ← kiến trúc nền tảng xuyên version (mọi sprint tham chiếu)
+├── design-system.md         ← design tokens xuyên version (khi có UI — từ DESIGN.md, bản ngoài, hoặc suy ra)
+└── <version>/               ← vd v1, v2
+    ├── sprints.md           ← danh sách sprint + tech stack + dependency + trạng thái
+    ├── state.md             ← con trỏ resume (schema cố định — xem templates/state.template.md)
+    └── <sprint-slug>/
+        ├── requirements.md      ← output analyze (gồm NFR + regression impact)
+        ├── design.md            ← output design hệ thống (bảng mapping RULE/EC/NFR)
+        ├── ui-design.input.md   ← (tùy chọn) bản design từ ngoài đưa vào — ui-designer ingest thành ui-design.md
+        ├── ui-design.md         ← output design giao diện (tokens, component spec, Design AC) — nếu có UI
+        ├── tasks.md             ← task list + status (todo/doing/done)
+        ├── commands.md          ← lệnh chạy từng task / chạy đến hết (sinh ở phase Tasks)
+        ├── test-report.md       ← kết quả test + việc cần bạn verify tay
+        └── visual-baseline/     ← screenshot baseline cho visual regression — nếu có UI
 ```
 
 > Định dạng file (md/json/...) do agent chọn cho phù hợp — không cố định. Riêng `state.md` theo schema cố
@@ -157,7 +160,7 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 | Command | `replan` | Cập nhật sprint khi business logic đổi, giữ state |
 | Agent | `product-analyst` | Requirements → user stories, AC, business rules, edge cases, NFR, regression |
 | Agent | `architect` | System design: API, DB, architecture, UI flow, NFR, regression-safe |
-| Agent | `feature-builder` | Implement từng task (+ git commit mỗi task) |
+| Agent | `feature-builder` | Implement từng task rồi báo kết quả (state + commit do command ghi) |
 | Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test |
 | Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao |
 | Agent | `ui-designer` | Nguồn thiết kế (bản ngoài / DESIGN.md / app cũ / hỏi user) → tokens, component spec, Design AC (khi có UI) |
@@ -180,7 +183,7 @@ xác định nguồn thiết kế **theo từng màn hình** (bên ngoài cấp 
 
 | Tình huống | ui-designer làm gì |
 |---|---|
-| Có bản design ngoài (`.sdlc/<sprint>/ui-design.input.md` — từ Claude Design / designer) | **Ingest + chuẩn hóa** thành `ui-design.md` (thêm Design AC/state/token nếu bản ngoài thiếu). Nguồn `external` |
+| Có bản design ngoài (`.sdlc/<version>/<sprint>/ui-design.input.md` — từ Claude Design / designer) | **Ingest + chuẩn hóa** thành `ui-design.md` (thêm Design AC/state/token nếu bản ngoài thiếu). Nguồn `external` |
 | Bản ngoài chỉ cấp một phần màn | Màn có → ingest; màn thiếu → **tự sinh** bám tokens của phần external. Nguồn `mixed` |
 | Có `DESIGN.md` / design system | Tự sinh spec từ đó. Nguồn `internal` |
 | **Dự án CŨ** (đã có UI chạy được), không DESIGN.md | Bám phong cách app hiện có — không hỏi, không đổi style |

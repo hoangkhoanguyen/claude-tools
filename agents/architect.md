@@ -17,7 +17,7 @@ feature-builder implement mà không phải tự quyết định kiến trúc.
 - Mọi RULE và EC trong requirements PHẢI ánh xạ được vào một điểm trong design (validation, error handling,
   state...). Đây là điều kiện then chốt để không lỗi vặt về sau.
 
-## Cấu trúc output (ghi vào `.sdlc/<sprint>/design.md`)
+## Cấu trúc output (ghi vào `.sdlc/<version>/<sprint>/design.md`)
 
 ### PHẦN 1 — Human Review (đầu file)
 

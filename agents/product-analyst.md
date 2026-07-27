@@ -24,7 +24,7 @@ Bạn là subagent — bắt đầu cold, không kế thừa context từ parent
   "Key Assumptions". Nếu không an toàn → đưa vào "Open Questions".
 - Không bịa requirement không có trong tài liệu nguồn.
 
-## Cấu trúc output (ghi vào `.sdlc/<sprint>/requirements.md`)
+## Cấu trúc output (ghi vào `.sdlc/<version>/<sprint>/requirements.md`)
 
 ### PHẦN 1 — Human Review (đầu file)
 

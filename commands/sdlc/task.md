@@ -48,10 +48,13 @@ Spawn `feature-builder`:
 - Implement theo đúng phạm vi task — không làm thêm task khác.
 - Chạy test cục bộ đến khi pass.
 - Self-review (skill `self-review`): đủ EC? không còn TODO/hardcode? test xanh thật?
+- Báo kết quả về: file đã đụng, test đã chạy, commit message đề xuất.
 
-Sau khi self-review pass: đặt task đã chọn = `done` trong `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite.
-Nếu không hoàn thành được (thiếu điều kiện, lỗi ngoài phạm vi) → đặt `blocked` kèm lý do, không đặt `done`.
-Cập nhật `.sdlc/<version>/state.md` (`current_task`, `updated_at`; nếu MỌI task đã `done` thì `execute: done`).
+Nhận báo cáo xong, **bạn (lệnh này) ghi state** — subagent không tự ghi:
+- `git commit` task trên sprint branch (không push/tạo PR trừ khi user yêu cầu).
+- Đặt task = `done` trong `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite. Nếu không hoàn thành được
+  (thiếu điều kiện, lỗi ngoài phạm vi) → đặt `blocked` kèm lý do, KHÔNG đặt `done`.
+- Cập nhật `.sdlc/<version>/state.md` (`current_task`, `updated_at`; nếu MỌI task đã `done` thì `execute: done`).
 
 ## Kết thúc
 

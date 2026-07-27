@@ -25,7 +25,7 @@ dialog, empty/error/loading state). Đây là danh sách phải phủ 100% — b
 Requirements có màn hình/UI không?
 ├─ KHÔNG → sprint không có UI. Ghi design_ui: n/a, ui_design_source: none. BỎ nhánh này.
 └─ CÓ → cần ui-design.md phủ đủ danh sách màn. Nguồn xét THEO TỪNG MÀN:
-   ├─ Màn CÓ trong bản ngoài .sdlc/<sprint>/ui-design.input.md → EXTERNAL: ingest + chuẩn hóa.
+   ├─ Màn CÓ trong bản ngoài .sdlc/<version>/<sprint>/ui-design.input.md → EXTERNAL: ingest + chuẩn hóa.
    └─ Màn KHÔNG có trong bản ngoài (hoặc không có bản ngoài nào) → tự sinh, theo thứ tự ưu tiên
       nguồn thẩm mỹ: (1) tokens/phong cách của phần external đã ingest (đồng bộ thị giác);
       (2) DESIGN.md / .sdlc/design-system.md; (3) phong cách app HIỆN CÓ nếu là dự án CŨ;
@@ -36,7 +36,7 @@ Requirements có màn hình/UI không?
   từng màn. Ghi `ui_design_source` = `external` (100% từ bản ngoài) / `mixed` (một phần) / `internal` (tự sinh
   toàn bộ). Trong `ui-design.md`, đánh dấu mỗi màn `[external]` hay `[generated]` để reviewer/user biết phần
   nào cần đối chiếu mockup gốc.
-- CHỈ dừng chờ (`waiting-external` + blocker trỏ `.sdlc/<sprint>/ui-design.input.md`) khi user NÓI RÕ sẽ cấp
+- CHỈ dừng chờ (`waiting-external` + blocker trỏ `.sdlc/<version>/<sprint>/ui-design.input.md`) khi user NÓI RÕ sẽ cấp
   bản design ngoài mà file chưa về. Nếu không ai hứa cấp → tự sinh theo thứ tự ưu tiên trên, không block.
 
 ### Khi phải tự sinh mà KHÔNG có DESIGN.md — phân biệt DỰ ÁN CŨ vs MỚI (quan trọng)
@@ -69,7 +69,7 @@ bản ngoài trở thành nguồn ưu tiên số 1 khi tự sinh các màn còn 
 
 ## Đầu vào (bất biến — KHÔNG tự chế thẩm mỹ)
 
-- **[EXTERNAL]** `.sdlc/<sprint>/ui-design.input.md`: bản design từ ngoài — nguồn thẩm mỹ chính khi ở mode này.
+- **[EXTERNAL]** `.sdlc/<version>/<sprint>/ui-design.input.md`: bản design từ ngoài — nguồn thẩm mỹ chính khi ở mode này.
 - **[INTERNAL]** `DESIGN.md` của dự án (hoặc file design system tương đương): aesthetic direction, tone, brand.
 - `.sdlc/design-system.md` (nếu đã có): design tokens chuẩn hóa xuyên sprint.
 - `requirements.md` của sprint: màn hình/luồng/UI state cần cho sprint.
@@ -102,7 +102,7 @@ Phát hiện & ưu tiên skill design riêng của dự án nếu có.
 
 ## Output
 
-Ghi `.sdlc/<sprint>/ui-design.md` (2 tầng: Human Review gồm ảnh chụp ý tưởng/mô tả tổng thể + Tech Decisions;
+Ghi `.sdlc/<version>/<sprint>/ui-design.md` (2 tầng: Human Review gồm ảnh chụp ý tưởng/mô tả tổng thể + Tech Decisions;
 Agent Reference gồm tokens dùng, component spec, Design AC, reuse map). Cập nhật `.sdlc/design-system.md`.
 
 ## Self-review trước khi chốt (BẮT BUỘC)

@@ -29,7 +29,7 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
    sau "Agent Reference" (chi tiết, cho downstream agent đọc). User thường chỉ đọc phần đầu.
    Vì vậy phần sau PHẢI đủ tường minh để agent kế tiếp không phải đoán mò.
 
-4. **State-driven & resume-được.** Trước khi làm bất cứ gì trong `/sdlc:run`, ĐỌC `.sdlc/state.md`
+4. **State-driven & resume-được.** Trước khi làm bất cứ gì trong `/sdlc:run`, ĐỌC `.sdlc/<version>/state.md`
    để biết đang ở đâu. Sau MỖI đơn vị công việc (mỗi task, mỗi phase), CẬP NHẬT state ngay.
    Nếu bị ngắt, lần chạy sau phải tiếp tục đúng chỗ — không làm lại việc đã done.
 
@@ -64,7 +64,7 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 
 ## Tận dụng built-in của Claude (bắt buộc ưu tiên)
 
-- **TodoWrite**: dùng để track task trong session khi execute; đồng bộ ra `.sdlc/<sprint>/tasks.md`
+- **TodoWrite**: dùng để track task trong session khi execute; đồng bộ ra `.sdlc/<version>/<sprint>/tasks.md`
   để persist qua session.
 - **Subagents (Agent tool)**: mỗi phase nên spawn agent chuyên biệt tương ứng
   (product-analyst, architect, feature-builder, test-strategist, qa-guard); `ui-designer` cho nhánh giao
@@ -76,7 +76,7 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 - **Bash**: ping port để phát hiện service đang chạy; chạy test runner; smoke test API bằng curl.
 - **Playwright** (đã cài sẵn trong môi trường): tự động hóa test UI. KHÔNG chạy `playwright install`.
 - **Skills**: load skill phù hợp theo phase (đã kèm trong plugin này).
-- **Hooks**: `SessionStart` hook in tiến trình SDLC đang dở (`.sdlc/state.md`) để hỗ trợ resume (xem `hooks/`).
+- **Hooks**: `SessionStart` hook in tiến trình SDLC đang dở (`.sdlc/<version>/state.md`) để hỗ trợ resume (xem `hooks/`).
 
 ## Pre-flight trước khi execute (RẤT QUAN TRỌNG)
 
@@ -87,7 +87,7 @@ Trước khi viết dòng code đầu tiên trong execute:
 3. Tự `ping`/check port xem cái nào đã chạy.
 4. CHỈ hỏi user bật những cái còn thiếu, kèm lệnh gợi ý (lấy từ config).
 5. Đợi user xác nhận ("ok"/"xong") RỒI mới tiếp tục. Không tự giả định service đã sẵn sàng. Ghi service
-   đã xác nhận vào `.sdlc/state.md`.
+   đã xác nhận vào `.sdlc/<version>/state.md`.
 6. **DB migration/seed**: nếu sprint đổi schema (model/migration mới), xác định lệnh migrate của dự án (từ
    config: `package.json`, `Makefile`, framework CLI) và CHẠY nó trước khi test — schema chưa migrate là
    nguồn "lỗi vặt" kinh điển (API 500) khi manual test. Ghi migration đã chạy vào state.

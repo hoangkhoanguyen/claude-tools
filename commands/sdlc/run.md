@@ -117,9 +117,11 @@ Chỉ tiếp tục Phase 4 khi user xác nhận. Ghi `tasks_approved: true` vào
 - **Migration/seed**: nếu sprint đổi schema → chạy lệnh migrate trước khi test. Ghi vào state.
 
 **4b. Implement:**
-Spawn `feature-builder` chạy từng task (song song nếu độc lập). Mỗi task: implement → test cục bộ →
-pass → commit task trên sprint branch → cập nhật `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite +
-`.sdlc/<version>/state.md` → task tiếp. Self-review sau mỗi task.
+Spawn `feature-builder` — **mỗi task một subagent**; task độc lập spawn song song, task phụ thuộc đợi
+task trước `done`. Subagent chỉ implement + test cục bộ + self-review rồi báo kết quả về.
+**Quyền ghi thuộc về bạn**, làm TUẦN TỰ theo thứ tự task hoàn thành: commit task trên sprint branch →
+cập nhật `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite + `.sdlc/<version>/state.md`.
+Không để hai subagent cùng ghi state hay cùng chạm git index.
 
 ### Phase 5 — Test
 Spawn `test-strategist` (skill `test-strategy`) → viết + chạy test. Nếu có UI design: visual verification

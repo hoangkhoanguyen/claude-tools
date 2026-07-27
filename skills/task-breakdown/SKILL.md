@@ -25,7 +25,7 @@ nhất một task phụ trách. Kèm bảng **AC/EC/NFR/DAC → task** để ch�
 ## Trạng thái task (để resume)
 
 Mỗi task có status: `todo` / `doing` / `done` (+ `blocked` kèm lý do nếu có). Ghi vào
-`.sdlc/<sprint>/tasks.md`. Khi execute, đồng bộ với TodoWrite trong session; cập nhật file sau mỗi task
+`.sdlc/<version>/<sprint>/tasks.md`. Khi execute, đồng bộ với TodoWrite trong session; cập nhật file sau mỗi task
 để lần chạy sau biết chỗ tiếp tục.
 
 ## Mẫu một task

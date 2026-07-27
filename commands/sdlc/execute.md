@@ -30,10 +30,17 @@ Resume: bỏ qua chặng/task đã `done`, tiếp tục đúng chỗ đang dở.
 
 ## Chặng 1 — Implement
 
-Spawn subagent `feature-builder`, chạy task tuần tự (song song nếu độc lập). Mỗi task:
-implement → test cục bộ → pass → commit task trên sprint branch → cập nhật
-`.sdlc/<version>/<sprint>/tasks.md` + TodoWrite + `.sdlc/<version>/state.md` → task tiếp.
-Self-review sau mỗi task (skill `self-review`). Bỏ qua task đã `done`.
+Spawn subagent `feature-builder` — **mỗi task một subagent**; task độc lập thì spawn SONG SONG,
+task có phụ thuộc thì đợi task trước `done`. Bỏ qua task đã `done`.
+
+Subagent chỉ implement + test cục bộ + self-review rồi báo kết quả về. **Bạn (lệnh này) giữ quyền ghi**,
+làm TUẦN TỰ theo thứ tự task hoàn thành — kể cả khi implement chạy song song:
+1. Nhận báo cáo (kết quả, file đã đụng, test đã chạy, commit message đề xuất).
+2. `git commit` task đó trên sprint branch (mỗi task một commit). KHÔNG push/tạo PR trừ khi user yêu cầu.
+3. Cập nhật `.sdlc/<version>/<sprint>/tasks.md` (`done`, hoặc `blocked` + lý do) + TodoWrite +
+   `.sdlc/<version>/state.md`.
+
+Không để hai subagent cùng ghi state hay cùng chạm git index — đó là nguồn hỏng state khi chạy song song.
 
 Chỉ sang Chặng 2 khi MỌI task đã `done`. Còn task `blocked` → dừng, báo blocker, không sang Test.
 

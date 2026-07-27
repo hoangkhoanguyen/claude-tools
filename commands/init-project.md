@@ -1,3 +1,8 @@
+---
+description: Nhận file tech stack đã soạn sẵn → init các app còn thiếu trong monorepo → viết CLAUDE.md cho root và từng app.
+argument-hint: [đường dẫn file tech stack]
+---
+
 # /init-project
 
 Nhận file tech stack đã soạn sẵn → init các app còn thiếu trong monorepo → viết CLAUDE.md cho root và từng app.
