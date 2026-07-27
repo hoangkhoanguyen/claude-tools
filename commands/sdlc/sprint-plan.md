@@ -1,61 +1,64 @@
 ---
-description: Đọc tài liệu business logic của dự án và chia thành các sprint. Người dùng review danh sách sprint và chốt tech stack mỗi sprint. Chạy MỘT LẦN ở đầu dự án.
-argument-hint: [đường dẫn tới tài liệu business logic]
+description: Đọc tài liệu business logic và chia thành các sprint cho một version mới. Chạy lần đầu với v1; dùng lại khi bắt đầu đợt phát triển mới (v2, v3,...).
+argument-hint: <version-slug> [đường dẫn tài liệu business logic]
 ---
 
 # /sdlc:sprint-plan
 
-Chia dự án thành các sprint từ tài liệu business logic. Đây là bước đầu tiên, chạy trước mọi thứ.
+Chia sprint từ tài liệu business logic cho **một version cụ thể**.
 
 ## Đầu vào
 
-Tài liệu business logic: `$1` (nếu trống, hỏi user chỉ đường dẫn / dán nội dung).
-Plugin KHÔNG tự sinh tài liệu này — nó là đầu vào do user cung cấp.
+- `$1`: version slug — vd `v1`, `v2`, `phase-2`. Nếu trống, tự xác định:
+  - Chưa có `.sdlc/versions.md` → đây là lần đầu, dùng `v1`.
+  - Đã có → đọc version tiếp theo (v cuối + 1) và xác nhận với user.
+- `$2`: tài liệu business logic (file / URL / paste). Nếu trống, hỏi user.
+
+Plugin KHÔNG tự sinh tài liệu business logic — đây là đầu vào do user cung cấp.
 
 ## Các bước
 
 1. **Đọc toàn bộ** tài liệu business logic. Nếu có codebase sẵn, Grep/Glob để hiểu hiện trạng.
+   Đọc `.sdlc/architecture.md` (nếu đã có từ version trước) để nắm nền tảng kế thừa.
 
 2. **Nhóm feature thành sprint.** Mỗi sprint là một khối feature khép kín, có thể deliver độc lập.
    Cân nhắc phụ thuộc giữa các feature để xếp thứ tự sprint hợp lý (nền tảng trước, tính năng phụ thuộc sau).
 
-3. **Ghi `.sdlc/sprints.md`** với, cho mỗi sprint:
+3. **Ghi `.sdlc/<version>/sprints.md`** với, cho mỗi sprint:
    - Slug ngắn, **bắt buộc theo pattern `sprint-<số>-<tên>`** (vd `sprint-1-auth`, `sprint-2-orders`).
-     Số thứ tự tăng dần liên tục — `/sdlc:replan` sẽ tiếp nối từ số cuối này khi thêm sprint mới.
+     Số thứ tự bắt đầu lại từ 1 trong mỗi version — namespace version đã tách biệt, không lo trùng.
    - Tên & mô tả 1-2 dòng (deliver gì)
    - Feature chính nằm trong sprint
-   - Phụ thuộc vào sprint nào
+   - Phụ thuộc vào sprint nào (trong version này hoặc version trước)
    - Tech stack đề xuất (để user chốt) — nếu dự án đã có stack thì kế thừa
    - Trạng thái: `planned`
 
-4. **Khởi tạo `.sdlc/state.md`** theo schema `templates/state.template.md`: chưa bắt đầu sprint nào.
+4. **Khởi tạo `.sdlc/<version>/state.md`** theo schema `templates/state.template.md`:
+   đặt `version: <version-slug>`, chưa bắt đầu sprint nào.
 
-4a. **Thiết lập gitignore**: thêm vào `.gitignore` của dự án (tạo nếu chưa có) dòng:
-    ```
-    .sdlc/*/visual-baseline/
-    ```
-    Toàn bộ `.sdlc/` còn lại được commit — đây là tài liệu sống của dự án, cả team theo dõi qua git.
+5. **Cập nhật `.sdlc/versions.md`** (tạo nếu chưa có): thêm dòng version mới với trạng thái `planned`.
+   File này là registry tất cả các version, giúp `/sdlc:status` và `/sdlc:run` xác định version active.
 
-4b. **Khởi tạo `.sdlc/architecture.md`** (foundational, xuyên sprint): ghi các quyết định nền tảng dùng
-   chung nhiều sprint — stack tổng thể, cấu trúc thư mục, cơ chế auth, mô hình dữ liệu lõi, convention chung.
-   Với dự án có sẵn: mô tả kiến trúc HIỆN CÓ (đọc từ codebase) để các sprint sau bám theo, không phá vỡ.
-   File này là nguồn tham chiếu cho `architect` ở mọi sprint; architect cập nhật nó khi thêm thành phần nền tảng mới.
+6. **Thiết lập gitignore** (chỉ lần đầu — khi chưa có `.sdlc/` hoặc chưa có dòng này):
+   thêm vào `.gitignore` của dự án:
+   ```
+   .sdlc/*/*/visual-baseline/
+   ```
+   Toàn bộ `.sdlc/` còn lại được commit — đây là tài liệu sống của dự án, cả team theo dõi qua git.
 
-4c. **Phát hiện định hướng thiết kế thị giác.** Xác định dự án CŨ (đã có UI chạy được) hay MỚI, và có nguồn
-   thẩm mỹ nào không (`DESIGN.md` / design system / thư viện UI / style hiện có). Ghi kết luận vào sprints.md
-   để `ui-designer` mọi sprint bám theo:
-   - **Có DESIGN.md / design system** → khởi tạo `.sdlc/design-system.md` (xuyên sprint), trích design tokens
-     (color, typography, spacing, radius, shadow, breakpoints, motion). Nguồn tham chiếu cho ui-designer.
-   - **Dự án CŨ, không DESIGN.md** → ghi chú: UI các sprint bám phong cách app hiện có (ui-designer suy tokens
-     từ code). KHÔNG hỏi phong cách.
-   - **Dự án MỚI, chưa có nguồn thẩm mỹ** → KHÔNG bỏ qua UI. Ghi chú: sprint đầu tiên có màn hình sẽ hỏi user
-     định hướng phong cách rồi sinh `DESIGN.md` (trừ khi sprint đó nhận bản design từ ngoài). Có thể hỏi ngay
-     ở đây 1 lần cho cả dự án nếu tiện, để các sprint sau khỏi bị ngắt.
-   Lưu ý: bản design cũng có thể được đưa từ NGOÀI vào ở phase design từng sprint (`ui-design.input.md`) — không
-   bắt buộc phải có DESIGN.md từ đầu.
+7. **Khởi tạo/cập nhật `.sdlc/architecture.md`** (xuyên version, ở gốc `.sdlc/`):
+   - Lần đầu (v1): ghi quyết định nền tảng — stack tổng thể, cấu trúc thư mục, cơ chế auth,
+     mô hình dữ liệu lõi, convention chung. Với dự án có sẵn: mô tả kiến trúc HIỆN CÓ.
+   - Version sau: chỉ bổ sung thay đổi nền tảng mới, không xóa lịch sử version trước.
+   File này là nguồn tham chiếu cho `architect` ở mọi sprint mọi version.
 
-5. **Trình bày danh sách sprint cho user** ở mức cao (không đi vào user story chi tiết — đó là việc của
-   phase analyze sau này). Mời user: reorder, gộp/tách sprint, chốt tech stack.
+8. **Phát hiện định hướng thiết kế thị giác.** Xác định dự án CŨ hay MỚI, nguồn thẩm mỹ sẵn có:
+   - **Có DESIGN.md / design system** → khởi tạo/cập nhật `.sdlc/design-system.md` (xuyên version),
+     trích design tokens. Nguồn tham chiếu cho ui-designer.
+   - **Dự án CŨ, không DESIGN.md** → ghi chú: UI bám phong cách app hiện có. KHÔNG hỏi phong cách.
+   - **Dự án MỚI, chưa có nguồn thẩm mỹ** → sprint đầu tiên có màn hình sẽ hỏi user 1 lần rồi sinh `DESIGN.md`.
+
+9. **Trình bày danh sách sprint cho user** ở mức cao. Mời user: reorder, gộp/tách, chốt tech stack.
 
 ## Self-review trước khi trình bày (dùng skill self-review)
 
@@ -65,4 +68,5 @@ Plugin KHÔNG tự sinh tài liệu này — nó là đầu vào do user cung c�
 
 ## Sau khi user chốt
 
-Cập nhật `.sdlc/sprints.md` theo chỉnh sửa của user. Hướng dẫn: chạy `/sdlc:run <sprint-slug>` để bắt đầu.
+Cập nhật `.sdlc/<version>/sprints.md` theo chỉnh sửa của user.
+Hướng dẫn: chạy `/sdlc:run <version> <sprint-slug>` để bắt đầu.
