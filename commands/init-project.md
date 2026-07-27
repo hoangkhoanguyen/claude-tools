@@ -64,6 +64,17 @@ Sau khi init:
 - Cài thêm dependencies chính được chỉ định trong tech stack
 - Thêm workspace reference (`"@repo/[name]": "workspace:*"`) vào app nào dùng shared package
 
+### GIỚI HẠN — KHÔNG được làm
+
+Bước 1 CHỈ scaffold project trống bằng CLI. KHÔNG làm bất kỳ điều nào sau:
+- Tạo/sửa page, component, provider, layout, hook, service, controller, hoặc bất kỳ file business logic nào
+- Viết App.tsx/App.vue custom, wiring providers, đăng ký resource/route
+- Chạy typecheck, build, hoặc verify build
+- Boot server/backend, curl endpoint, probe health check
+- Xoá/thay thế file mặc định của CLI (giữ nguyên scaffold gốc)
+
+Output bước 1 = project chạy được `pnpm dev` với **trang mặc định của framework** (Hello World). Mọi customization thuộc về `/sdlc:run` phase execute.
+
 ### Báo cáo bước 1
 ```
 ✓ Init: apps/web (Next.js 14)
