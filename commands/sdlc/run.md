@@ -89,8 +89,8 @@ Chỉ tiếp tục Phase 3 khi user xác nhận. Ghi `design_approved: true` và
 Dùng skill `task-breakdown` → ghi `.sdlc/<version>/<sprint>/tasks.md` (status todo). Đồng bộ TodoWrite.
 Cross-check: mọi AC/EC có task phụ trách chưa. (Reviewer optional ở phase này.)
 Sinh `.sdlc/<version>/<sprint>/commands.md` (giống `/sdlc:tasks`): liệt kê lệnh chạy từng task
-`/sdlc:task <version> <sprint> <task-id>` và lệnh chạy cả sprint `/sdlc:execute <version> <sprint>` —
-để sau này user chạy/rà lại thủ công từng task.
+`/sdlc:task <version> <sprint> <task-id>` và lệnh thực thi đến hết `/sdlc:execute <version> <sprint>`
+(implement + test + qa) — để sau này user chạy/rà lại thủ công.
 
 **→ Human approval gate (BẮT BUỘC)**: Trình bày tóm tắt `tasks.md` cho user, sau đó **DỪNG và hỏi
 user có approve không** trước khi chạy Execute. Ví dụ:
@@ -99,7 +99,8 @@ user có approve không** trước khi chạy Execute. Ví dụ:
 > - [số task, danh sách ngắn từng task kèm AC phục vụ]
 > - [task nào chạy song song, thứ tự phụ thuộc đáng chú ý]
 >
-> Reply **"ok"** hoặc **"execute"** để bắt đầu thực thi, hoặc `/sdlc:task` để chạy thủ công từng task.
+> Reply **"ok"** để `/sdlc:run` chạy tiếp đến hết (implement + test + qa). Hoặc dừng đây và tự chạy:
+> `/sdlc:execute` (thực thi đến hết) / `/sdlc:task` (làm thủ công từng task).
 
 Chỉ tiếp tục Phase 4 khi user xác nhận. Ghi `tasks_approved: true` vào `.sdlc/<version>/state.md`.
 

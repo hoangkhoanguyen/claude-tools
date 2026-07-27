@@ -37,7 +37,7 @@ theo mẫu sau (điền đúng version, sprint, task IDs và mô tả ngắn t�
 /sdlc:task <version> <sprint> TASK-02   # <mô tả ngắn task 02>
 ...
 
-## Chạy toàn bộ sprint (tuần tự, tự động)
+## Chạy phần thực thi đến hết (implement + test + qa + bàn giao)
 /sdlc:execute <version> <sprint>
 ```
 

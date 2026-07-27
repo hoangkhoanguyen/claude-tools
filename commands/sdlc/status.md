@@ -11,6 +11,7 @@ Hiển thị tiến độ hiện tại của dự án. Không thay đổi gì, c
 1. Đọc `.sdlc/versions.md` → danh sách versions và trạng thái từng version.
 2. Với mỗi version, đọc `.sdlc/<version>/sprints.md` → trạng thái từng sprint.
 3. Đọc `.sdlc/<version>/state.md` của version đang active → sprint hiện tại, phase đang ở, task đang dở.
+   Kiểm tra approval gate: phase `done` mà `*_approved: pending` → đang chờ user duyệt (hiện rõ ở phần Resume).
 4. Với sprint đang làm, đọc `.sdlc/<version>/<sprint>/tasks.md` → đếm task todo/doing/done.
 
 ## Trình bày
@@ -32,6 +33,14 @@ Version active: v2
 ▶ Resume:
   /sdlc:run v2 sprint-1-upgrade
   └─ Sẽ tiếp tục từ: execute › TASK-03
+```
+
+Nếu đang chờ approve ở một gate (vd tasks xong nhưng `tasks_approved: pending`), hiện rõ:
+
+```
+▶ Resume:
+  /sdlc:run v2 sprint-1-upgrade
+  └─ ⏸ Chờ bạn approve task list trước khi Execute (reply "ok" khi chạy /sdlc:run)
 ```
 
 Nếu version đang làm đã xong hết sprint, gợi ý:

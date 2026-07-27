@@ -5,7 +5,8 @@ argument-hint: [version-slug] [sprint-slug] [task-id]
 
 # /sdlc:task
 
-Thực thi thủ công MỘT task trong sprint. (Muốn chạy tuần tự cả sprint → dùng `/sdlc:execute`.)
+Thực thi thủ công MỘT task trong sprint. (Muốn thực thi đến hết cả sprint — implement + test + qa —
+→ dùng `/sdlc:execute`.)
 
 ## Xác định task cần chạy
 

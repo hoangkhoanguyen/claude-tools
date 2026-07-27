@@ -108,9 +108,11 @@ Ngoài `run`, mỗi phase cũng có command riêng nếu bạn muốn chạy t�
 `/sdlc:analyze`, `/sdlc:design`, `/sdlc:tasks`, `/sdlc:execute`, `/sdlc:test`.
 
 `/sdlc:tasks` chỉ tạo tài liệu (chia task, không code) và sinh `commands.md` liệt kê lệnh chạy.
-Muốn thực thi thủ công một task: gõ `/sdlc:task` (không tham số) để chọn task chưa done từ list,
-hoặc chỉ đích danh `/sdlc:task <version> <sprint> <task-id>`. Muốn chạy tuần tự cả sprint:
-`/sdlc:execute <version> <sprint>`.
+Từ đó có 2 cách thực thi:
+- **Từng task thủ công**: gõ `/sdlc:task` (không tham số) để chọn task chưa done từ list, hoặc đích
+  danh `/sdlc:task <version> <sprint> <task-id>`.
+- **Đến hết**: `/sdlc:execute <version> <sprint>` — implement toàn bộ tasks rồi chạy luôn test + QA
+  gate + bàn giao.
 
 `/sdlc:status` để xem tiến độ bất cứ lúc nào. `/sdlc:replan` để cập nhật sprint khi business logic đổi
 giữa chừng mà không mất state.
@@ -148,7 +150,9 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 |------|-----|---------|
 | Command | `sprint-plan` | Chia sprint + tạo architecture.md nền tảng |
 | Command | `run` | Chạy trọn 1 sprint, resume được |
-| Command | `analyze` / `design` / `tasks` / `execute` / `test` | Chạy từng phase riêng lẻ |
+| Command | `analyze` / `design` / `tasks` / `test` | Chạy từng phase riêng lẻ (`tasks` chỉ tạo tài liệu) |
+| Command | `task` | Thực thi lẻ 1 task (không tham số → chọn từ list) |
+| Command | `execute` | Thực thi đến hết: implement toàn bộ tasks + test + QA + bàn giao |
 | Command | `status` | Xem tiến độ |
 | Command | `replan` | Cập nhật sprint khi business logic đổi, giữ state |
 | Agent | `product-analyst` | Requirements → user stories, AC, business rules, edge cases, NFR, regression |

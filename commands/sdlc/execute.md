@@ -1,14 +1,18 @@
 ---
-description: Chạy riêng phase execute cho một sprint — pre-flight yêu cầu bật service ngoài, rồi implement từng task, test cục bộ, cập nhật status để resume.
+description: Chạy phần thực thi ĐẾN HẾT cho một sprint — pre-flight, implement toàn bộ tasks, rồi Test + QA gate + bàn giao. Dùng sau khi đã có tasks (vd sau khi /sdlc:run dừng ở gate Tasks).
 argument-hint: <version-slug> <sprint-slug>
 ---
 
 # /sdlc:execute
 
-Chạy riêng phase thực thi cho sprint `$2` thuộc version `$1`
+Chạy phần thực thi ĐẾN HẾT cho sprint `$2` thuộc version `$1`
 (nếu trống, lấy từ `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
 
+Gồm 3 chặng: **Implement → Test → QA gate + bàn giao**. Đây là "execute đến hết" — chạy trọn từ
+tasks đã lên cho tới lúc bàn giao sạch. Muốn chạy lẻ đúng 1 task → dùng `/sdlc:task`.
+
 Yêu cầu `.sdlc/<version>/<sprint>/tasks.md` đã tồn tại (chạy `/sdlc:tasks` trước nếu chưa).
+Resume: bỏ qua chặng/task đã `done`, tiếp tục đúng chỗ đang dở.
 
 ## Pre-flight (BẮT BUỘC trước khi code)
 
@@ -24,10 +28,32 @@ Yêu cầu `.sdlc/<version>/<sprint>/tasks.md` đã tồn tại (chạy `/sdlc:t
 5. **Migration**: nếu sprint đổi schema → xác định lệnh migrate của dự án và chạy trước khi test.
    Ghi vào state.
 
-## Implement
+## Chặng 1 — Implement
 
 Spawn subagent `feature-builder`, chạy task tuần tự (song song nếu độc lập). Mỗi task:
-implement → test cục bộ → pass → cập nhật `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite +
-`.sdlc/<version>/state.md` → task tiếp. Self-review sau mỗi task (skill `self-review`).
+implement → test cục bộ → pass → commit task trên sprint branch → cập nhật
+`.sdlc/<version>/<sprint>/tasks.md` + TodoWrite + `.sdlc/<version>/state.md` → task tiếp.
+Self-review sau mỗi task (skill `self-review`). Bỏ qua task đã `done`.
 
-Resume: bỏ qua task đã `done`, tiếp tục task đang dở. Kết thúc: tóm tắt task done / còn lại / blocker.
+Chỉ sang Chặng 2 khi MỌI task đã `done`. Còn task `blocked` → dừng, báo blocker, không sang Test.
+
+## Chặng 2 — Test
+
+Spawn subagent `test-strategist` (skill `test-strategy`). Tự phát hiện stack & công cụ, chọn cách test
+theo loại feature (unit / API / Playwright UI / 3rd party sandbox / mock webhook). Nếu có UI design →
+visual verification (skill `design-fidelity`): screenshot đối chiếu Design AC + baseline trong
+`.sdlc/<version>/<sprint>/visual-baseline/`. Viết test và CHẠY thật đến khi xanh.
+Mọi AC/EC/NFR/DAC phải có test hoặc được liệt kê verify-tay. Ghi `.sdlc/<version>/<sprint>/test-report.md`.
+Nếu cần app/service để test → yêu cầu user bật (như pre-flight), đợi xác nhận.
+
+## Chặng 3 — QA gate + bàn giao
+
+Spawn subagent `qa-guard`: full test + happy path từng story + regression happy path feature cũ liên quan +
+NFR check + design fidelity (nếu có UI) + quét hardcode/TODO/unhandled error. Chỉ khi sạch mới bàn giao:
+
+- Cập nhật sprint = `done` trong `.sdlc/<version>/sprints.md`; nếu mọi sprint trong version đã `done` →
+  cập nhật `.sdlc/versions.md` version = `done`.
+- Trình bày Pre-manual Report: đã tự động cover / cần user verify tay / edge case chưa define.
+- Nhắc user: sprint tiếp theo `/sdlc:run <version> <sprint-slug>`; version mới `/sdlc:sprint-plan <version>`.
+
+Kết thúc mỗi chặng: chạy skill `self-review`, cập nhật `.sdlc/<version>/state.md`.
