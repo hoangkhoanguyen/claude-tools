@@ -108,7 +108,8 @@ Ngoài `run`, mỗi phase cũng có command riêng nếu bạn muốn chạy t�
 `/sdlc:analyze`, `/sdlc:design`, `/sdlc:tasks`, `/sdlc:execute`, `/sdlc:test`.
 
 `/sdlc:tasks` chỉ tạo tài liệu (chia task, không code) và sinh `commands.md` liệt kê lệnh chạy.
-Muốn thực thi thủ công một task: `/sdlc:task <version> <sprint> <task-id>`; chạy tuần tự cả sprint:
+Muốn thực thi thủ công một task: gõ `/sdlc:task` (không tham số) để chọn task chưa done từ list,
+hoặc chỉ đích danh `/sdlc:task <version> <sprint> <task-id>`. Muốn chạy tuần tự cả sprint:
 `/sdlc:execute <version> <sprint>`.
 
 `/sdlc:status` để xem tiến độ bất cứ lúc nào. `/sdlc:replan` để cập nhật sprint khi business logic đổi
