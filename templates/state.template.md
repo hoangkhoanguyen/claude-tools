@@ -26,6 +26,7 @@
 
 - analyze_approved:  <pending | true>   # true khi user đã xác nhận requirements trước khi Design
 - design_approved:   <pending | true>   # true khi user đã xác nhận design trước khi Tasks
+- tasks_approved:    <pending | true>   # true khi user đã xác nhận task list trước khi Execute
 
 ## Con trỏ resume
 

@@ -87,6 +87,17 @@ Sinh `.sdlc/<version>/<sprint>/commands.md` (giống `/sdlc:tasks`): liệt kê 
 `/sdlc:task <version> <sprint> <task-id>` và lệnh chạy cả sprint `/sdlc:execute <version> <sprint>` —
 để sau này user chạy/rà lại thủ công từng task.
 
+**→ Human approval gate (BẮT BUỘC)**: Trình bày tóm tắt `tasks.md` cho user, sau đó **DỪNG và hỏi
+user có approve không** trước khi chạy Execute. Ví dụ:
+
+> ✅ Tasks xong. Tóm tắt:
+> - [số task, danh sách ngắn từng task kèm AC phục vụ]
+> - [task nào chạy song song, thứ tự phụ thuộc đáng chú ý]
+>
+> Reply **"ok"** hoặc **"execute"** để bắt đầu thực thi, hoặc `/sdlc:task` để chạy thủ công từng task.
+
+Chỉ tiếp tục Phase 4 khi user xác nhận. Ghi `tasks_approved: true` vào `.sdlc/<version>/state.md`.
+
 ### Phase 4 — Execute (quan trọng nhất)
 
 **4a. Pre-flight (BẮT BUỘC trước khi code):**
