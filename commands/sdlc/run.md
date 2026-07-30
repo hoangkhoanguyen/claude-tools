@@ -116,12 +116,18 @@ Chỉ tiếp tục Phase 4 khi user xác nhận. Ghi `tasks_approved: true` vào
 - CHỈ hỏi user bật cái còn thiếu. ĐỢI user xác nhận rồi mới tiếp. Ghi vào `.sdlc/<version>/state.md`.
 - **Migration/seed**: nếu sprint đổi schema → chạy lệnh migrate trước khi test. Ghi vào state.
 
-**4b. Implement:**
-Spawn `feature-builder` — **mỗi task một subagent**; task độc lập spawn song song, task phụ thuộc đợi
-task trước `done`. Subagent chỉ implement + test cục bộ + self-review rồi báo kết quả về.
-**Quyền ghi thuộc về bạn**, làm TUẦN TỰ theo thứ tự task hoàn thành: commit task trên sprint branch →
-cập nhật `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite + `.sdlc/<version>/state.md`.
-Không để hai subagent cùng ghi state hay cùng chạm git index.
+**4b. Implement — giao trọn cho `implement-coordinator`:**
+KHÔNG tự điều phối từng task trong conversation này (context còn phải đủ cho Phase 5 + 6).
+Đồng bộ TodoWrite một lần, rồi spawn subagent `implement-coordinator`, truyền `version`, `sprint`,
+tên sprint branch, `services_up` đã xác nhận. Nó tự chia wave theo phụ thuộc → giao từng task cho
+`feature-builder` (task độc lập song song) → commit từng task → ghi `tasks.md` + `state.md`.
+
+**Trong lúc nó chạy, bạn KHÔNG chạm `tasks.md` / `state.md` / git index** — nó là người ghi duy nhất.
+
+Xử lý status nó trả về: `DONE` → Phase 5. `BLOCKED` → dừng, báo user. `DESIGN_GAP` → vá design nếu
+nhỏ & rõ, không thì đề nghị `/sdlc:replan`, rồi spawn coordinator mới. `NEEDS_SERVICE` → hỏi user bật,
+đợi "ok", spawn lại. `CONTEXT_LIMIT` → spawn coordinator mới tiếp tục (tiến độ đã trên disk).
+Relay báo cáo dạng tóm tắt ngắn cho user.
 
 ### Phase 5 — Test
 Spawn `test-strategist` (skill `test-strategy`) → viết + chạy test. Nếu có UI design: visual verification

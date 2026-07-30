@@ -160,7 +160,8 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 | Command | `replan` | Cập nhật sprint khi business logic đổi, giữ state |
 | Agent | `product-analyst` | Requirements → user stories, AC, business rules, edge cases, NFR, regression |
 | Agent | `architect` | System design: API, DB, architecture, UI flow, NFR, regression-safe |
-| Agent | `feature-builder` | Implement từng task rồi báo kết quả (state + commit do command ghi) |
+| Agent | `implement-coordinator` | Chạy trọn chặng implement của sprint: chia wave, giao task, commit, ghi state — cô lập context khỏi conversation chính |
+| Agent | `feature-builder` | Implement từng task rồi báo kết quả (state + commit do bên gọi ghi) |
 | Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test |
 | Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao |
 | Agent | `ui-designer` | Nguồn thiết kế (bản ngoài / DESIGN.md / app cũ / hỏi user) → tokens, component spec, Design AC (khi có UI) |
