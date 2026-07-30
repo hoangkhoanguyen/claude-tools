@@ -107,26 +107,32 @@ Chỉ tiếp tục Phase 4 khi user xác nhận. Ghi `tasks_approved: true` vào
 ### Phase 4 — Execute (quan trọng nhất)
 
 **4a. Pre-flight (BẮT BUỘC trước khi code):**
-- **Phát hiện skill dùng được trong repo:** quét `.claude/skills`, `.claude/agents`, `.claude/commands`
-  của dự án, skill từ `pluginDirs`, và skill built-in đang khả dụng.
-- **Suy ra service ngoài từ config dự án**: đọc `docker-compose.yml`, `.env.example`, `package.json`
-  scripts, `Procfile`, `Makefile`, README → liệt kê DB, cache, dev server, sandbox 3rd party + port +
-  lệnh khởi động chuẩn.
-- Bash ping/check port xem cái nào đã chạy.
-- CHỈ hỏi user bật cái còn thiếu. ĐỢI user xác nhận rồi mới tiếp. Ghi vào `.sdlc/<version>/state.md`.
-- **Migration/seed**: nếu sprint đổi schema → chạy lệnh migrate trước khi test. Ghi vào state.
+Từ đây tới hết Phase 6, context của bạn phải tiết kiệm tối đa — nó đã mang theo cả analyze + design +
+tasks. Mọi agent thực thi tự nạp `CLAUDE.md`/`design.md`/skill của repo khi khởi động, nên **đừng đọc
+lại giúp chúng**.
+
+- **Spawn `preflight-scout`** (read-only): nó đọc `docker-compose.yml`, `.env.example`, `package.json`
+  scripts, `Procfile`, `Makefile`, README giúp bạn, tự ping port, trả về bảng service + port + trạng
+  thái + lệnh bật + lệnh migrate. Bạn không tự đọc đống config đó.
+- **Chốt service cho cả Phase 4-5-6 một lượt** — bảng của scout đã gồm dev server/sandbox mà Test và QA
+  cần. Hỏi thiếu ở đây thì Phase 5/6 trả `NEEDS_SERVICE`, mỗi lần spawn lại là một cold-start.
+- CHỈ hỏi user bật cái scout báo "chưa chạy", kèm lệnh nó đưa ra. ĐỢI user xác nhận rồi mới tiếp.
+  Ghi `services_up` vào `.sdlc/<version>/state.md` — đây là **lần cuối** bạn ghi file này trong sprint.
+- **Migration/seed**: scout báo sprint đổi schema → chạy lệnh migrate nó đưa ra (sau khi DB lên). Ghi vào state.
 
 **4b. Implement — giao trọn cho `implement-coordinator`:**
 KHÔNG tự điều phối từng task trong conversation này (context còn phải đủ cho Phase 5 + 6).
-Đồng bộ TodoWrite một lần, rồi spawn subagent `implement-coordinator`, truyền `version`, `sprint`,
+Đồng bộ TodoWrite một lần (lấy ID + mô tả bằng Grep có đích vào `tasks.md`, không Read trọn file —
+mỗi task có 7 field mà bạn chỉ cần 2), rồi spawn subagent `implement-coordinator`, truyền `version`, `sprint`,
 tên sprint branch, `services_up` đã xác nhận. Nó tự chia wave theo phụ thuộc → giao từng task cho
 `feature-builder` (task độc lập song song) → commit từng task → ghi `tasks.md` + `state.md`.
 
 **Trong lúc nó chạy, bạn KHÔNG chạm `tasks.md` / `state.md` / git index** — nó là người ghi duy nhất.
 
-Xử lý status nó trả về: `DONE` → Phase 5. `BLOCKED` → dừng, báo user. `DESIGN_GAP` → vá design nếu
-nhỏ & rõ, không thì đề nghị `/sdlc:replan`, rồi spawn coordinator mới. `NEEDS_SERVICE` → hỏi user bật,
-đợi "ok", spawn lại. `CONTEXT_LIMIT` → spawn coordinator mới tiếp tục (tiến độ đã trên disk).
+Xử lý status nó trả về: `DONE` → Phase 5. `BLOCKED` → dừng, báo user. `DESIGN_GAP` → **bạn quyết định,
+`architect` viết**: gap nhỏ & rõ thì spawn `architect` kèm mô tả gap để nó vá `design.md` (đừng tự đọc
+`design.md` để sửa), gap lớn thì đề nghị `/sdlc:replan`; xong spawn coordinator mới. `NEEDS_SERVICE` →
+hỏi user bật, đợi "ok", spawn lại. `CONTEXT_LIMIT` → spawn coordinator mới tiếp tục (tiến độ đã trên disk).
 Relay báo cáo dạng tóm tắt ngắn cho user.
 
 ### Phase 5 — Test
@@ -151,6 +157,12 @@ Nhắc user: sprint tiếp theo `/sdlc:run <version> <sprint-slug>`; version m�
 
 ## Quản lý context / checkpoint
 
-- Cập nhật `.sdlc/<version>/state.md` sau MỖI phase và MỖI task.
+- **Phase 1-3 (analyze → design → tasks)**: bạn cập nhật `.sdlc/<version>/state.md` sau mỗi phase.
+- **Phase 4-6 (execute → test → qa)**: agent đang chạy sở hữu `state.md` và tự cập nhật sau mỗi task /
+  mỗi chặng. **Bạn KHÔNG ghi vào đó nữa** sau khi đã ghi `services_up` ở pre-flight — hai writer trên
+  cùng một file là nguồn hỏng state. Bạn cũng không chạy skill `self-review` thay chúng: mỗi agent đã
+  có mục self-review BẮT BUỘC của riêng nó.
+- Từ Phase 4 trở đi bạn không `git add`/`commit`/`push`, không sửa `design.md`/`requirements.md`/`tasks.md`.
+  Ngoại lệ duy nhất: bàn giao (`sprints.md`, `versions.md`).
 - Nếu context sắp đầy: hoàn tất task/phase hiện tại → DỪNG → báo user chạy lại `/sdlc:run <version> <sprint>`.
-- Spawn subagent cho từng phase để cô lập context.
+- Spawn subagent cho từng phase để cô lập context — kể cả các phase tưởng là nhẹ.

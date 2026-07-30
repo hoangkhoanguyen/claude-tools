@@ -88,16 +88,37 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 ## Pre-flight trước khi execute (RẤT QUAN TRỌNG)
 
 Trước khi viết dòng code đầu tiên trong execute:
-1. Phát hiện & ưu tiên dùng skill sẵn có trong repo (nguyên tắc 7).
-2. Suy ra service/tool bên ngoài cần chạy TỪ CONFIG dự án (docker-compose, .env.example, package.json
-   scripts, Procfile, Makefile, README) — không đoán mò. Liệt kê kèm port + lệnh khởi động chuẩn.
-3. Tự `ping`/check port xem cái nào đã chạy.
-4. CHỈ hỏi user bật những cái còn thiếu, kèm lệnh gợi ý (lấy từ config).
+1. Phát hiện & ưu tiên dùng skill sẵn có trong repo (nguyên tắc 7) — **việc này của agent thực thi**,
+   mỗi agent tự quét khi khởi động. Conversation chính không quét hộ (xem "Kỷ luật context" bên dưới).
+2. **Spawn `preflight-scout`** để suy ra service/tool bên ngoài TỪ CONFIG dự án (docker-compose,
+   .env.example, package.json scripts, Procfile, Makefile, README) — không đoán mò. Nó trả về bảng
+   service + port + trạng thái (tự ping) + lệnh khởi động + lệnh migrate. Conversation chính KHÔNG tự
+   đọc đống config đó.
+3. Chốt service cho **cả chặng thực thi** (implement + test + qa) trong một lượt hỏi — dev server và
+   sandbox mà Test/QA cần cũng phải nằm trong danh sách, không chỉ service lúc implement.
+4. CHỈ hỏi user bật những cái scout báo "chưa chạy", kèm lệnh gợi ý nó đưa ra.
 5. Đợi user xác nhận ("ok"/"xong") RỒI mới tiếp tục. Không tự giả định service đã sẵn sàng. Ghi service
    đã xác nhận vào `.sdlc/<version>/state.md`.
 6. **DB migration/seed**: nếu sprint đổi schema (model/migration mới), xác định lệnh migrate của dự án (từ
    config: `package.json`, `Makefile`, framework CLI) và CHẠY nó trước khi test — schema chưa migrate là
    nguồn "lỗi vặt" kinh điển (API 500) khi manual test. Ghi migration đã chạy vào state.
+
+## Kỷ luật context của conversation chính (chặng thực thi)
+
+Từ lúc bắt đầu execute, conversation chính chỉ còn 2 vai: **điều phối subagent** và **nói chuyện với
+user**. Nó không viết code, không viết design, không chia task — nên nó KHÔNG đọc thay ai:
+
+- **Không** Glob/đọc `CLAUDE.md` của dự án, `architecture.md`, `design.md`, không quét skill của repo.
+  Mọi agent thực thi bắt đầu cold và tự nạp hết những thứ đó. Đọc lại là trả tiền hai lần, lần thứ hai
+  vào đúng context phải sống suốt cả chặng.
+- **Không** Read trọn `tasks.md` chỉ để đồng bộ TodoWrite — Grep có đích lấy ID + mô tả.
+- **Không** đọc file để tóm tắt cho user: agent sinh ra file phải trả kèm block hiển thị sẵn để
+  conversation chính relay nguyên văn.
+- **Không** ghi `state.md`, không `git add/commit/push`, không sửa artifact (`design.md`,
+  `requirements.md`, `tasks.md`) khi một agent thực thi đang chạy — agent đó là người ghi duy nhất.
+  Cần vá `design.md` sau `DESIGN_GAP` → quyết định là của conversation chính, nhưng **`architect` viết**.
+
+Ngoại lệ được phép ghi: pre-flight (`services_up`) và bàn giao (`sprints.md`, `versions.md`).
 
 ## Chọn chiến lược test (tự phát hiện)
 
