@@ -162,8 +162,8 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 | Agent | `architect` | System design: API, DB, architecture, UI flow, NFR, regression-safe |
 | Agent | `implement-coordinator` | Chạy trọn chặng implement của sprint: chia wave, giao task, commit, ghi state — cô lập context khỏi conversation chính |
 | Agent | `feature-builder` | Implement từng task rồi báo kết quả (state + commit do bên gọi ghi) |
-| Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test |
-| Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao |
+| Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test; tự đóng vòng fix + commit |
+| Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao; tự đóng vòng fix + commit |
 | Agent | `ui-designer` | Nguồn thiết kế (bản ngoài / DESIGN.md / app cũ / hỏi user) → tokens, component spec, Design AC (khi có UI) |
 | Agent | `reviewer` | Kiểm chéo độc lập output analyze/design/ui-design so với đầu vào |
 | Skill | `requirements-analysis` | Chuẩn output của analyze |

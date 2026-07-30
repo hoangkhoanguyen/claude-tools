@@ -133,10 +133,13 @@ Relay báo cáo dạng tóm tắt ngắn cho user.
 Spawn `test-strategist` (skill `test-strategy`) → viết + chạy test. Nếu có UI design: visual verification
 (skill `design-fidelity`) — screenshot mỗi màn/state + dark/light, baseline trong
 `.sdlc/<version>/<sprint>/visual-baseline/`. Ghi `.sdlc/<version>/<sprint>/test-report.md`.
+**Nó tự đóng vòng fix (tối đa 3 vòng) và tự commit test file + fix** — bạn KHÔNG điều phối vòng fix,
+KHÔNG chạm git index khi nó chạy. Xử lý status như Phase 4b.
 
 ### Phase 6 — QA Gate
 Spawn `qa-guard`: full test + happy path + regression + NFR + design fidelity + quét hardcode/TODO.
-Chỉ khi sạch mới sang bàn giao.
+**Cũng tự đóng vòng fix (tối đa 3 vòng, mỗi vòng chạy lại checklist từ đầu) và tự commit.**
+Bạn chỉ nhận status; chỉ `DONE` mới sang bàn giao.
 
 ## Bàn giao
 

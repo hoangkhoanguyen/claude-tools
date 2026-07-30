@@ -63,12 +63,19 @@ theo loại feature (unit / API / Playwright UI / 3rd party sandbox / mock webho
 visual verification (skill `design-fidelity`): screenshot đối chiếu Design AC + baseline trong
 `.sdlc/<version>/<sprint>/visual-baseline/`. Viết test và CHẠY thật đến khi xanh.
 Mọi AC/EC/NFR/DAC phải có test hoặc được liệt kê verify-tay. Ghi `.sdlc/<version>/<sprint>/test-report.md`.
-Nếu cần app/service để test → yêu cầu user bật (như pre-flight), đợi xác nhận.
+
+**Nó tự đóng vòng fix (tối đa 3 vòng) và tự commit test file + fix.** Bạn KHÔNG điều phối vòng fix,
+KHÔNG chạm git index khi nó đang chạy — đẩy vòng fix về đây là nguồn tốn context ở conversation chính.
+Xử lý status nó trả về theo cùng bảng như Chặng 1 (`DONE` → sang Chặng 3; `BLOCKED` → dừng báo user;
+`DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT` → xử lý rồi spawn lại). Relay tóm tắt ngắn cho user.
 
 ## Chặng 3 — QA gate + bàn giao
 
 Spawn subagent `qa-guard`: full test + happy path từng story + regression happy path feature cũ liên quan +
-NFR check + design fidelity (nếu có UI) + quét hardcode/TODO/unhandled error. Chỉ khi sạch mới bàn giao:
+NFR check + design fidelity (nếu có UI) + quét hardcode/TODO/unhandled error.
+
+**Nó cũng tự đóng vòng fix (tối đa 3 vòng) và tự commit** — mỗi vòng fix nó chạy lại checklist từ đầu.
+Bạn chỉ nhận status, không tự fix, không chạm git. Chỉ khi status `DONE` mới bàn giao:
 
 - Cập nhật sprint = `done` trong `.sdlc/<version>/sprints.md`; nếu mọi sprint trong version đã `done` →
   cập nhật `.sdlc/versions.md` version = `done`.

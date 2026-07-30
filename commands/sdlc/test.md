@@ -19,12 +19,17 @@ thêm visual verification (skill `design-fidelity`): screenshot đối chiếu D
 Mọi AC/EC/NFR/DAC phải có test hoặc được liệt kê verify-tay.
 Ghi `.sdlc/<version>/<sprint>/test-report.md`.
 
-Nếu cần app/service chạy để test → yêu cầu user bật (như pre-flight), đợi xác nhận.
+**Nó tự đóng vòng fix (tối đa 3 vòng) và tự commit test file + fix.** Bạn KHÔNG điều phối vòng fix,
+KHÔNG chạm git index khi nó đang chạy. Nó trả status ở dòng đầu: `DONE` → sang QA gate; `BLOCKED` →
+dừng, báo user; `DESIGN_GAP` → vá design nếu nhỏ & rõ, không thì đề nghị `/sdlc:replan`, rồi spawn lại;
+`NEEDS_SERVICE` → hỏi user bật service kèm lệnh gợi ý, đợi "ok", spawn lại; `CONTEXT_LIMIT` → spawn
+agent mới tiếp tục. Relay tóm tắt ngắn cho user.
 
 ## QA Gate
 Spawn subagent `qa-guard`: chạy full test + happy path từng story + regression happy path feature cũ liên
-quan + NFR check + design fidelity check (nếu có UI) + quét hardcode/TODO/unhandled error. Chỉ khi sạch
-mới trình bày Pre-manual Report:
+quan + NFR check + design fidelity check (nếu có UI) + quét hardcode/TODO/unhandled error.
+**Cũng tự đóng vòng fix (tối đa 3 vòng, mỗi vòng chạy lại checklist từ đầu) và tự commit** — bạn chỉ
+nhận status, không tự fix, không chạm git. Chỉ khi status `DONE` mới trình bày Pre-manual Report:
 - Đã tự động cover (không cần user kiểm)
 - Cần user verify tay (chỉ nghiệp vụ)
 - Edge case chưa define (nếu có)

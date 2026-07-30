@@ -70,7 +70,11 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
   (product-analyst, architect, implement-coordinator → feature-builder, test-strategist, qa-guard).
   Chặng implement giao TRỌN cho `implement-coordinator` — nó là người ghi duy nhất (commit, `tasks.md`,
   `state.md`) và tự giao từng task cho `feature-builder`, để conversation chính không tốn context vào
-  vòng lặp report-commit-ghi-state; `ui-designer` cho nhánh giao
+  vòng lặp report-commit-ghi-state. Cùng nguyên tắc đó, `test-strategist` và `qa-guard` TỰ đóng vòng fix
+  (tối đa 3 vòng rồi escalate) và TỰ commit — conversation chính không bao giờ điều phối vòng fix hay
+  chạm git index khi một agent thực thi đang chạy; nó chỉ nhận status ở dòng đầu báo cáo
+  (`DONE` / `BLOCKED` / `DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT`) và xử lý theo đó;
+  `ui-designer` cho nhánh giao
   diện khi sprint có màn hình (nguồn thiết kế: bản ngoài / DESIGN.md / phong cách app cũ / hỏi user);
   và `reviewer` để kiểm chéo độc lập sau analyze/design. Chạy song song khi các phần độc lập; cô lập
   context của từng phase.
