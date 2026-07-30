@@ -28,21 +28,33 @@ Resume: bỏ qua chặng/task đã `done`, tiếp tục đúng chỗ đang dở.
 5. **Migration**: nếu sprint đổi schema → xác định lệnh migrate của dự án và chạy trước khi test.
    Ghi vào state.
 
-## Chặng 1 — Implement
+## Chặng 1 — Implement (giao trọn cho `implement-coordinator`)
 
-Spawn subagent `feature-builder` — **mỗi task một subagent**; task độc lập thì spawn SONG SONG,
-task có phụ thuộc thì đợi task trước `done`. Bỏ qua task đã `done`.
+Chặng này ồn nhất (report từng task + commit + ghi state). Đừng chạy trong conversation này —
+**spawn subagent `implement-coordinator`** để cô lập context, giữ chỗ cho Chặng 2 + 3.
 
-Subagent chỉ implement + test cục bộ + self-review rồi báo kết quả về. **Bạn (lệnh này) giữ quyền ghi**,
-làm TUẦN TỰ theo thứ tự task hoàn thành — kể cả khi implement chạy song song:
-1. Nhận báo cáo (kết quả, file đã đụng, test đã chạy, commit message đề xuất).
-2. `git commit` task đó trên sprint branch (mỗi task một commit). KHÔNG push/tạo PR trừ khi user yêu cầu.
-3. Cập nhật `.sdlc/<version>/<sprint>/tasks.md` (`done`, hoặc `blocked` + lý do) + TodoWrite +
-   `.sdlc/<version>/state.md`.
+Trước khi spawn: đồng bộ TodoWrite một lần (một item cho mỗi task chưa done) để user thấy phạm vi.
 
-Không để hai subagent cùng ghi state hay cùng chạm git index — đó là nguồn hỏng state khi chạy song song.
+Truyền cho coordinator: `version`, `sprint`, tên **sprint branch**, và `services_up` đã xác nhận ở
+pre-flight. Coordinator sẽ tự: chia wave theo phụ thuộc → giao từng task cho `feature-builder`
+(task độc lập chạy song song) → commit từng task → cập nhật `tasks.md` + `state.md`.
 
-Chỉ sang Chặng 2 khi MỌI task đã `done`. Còn task `blocked` → dừng, báo blocker, không sang Test.
+**Trong lúc coordinator chạy, bạn KHÔNG chạm vào `tasks.md`, `state.md`, hay git index** — nó là
+người ghi duy nhất của chặng này. Hai bên cùng ghi là nguồn hỏng state kinh điển.
+
+Coordinator trả về status ở dòng đầu; xử lý theo bảng:
+
+| Status | Bạn làm gì |
+|---|---|
+| `DONE` | Refresh TodoWrite, sang Chặng 2 |
+| `BLOCKED` | DỪNG, báo blocker cho user. Không sang Test |
+| `DESIGN_GAP` | Quyết định: vá `design.md` tại chỗ (nếu nhỏ, rõ) hoặc đề nghị user `/sdlc:replan`. Xong → spawn coordinator mới tiếp tục |
+| `NEEDS_SERVICE` | Hỏi user bật service (kèm lệnh gợi ý), ghi vào `services_up`, đợi "ok" → spawn coordinator mới |
+| `CONTEXT_LIMIT` | Spawn coordinator mới ngay — tiến độ đã nằm trên disk nên nó tiếp đúng chỗ |
+
+Relay báo cáo của coordinator cho user dưới dạng tóm tắt ngắn (user không thấy output subagent).
+
+Chỉ sang Chặng 2 khi status `DONE`.
 
 ## Chặng 2 — Test
 
