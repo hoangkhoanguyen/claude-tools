@@ -10,10 +10,11 @@ Chạy riêng phase thiết kế cho sprint `$2` thuộc version `$1`
 
 Yêu cầu `.sdlc/<version>/<sprint>/requirements.md` đã tồn tại (chạy `/sdlc:analyze` trước nếu chưa).
 
-**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
-`CLAUDE.md` liên quan đến sprint. Đọc `.sdlc/architecture.md`. Truyền context này khi spawn agent.
+**KHÔNG tự Glob/Read CLAUDE.md hay `.sdlc/architecture.md`** — architect và ui-designer là subagent
+cold-start, mỗi agent tự nạp phần liên quan tới mình. Conversation chính chỉ truyền
+version/sprint slug + path `requirements.md`.
 
-Chạy 2 nhánh (song song nếu độc lập):
+Chạy 2 nhánh (song song, ĐỘC LẬP):
 
 **Nhánh hệ thống** — spawn `architect`, dùng skill `system-design`. Đọc codebase +
 `.sdlc/architecture.md` + CLAUDE.md liên quan. Ghi `.sdlc/<version>/<sprint>/design.md` với 2 tầng +
@@ -34,8 +35,9 @@ Ghi `.sdlc/<version>/<sprint>/ui-design.md`; cập nhật `.sdlc/design-system.m
 **Quan trọng — 2 nhánh độc lập:** nhánh hệ thống KHÔNG chờ UI design. Chỉ các phase SAU (Tasks
 trở đi) mới cần `ui-design.md` hoàn chỉnh.
 
-Kết thúc: chạy skill `self-review`, rồi spawn `reviewer` kiểm chéo `design.md` (và `ui-design.md`
-nếu có) so với `requirements.md` — chỉ `PASS` mới coi là xong.
+Self-review: architect và ui-designer TỰ chạy `self-review` trước khi trả file (không cần bạn chạy
+thay). Sau đó spawn `reviewer` kiểm chéo `design.md` (và `ui-design.md` nếu có) so với `requirements.md`
+— chỉ `PASS` mới coi là xong.
 Cập nhật `.sdlc/<version>/state.md` theo schema.
 
 Đây là phase con của `/sdlc:run`; dùng khi muốn chạy/rà lại riêng phase design.

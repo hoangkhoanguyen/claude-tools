@@ -10,9 +10,9 @@ Chạy riêng phase chia task cho sprint `$2` thuộc version `$1`
 
 Yêu cầu `.sdlc/<version>/<sprint>/design.md` đã tồn tại (chạy `/sdlc:design` trước nếu chưa).
 
-**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
-`CLAUDE.md` trong thư mục mà sprint này sẽ đụng tới (dựa vào File Change Plan trong `design.md`).
-Đọc `.sdlc/architecture.md`. Tuân thủ convention tuyệt đối khi chia task (naming, cấu trúc file...).
+**KHÔNG tự Glob CLAUDE.md / Read design.md / architecture.md.** Spawn subagent (dùng skill
+`task-breakdown`) — nó tự nạp CLAUDE.md liên quan theo File Change Plan trong `design.md`, tự đọc
+`architecture.md`, tự chạy `self-review` trước khi trả file.
 
 ## Chỉ tạo tài liệu — KHÔNG execute
 
@@ -21,10 +21,10 @@ Thực thi bắt đầu từ `/sdlc:task` (từng task thủ công) hoặc `/sdl
 
 ## Quy trình
 
-Dùng skill `task-breakdown`. Ghi `.sdlc/<version>/<sprint>/tasks.md` với các task (status `todo`),
-phụ thuộc, đánh dấu task chạy song song được, và bảng AC/EC → task. Đồng bộ TodoWrite.
+Subagent ghi `.sdlc/<version>/<sprint>/tasks.md` với các task (status `todo`), phụ thuộc, đánh dấu
+task chạy song song được, và bảng AC/EC → task. Trả về block Human Review để relay + list ID/mô tả
+ngắn để conversation chính đồng bộ TodoWrite (không Read trọn `tasks.md`).
 
-Kết thúc: chạy skill `self-review` — mọi AC/EC phải có task phụ trách.
 Cập nhật `.sdlc/<version>/state.md`.
 
 ## Sinh command shortcuts

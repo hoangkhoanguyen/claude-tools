@@ -18,12 +18,17 @@ Plugin KHÔNG tự sinh tài liệu business logic — đây là đầu vào do 
 
 ## Các bước
 
-1. **Nạp context & đọc tài liệu**: Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
-   `CLAUDE.md` liên quan. Đọc `.sdlc/architecture.md` (nếu đã có từ version trước) để nắm nền tảng
-   kế thừa. Nếu có codebase sẵn, Grep/Glob để hiểu hiện trạng. Đọc toàn bộ tài liệu business logic.
+1. **Delegate đọc tài liệu cho subagent (KHÔNG tự Read).** Business docs của user thường dài
+   (BRD/PRD/SRS 20-50 trang) và cả team CLAUDE.md có thể 5-10 file — nếu conversation chính tự đọc,
+   context này còn phải sống suốt cả version. Spawn subagent `product-analyst` với nhiệm vụ đặc biệt
+   "sprint decomposition": truyền path business docs + version slug. Nó tự Glob CLAUDE.md, tự đọc
+   `.sdlc/architecture.md` (nếu có), tự đọc business docs, và trả về **bảng sprint đề xuất** (slug,
+   goal 1-2 dòng, features, dependencies, tech stack suggestion) + block Human Review sẵn để relay.
+   Conversation chính chỉ nhận bảng cô đọng — không giữ raw docs.
 
-2. **Nhóm feature thành sprint.** Mỗi sprint là một khối feature khép kín, có thể deliver độc lập.
-   Cân nhắc phụ thuộc giữa các feature để xếp thứ tự sprint hợp lý (nền tảng trước, tính năng phụ thuộc sau).
+2. **Nhận bảng sprint từ subagent.** Mỗi sprint là một khối feature khép kín, có thể deliver độc lập.
+   Nếu bảng nó trả có vấn đề về phụ thuộc/thứ tự, feedback lại cho nó chỉnh — đừng tự sửa bằng cách
+   đọc lại docs.
 
 3. **Ghi `.sdlc/<version>/sprints.md`** với, cho mỗi sprint:
    - Slug ngắn, **bắt buộc theo pattern `sprint-<số>-<tên>`** (vd `sprint-1-auth`, `sprint-2-orders`).
