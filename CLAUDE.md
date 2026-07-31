@@ -103,17 +103,27 @@ Trước khi viết dòng code đầu tiên trong execute:
    config: `package.json`, `Makefile`, framework CLI) và CHẠY nó trước khi test — schema chưa migrate là
    nguồn "lỗi vặt" kinh điển (API 500) khi manual test. Ghi migration đã chạy vào state.
 
-## Kỷ luật context của conversation chính (chặng thực thi)
+## Kỷ luật context của conversation chính (áp dụng XUYÊN SUỐT sprint, không chỉ execute)
 
-Từ lúc bắt đầu execute, conversation chính chỉ còn 2 vai: **điều phối subagent** và **nói chuyện với
-user**. Nó không viết code, không viết design, không chia task — nên nó KHÔNG đọc thay ai:
+Từ Phase 1 (Analyze) trở đi, conversation chính chỉ còn 2 vai: **điều phối subagent** và **nói chuyện
+với user**. Nó không tự analyze, không tự design, không tự chia task, không viết code — nên nó KHÔNG
+đọc thay ai. Trước đây quy tắc này chỉ áp cho chặng execute, nhưng thực tế Phase 1-3 mới là nơi
+conversation chính dễ "chết context" nhất (business docs + nhiều CLAUDE.md + codebase khảo sát).
 
-- **Không** Glob/đọc `CLAUDE.md` của dự án, `architecture.md`, `design.md`, không quét skill của repo.
-  Mọi agent thực thi bắt đầu cold và tự nạp hết những thứ đó. Đọc lại là trả tiền hai lần, lần thứ hai
-  vào đúng context phải sống suốt cả chặng.
-- **Không** Read trọn `tasks.md` chỉ để đồng bộ TodoWrite — Grep có đích lấy ID + mô tả.
-- **Không** đọc file để tóm tắt cho user: agent sinh ra file phải trả kèm block hiển thị sẵn để
+**Nguyên tắc 0 (đọc CLAUDE.md liên quan) áp dụng cho AGENT thực thi phase đó, không phải conversation
+chính.** Mỗi subagent bắt đầu cold và tự Glob/đọc CLAUDE.md của scope mình. Conversation chính chỉ
+truyền path + slug + Human Review blocks nhận lại.
+
+- **Không** Glob/đọc `CLAUDE.md` của dự án, `architecture.md`, `requirements.md`, `design.md`, business
+  docs của user, không quét skill của repo, không khảo sát codebase. Mọi agent (product-analyst,
+  architect, ui-designer, task-breakdown agent, implement-coordinator, test-strategist, qa-guard,
+  reviewer) bắt đầu cold và tự nạp hết. Đọc lại là trả tiền hai lần.
+- **Không** Read trọn `tasks.md` chỉ để đồng bộ TodoWrite — dùng list ID+mô tả agent trả về, hoặc
+  Grep có đích.
+- **Không** đọc file để tóm tắt cho user: agent sinh ra file PHẢI trả kèm block Human Review sẵn để
   conversation chính relay nguyên văn.
+- Ở Phase 1-3, self-review là bước cuối của chính subagent trước khi trả file — conversation chính
+  KHÔNG chạy `self-review` skill hộ.
 - **Không** ghi `state.md`, không `git add/commit/push`, không sửa artifact (`design.md`,
   `requirements.md`, `tasks.md`) khi một agent thực thi đang chạy — agent đó là người ghi duy nhất.
   Cần vá `design.md` sau `DESIGN_GAP` → quyết định là của conversation chính, nhưng **`architect` viết**.

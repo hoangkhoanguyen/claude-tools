@@ -15,14 +15,16 @@ Lệnh chính. Chạy toàn bộ vòng đời cho MỘT sprint và tự lưu sta
 
 Mọi file output trong lệnh này đều nằm dưới `.sdlc/<version>/`.
 
-## BƯỚC 0 — Context + Resume + Dependency check (LUÔN làm đầu tiên)
+## BƯỚC 0 — Resume + Dependency check (LUÔN làm đầu tiên)
 
-1. **Nạp context dự án** (nguyên tắc 0 trong CLAUDE.md của plugin): Glob mọi `CLAUDE.md`, tự đánh giá &
-   đọc các file liên quan tới sprint này; đọc `.sdlc/architecture.md` (foundational, nếu có).
-2. **Dependency check**: đọc `.sdlc/<version>/sprints.md`. Nếu sprint này phụ thuộc sprint khác mà sprint đó
+**KHÔNG tự nạp CLAUDE.md / architecture.md ở đây.** Từ Phase 1, mỗi subagent tự nạp phần liên quan
+tới nó cold-start. Conversation chính chỉ giữ state + Human Review blocks để điều phối và relay
+cho user — nguyên tắc "Kỷ luật context" áp dụng xuyên suốt, không chỉ từ Phase 4.
+
+1. **Dependency check**: đọc `.sdlc/<version>/sprints.md`. Nếu sprint này phụ thuộc sprint khác mà sprint đó
    CHƯA `done` → CẢNH BÁO user và dừng, đề nghị chạy sprint phụ thuộc trước (trừ khi user yêu cầu vẫn tiếp).
    Nếu sprint phụ thuộc vào sprint ở version trước, đọc `.sdlc/<version-trước>/sprints.md` để xác nhận.
-3. **Resume check**: đọc `.sdlc/<version>/state.md` (theo schema `templates/state.template.md`) +
+2. **Resume check**: đọc `.sdlc/<version>/state.md` (theo schema `templates/state.template.md`) +
    `.sdlc/<version>/<sprint>/`. Xác định phase & task đang dở. **Bỏ qua** mọi phase/task đã done.
    Lần chạy đầu → bắt đầu từ analyze.
    - **Approval gate chưa qua**: một phase có thể `done` nhưng approval của nó vẫn `pending` (bị ngắt ngay
@@ -36,12 +38,12 @@ Mọi file output trong lệnh này đều nằm dưới `.sdlc/<version>/`.
 ## Chạy tuần tự các phase (bỏ qua phase đã done)
 
 ### Phase 1 — Analyze
-Spawn subagent `product-analyst` (dùng skill `requirements-analysis`) → ghi
-`.sdlc/<version>/<sprint>/requirements.md` (bao gồm cả Non-functional requirements + Regression impact
-nếu là codebase có sẵn). Tự soi bằng skill `self-review`. Nếu có Open Questions không tự resolve an toàn
-→ hỏi user rồi mới đi tiếp.
-**→ Reviewer gate**: spawn `reviewer` kiểm `requirements.md` so với tài liệu gốc. `NEEDS_FIX` → sửa rồi
-review lại; chỉ `PASS` mới sang bước tiếp.
+Spawn `product-analyst` (skill `requirements-analysis`). Nó tự nạp CLAUDE.md + architecture.md +
+business docs, tự chạy `self-review`, ghi `.sdlc/<version>/<sprint>/requirements.md` (bao gồm NFR +
+Regression impact nếu codebase có sẵn), và trả về block Human Review sẵn để relay. **Bạn không Read
+lại file** — dùng block agent trả về. Open Questions không tự resolve an toàn → hỏi user.
+**→ Reviewer gate**: spawn `reviewer` (nó tự đọc file). `NEEDS_FIX` → sửa rồi review lại; chỉ `PASS`
+mới sang bước tiếp.
 
 **→ Human approval gate (BẮT BUỘC)**: Trình bày tóm tắt phần "Human Review" của `requirements.md` cho user,
 sau đó **DỪNG và hỏi user có approve không** trước khi chạy Design. Ví dụ:
@@ -55,6 +57,7 @@ sau đó **DỪNG và hỏi user có approve không** trước khi chạy Design
 Chỉ tiếp tục Phase 2 khi user xác nhận. Ghi `analyze_approved: true` vào `.sdlc/<version>/state.md`.
 
 ### Phase 2 — Design (2 nhánh song song, ĐỘC LẬP)
+Cả 2 agent tự nạp CLAUDE.md/architecture.md/requirements.md cold — bạn KHÔNG đọc hộ.
 - **Hệ thống**: spawn `architect` (skill `system-design`) → ghi `.sdlc/<version>/<sprint>/design.md`;
   cập nhật `.sdlc/architecture.md` nếu thêm/đổi thành phần nền tảng. Nhánh này chỉ cần `requirements.md`
   — **KHÔNG chờ UI design**, cứ chạy tới `done`.
@@ -69,9 +72,9 @@ Chỉ tiếp tục Phase 2 khi user xác nhận. Ghi `analyze_approved: true` v�
 
 **Đồng bộ trước khi sang Tasks**: chỉ chuyển Phase 3 khi nhánh UI đã có `ui-design.md` hoàn chỉnh.
 
-Cross-check self-review: mọi RULE/EC/NFR có trong bảng mapping; mọi màn hình có Design AC (nếu có UI).
-**→ Reviewer gate**: spawn `reviewer` kiểm `design.md` (+ `ui-design.md`) so với `requirements.md`.
-Chỉ `PASS` mới sang bước tiếp.
+Self-review: mỗi agent tự chạy trước khi trả file (không cần bạn chạy hộ).
+**→ Reviewer gate**: spawn `reviewer` kiểm `design.md` (+ `ui-design.md`) so với `requirements.md` —
+nó tự đọc. Chỉ `PASS` mới sang bước tiếp.
 
 **→ Human approval gate (BẮT BUỘC)**: Trình bày tóm tắt phần "Human Review" của `design.md` (và
 `ui-design.md` nếu có) cho user, sau đó **DỪNG và hỏi user có approve không** trước khi chạy Tasks. Ví dụ:
@@ -86,8 +89,9 @@ Chỉ `PASS` mới sang bước tiếp.
 Chỉ tiếp tục Phase 3 khi user xác nhận. Ghi `design_approved: true` vào `.sdlc/<version>/state.md`.
 
 ### Phase 3 — Tasks
-Dùng skill `task-breakdown` → ghi `.sdlc/<version>/<sprint>/tasks.md` (status todo). Đồng bộ TodoWrite.
-Cross-check: mọi AC/EC có task phụ trách chưa. (Reviewer optional ở phase này.)
+Spawn subagent (skill `task-breakdown`). Nó tự nạp CLAUDE.md liên quan (theo File Change Plan trong
+`design.md`) + architecture.md, tự chạy self-review, ghi `.sdlc/<version>/<sprint>/tasks.md` (status
+todo), trả về list ID+mô tả ngắn để bạn đồng bộ TodoWrite (KHÔNG Read trọn `tasks.md`).
 Sinh `.sdlc/<version>/<sprint>/commands.md` (giống `/sdlc:tasks`): liệt kê lệnh chạy từng task
 `/sdlc:task <version> <sprint> <task-id>` và lệnh thực thi đến hết `/sdlc:execute <version> <sprint>`
 (implement + test + qa) — để sau này user chạy/rà lại thủ công.
