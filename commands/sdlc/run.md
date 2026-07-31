@@ -15,6 +15,29 @@ Lệnh chính. Chạy toàn bộ vòng đời cho MỘT sprint và tự lưu sta
 
 Mọi file output trong lệnh này đều nằm dưới `.sdlc/<version>/`.
 
+## Chính sách model (đọc trước, ảnh hưởng cả lệnh)
+
+Lệnh này nên chạy bằng **Opus** — nó giữ mọi quyết định của sprint (approval gate, xử lý `DESIGN_GAP`,
+chốt phạm vi) và phải sống suốt 6 phase. Nếu session đang chạy model khác, cứ chạy tiếp; đừng dừng lại
+để đòi đổi model.
+
+Model của từng subagent **đã khai trong frontmatter của chính agent đó** (`agents/*.md`) — bạn KHÔNG
+truyền tham số `model` khi spawn, để khỏi ghi đè chính sách:
+
+| Agent | Model | Vì sao |
+|---|---|---|
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | opus | Phase 1-3 là nơi sai một lần thì mọi phase sau kế thừa lỗi |
+| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | sonnet | Phase 4-6 là việc lặp lại, có spec rõ trong tay |
+
+**Leo thang lên Opus là việc của agent thực thi, không phải của bạn.** `implement-coordinator`,
+`test-strategist`, `qa-guard` tự nâng `feature-builder` lên Opus khi Sonnet đã thất bại đủ 5 lượt cho
+cùng một chỗ (chi tiết trong file agent). Bạn chỉ nhận status ở dòng đầu báo cáo. Đừng tự spawn lại một
+agent bằng Opus chỉ vì nó trả `BLOCKED` — hạn mức leo thang đã dùng hết trước khi status đó tới tay bạn;
+`BLOCKED` nghĩa là cần người quyết định, không phải cần model to hơn.
+
+Ngoại lệ duy nhất bạn được truyền `model` khi spawn: user nói rõ trong câu lệnh muốn chạy khác đi
+(vd "sprint này chạy Opus hết cho chắc").
+
 ## BƯỚC 0 — Resume + Dependency check (LUÔN làm đầu tiên)
 
 **KHÔNG tự nạp CLAUDE.md / architecture.md ở đây.** Từ Phase 1, mỗi subagent tự nạp phần liên quan
@@ -143,12 +166,12 @@ Relay báo cáo dạng tóm tắt ngắn cho user.
 Spawn `test-strategist` (skill `test-strategy`) → viết + chạy test. Nếu có UI design: visual verification
 (skill `design-fidelity`) — screenshot mỗi màn/state + dark/light, baseline trong
 `.sdlc/<version>/<sprint>/visual-baseline/`. Ghi `.sdlc/<version>/<sprint>/test-report.md`.
-**Nó tự đóng vòng fix (tối đa 3 vòng) và tự commit test file + fix** — bạn KHÔNG điều phối vòng fix,
+**Nó tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus) và tự commit test file + fix** — bạn KHÔNG điều phối vòng fix,
 KHÔNG chạm git index khi nó chạy. Xử lý status như Phase 4b.
 
 ### Phase 6 — QA Gate
 Spawn `qa-guard`: full test + happy path + regression + NFR + design fidelity + quét hardcode/TODO.
-**Cũng tự đóng vòng fix (tối đa 3 vòng, mỗi vòng chạy lại checklist từ đầu) và tự commit.**
+**Cũng tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus, mỗi vòng chạy lại checklist từ đầu) và tự commit.**
 Bạn chỉ nhận status; chỉ `DONE` mới sang bàn giao.
 
 ## Bàn giao

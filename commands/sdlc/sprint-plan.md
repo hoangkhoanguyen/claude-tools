@@ -16,6 +16,14 @@ Chia sprint từ tài liệu business logic cho **một version cụ thể**.
 
 Plugin KHÔNG tự sinh tài liệu business logic — đây là đầu vào do user cung cấp.
 
+## Model — nhắc user một lần, ở đây
+
+Đây là điểm vào đầu tiên của plugin, nên nhắc user **một lần duy nhất** rồi thôi: session chạy `/sdlc:*`
+nên để **Opus** (`/model opus`), vì nó giữ mọi quyết định và approval gate suốt cả sprint. Các subagent
+đã tự khai model của chúng (phase 1-3 Opus, phase 4-6 Sonnet) nên **không cần cấu hình gì thêm**.
+
+Nhắc xong thì chạy tiếp bình thường — đừng dừng lại chờ user đổi model, và đừng nhắc lại ở các lệnh sau.
+
 ## Các bước
 
 1. **Delegate đọc tài liệu cho subagent (KHÔNG tự Read).** Business docs của user thường dài

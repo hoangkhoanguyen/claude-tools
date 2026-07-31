@@ -44,11 +44,24 @@ Nạp context: đọc các `CLAUDE.md` liên quan (nguyên tắc 0) + `.sdlc/arc
 Trước khi code: đặt task đã chọn = `doing` trong `tasks.md`; trong state đặt
 `current_phase: execute`, `current_task: <task-id>`, `execute: doing`.
 
-Spawn `feature-builder`:
+Spawn `feature-builder` (nó đã khai `model: sonnet` trong frontmatter — **không truyền tham số `model`**
+ở lượt đầu):
 - Implement theo đúng phạm vi task — không làm thêm task khác.
 - Chạy test cục bộ đến khi pass.
 - Self-review (skill `self-review`): đủ EC? không còn TODO/hardcode? test xanh thật?
 - Báo kết quả về: file đã đụng, test đã chạy, commit message đề xuất.
+
+**Leo thang khi task không xong** (ở lệnh này bạn là người điều phối, nên bạn giữ hạn mức):
+
+- Trả `blocked` → spawn lại `feature-builder`, **kèm nguyên phần "Đã thử gì" của lượt trước**. Nó
+  cold-start mỗi lần; không truyền lịch sử thì nó lặp lại đúng sai lầm cũ.
+- Tối đa **5 lượt Sonnet**. Lượt thứ **6** spawn với `model: "opus"`, nói rõ đây là lượt escalate cuối và
+  liệt kê đủ 5 hướng đã thử. Vẫn không xong → đặt task `blocked` trong `tasks.md` kèm lý do, báo user.
+- **Leo sớm** nếu ba lượt liên tiếp thất bại y hệt nhau (cùng test đỏ, cùng lỗi) — đừng chờ đủ 5.
+- Task được `tasks.md` đánh `Độ khó: cao`, hoặc đụng thuật toán / đồng thời / giao dịch / mật mã →
+  spawn thẳng `model: "opus"` ngay lượt đầu.
+- Báo `khoảng trống design` → **không tính vào hạn mức**, và đổi model cũng vô ích: dừng, cho `architect`
+  vá `design.md` (nó chạy Opus) rồi chạy lại task.
 
 Nhận báo cáo xong, **bạn (lệnh này) ghi state** — subagent không tự ghi:
 - `git commit` task trên sprint branch (không push/tạo PR trừ khi user yêu cầu).

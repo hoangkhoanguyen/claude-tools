@@ -26,6 +26,21 @@ Bạn CHỈ đọc: `.sdlc/<version>/state.md` (resume), `.sdlc/<version>/sprint
 đích** vào `.sdlc/<version>/<sprint>/tasks.md` để lấy ID + dòng mô tả của các task chưa done.
 KHÔNG Read trọn `tasks.md` — mỗi task có 7 field mà bạn chỉ cần 2.
 
+## Chính sách model
+
+Lệnh này nên chạy bằng **Opus** — nó giữ quyết định (xử lý `DESIGN_GAP`, chốt bàn giao) suốt cả 3 chặng.
+
+Model của từng subagent **đã khai trong frontmatter của agent đó** — cả 4 agent trong lệnh này
+(`preflight-scout`, `implement-coordinator`, `test-strategist`, `qa-guard`) chạy **Sonnet**. Bạn KHÔNG
+truyền tham số `model` khi spawn, để khỏi ghi đè chính sách.
+
+**Leo thang lên Opus là việc của agent thực thi, không phải của bạn**: coordinator / test-strategist /
+qa-guard tự nâng `feature-builder` lên Opus khi Sonnet đã thất bại đủ 5 lượt ở cùng một chỗ. Khi status
+`BLOCKED` tới tay bạn thì hạn mức đó đã dùng hết — đừng spawn lại bằng Opus, `BLOCKED` nghĩa là cần
+người quyết định chứ không phải cần model to hơn.
+
+Ngoại lệ: user nói rõ muốn chạy khác đi thì làm theo user.
+
 ## Pre-flight (BẮT BUỘC trước khi code)
 
 1. **Spawn `preflight-scout`** (read-only). Nó đọc `docker-compose.yml`, `.env.example`, `package.json`
@@ -78,7 +93,7 @@ visual verification (skill `design-fidelity`): screenshot đối chiếu Design 
 `.sdlc/<version>/<sprint>/visual-baseline/`. Viết test và CHẠY thật đến khi xanh.
 Mọi AC/EC/NFR/DAC phải có test hoặc được liệt kê verify-tay. Ghi `.sdlc/<version>/<sprint>/test-report.md`.
 
-**Nó tự đóng vòng fix (tối đa 3 vòng) và tự commit test file + fix.** Bạn KHÔNG điều phối vòng fix,
+**Nó tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus) và tự commit test file + fix.** Bạn KHÔNG điều phối vòng fix,
 KHÔNG chạm git index khi nó đang chạy — đẩy vòng fix về đây là nguồn tốn context ở conversation chính.
 Xử lý status nó trả về theo cùng bảng như Chặng 1 (`DONE` → sang Chặng 3; `BLOCKED` → dừng báo user;
 `DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT` → xử lý rồi spawn lại). Relay tóm tắt ngắn cho user.
@@ -88,7 +103,7 @@ Xử lý status nó trả về theo cùng bảng như Chặng 1 (`DONE` → sang
 Spawn subagent `qa-guard`: full test + happy path từng story + regression happy path feature cũ liên quan +
 NFR check + design fidelity (nếu có UI) + quét hardcode/TODO/unhandled error.
 
-**Nó cũng tự đóng vòng fix (tối đa 3 vòng) và tự commit** — mỗi vòng fix nó chạy lại checklist từ đầu.
+**Nó cũng tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus) và tự commit** — mỗi vòng fix nó chạy lại checklist từ đầu.
 Bạn chỉ nhận status, không tự fix, không chạm git. Chỉ khi status `DONE` mới bàn giao:
 
 - Cập nhật sprint = `done` trong `.sdlc/<version>/sprints.md`; nếu mọi sprint trong version đã `done` →
