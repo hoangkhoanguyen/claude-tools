@@ -185,13 +185,18 @@ thực thi thì test bắt được và fix được.
 
 | Vai | Model |
 |---|---|
-| Session chính chạy `/sdlc:*` | **Opus** (bạn tự chọn bằng `/model`) |
-| `product-analyst`, `architect`, `ui-designer`, `reviewer` | **Opus** |
-| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | **Sonnet** |
+| Session chính chạy `/sdlc:*` | **Opus** — bạn tự chọn bằng `/model` |
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` → chạy đúng Opus bạn đã chọn |
+| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | **Sonnet** (ghim cứng) |
 
 Model của subagent khai trong frontmatter `agents/*.md`, nên **chính sách này đi theo khi cài vào dự án
 khác** — không cần cấu hình gì thêm. Bạn chỉ cần bật Opus cho session chính bằng `/model` trước khi chạy
-`/sdlc:run`.
+`/sdlc:sprint-plan`.
+
+Phase 1-3 dùng `inherit` thay vì ghim `opus` để tôn trọng đúng bản Opus bạn chọn (alias `opus` resolve về
+bản mặc định của tier, không nhất thiết là bản bạn đang dùng). Đánh đổi: **quên bật Opus thì phase 1-3
+chạy Sonnet**. Phase 4-6 ghim cứng `sonnet` vì mục đích của chúng là hạ model xuống bất kể session chính
+chạy gì — để `inherit` ở đó sẽ kéo cả chặng thực thi lên Opus và mất sạch lợi ích tốc độ/chi phí.
 
 ### Khi nào Opus được gọi vào chặng thực thi
 

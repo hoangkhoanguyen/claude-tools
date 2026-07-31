@@ -97,12 +97,21 @@ ghi đè chính sách.
 
 | Vai | Model | Lý do |
 |---|---|---|
-| Conversation chính (`/sdlc:*`) | opus | Giữ mọi quyết định + approval gate, sống suốt 6 phase |
-| `product-analyst`, `architect`, `ui-designer`, `reviewer` | opus | Phase 1-3: sai một lần, mọi phase sau kế thừa lỗi |
+| Conversation chính (`/sdlc:*`) | user tự chọn — nên là **Opus** | Giữ mọi quyết định + approval gate, sống suốt 6 phase |
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` | Phase 1-3: sai một lần, mọi phase sau kế thừa lỗi → chạy đúng model user đã chọn |
 | `preflight-scout` | sonnet | Đọc config, ping port — việc cơ học |
 | `implement-coordinator` | sonnet | Chia wave + commit + ghi state theo quy trình có sẵn |
 | `feature-builder` | sonnet | Có design + task spec rõ trong tay |
 | `test-strategist`, `qa-guard` | sonnet | Chạy checklist, viết test theo bảng quyết định |
+
+**Vì sao phase 1-3 dùng `inherit` chứ không ghim `opus`:** alias `opus` resolve về bản Opus mặc định của
+tier, không nhất thiết là bản user đang chủ động chọn ở conversation chính. `inherit` tôn trọng lựa chọn
+đó — user chọn Opus nào thì 4 agent này chạy đúng bản ấy. Hệ quả cần biết: **conversation chính chạy
+Sonnet thì phase 1-3 cũng chạy Sonnet**. Vì vậy `/sdlc:sprint-plan` nhắc user bật Opus ngay ở điểm vào.
+
+Phase 4-6 thì ngược lại — ghim cứng `sonnet`, KHÔNG `inherit`, vì mục đích của chúng chính là **hạ** model
+xuống bất kể conversation chính đang chạy gì. Để `inherit` ở đây sẽ kéo cả chặng thực thi lên Opus và xoá
+sạch lợi ích tốc độ/chi phí — đúng thứ mà thiết kế này nhắm tới.
 
 ### Leo thang lên Opus — do agent thực thi tự quyết
 

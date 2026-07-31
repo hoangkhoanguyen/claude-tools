@@ -26,8 +26,8 @@ truyền tham số `model` khi spawn, để khỏi ghi đè chính sách:
 
 | Agent | Model | Vì sao |
 |---|---|---|
-| `product-analyst`, `architect`, `ui-designer`, `reviewer` | opus | Phase 1-3 là nơi sai một lần thì mọi phase sau kế thừa lỗi |
-| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | sonnet | Phase 4-6 là việc lặp lại, có spec rõ trong tay |
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` | Phase 1-3 là nơi sai một lần thì mọi phase sau kế thừa lỗi → chạy đúng model user chọn |
+| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | sonnet | Phase 4-6 là việc lặp lại, có spec rõ trong tay — ghim cứng để hạ model bất kể session chính chạy gì |
 
 **Leo thang lên Opus là việc của agent thực thi, không phải của bạn.** `implement-coordinator`,
 `test-strategist`, `qa-guard` tự nâng `feature-builder` lên Opus khi Sonnet đã thất bại đủ 5 lượt cho
