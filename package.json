@@ -1,6 +1,6 @@
 {
   "name": "sdlc-workflow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Installer cho SDLC Workflow plugin: copy agents/commands/skills/hooks vào .claude của dự án đích, merge an toàn, update idempotent.",
   "bin": {
     "sdlc-workflow": "bin/install.js",

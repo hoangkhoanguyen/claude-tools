@@ -71,7 +71,7 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
   Chặng implement giao TRỌN cho `implement-coordinator` — nó là người ghi duy nhất (commit, `tasks.md`,
   `state.md`) và tự giao từng task cho `feature-builder`, để conversation chính không tốn context vào
   vòng lặp report-commit-ghi-state. Cùng nguyên tắc đó, `test-strategist` và `qa-guard` TỰ đóng vòng fix
-  (tối đa 3 vòng rồi escalate) và TỰ commit — conversation chính không bao giờ điều phối vòng fix hay
+  (tối đa 5 vòng Sonnet + 1 vòng escalate Opus rồi dừng) và TỰ commit — conversation chính không bao giờ điều phối vòng fix hay
   chạm git index khi một agent thực thi đang chạy; nó chỉ nhận status ở dòng đầu báo cáo
   (`DONE` / `BLOCKED` / `DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT`) và xử lý theo đó;
   `ui-designer` cho nhánh giao
@@ -84,6 +84,57 @@ bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
 - **Playwright** (đã cài sẵn trong môi trường): tự động hóa test UI. KHÔNG chạy `playwright install`.
 - **Skills**: load skill phù hợp theo phase (đã kèm trong plugin này).
 - **Hooks**: `SessionStart` hook in tiến trình SDLC đang dở (`.sdlc/<version>/state.md`) để hỗ trợ resume (xem `hooks/`).
+
+## Chính sách model (Opus điều phối — Sonnet thực thi)
+
+Sprint chạy trọn một mạch, không ngắt để approve từng bước, nên model phải phân bổ theo **nơi sai lầm
+đắt nhất**: quyết định sai ở phase đầu thì mọi phase sau kế thừa lỗi, còn code sai ở phase thực thi thì
+test bắt được và fix được.
+
+**Model đã khai sẵn trong frontmatter của từng agent (`agents/*.md`)** — đó là nguồn sự thật, và nó đi
+theo khi cài plugin vào dự án khác. Conversation chính KHÔNG truyền tham số `model` khi spawn, để khỏi
+ghi đè chính sách.
+
+| Vai | Model | Lý do |
+|---|---|---|
+| Conversation chính (`/sdlc:*`) | user tự chọn — nên là **Opus** | Giữ mọi quyết định + approval gate, sống suốt 6 phase |
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` | Phase 1-3: sai một lần, mọi phase sau kế thừa lỗi → chạy đúng model user đã chọn |
+| `preflight-scout` | sonnet | Đọc config, ping port — việc cơ học |
+| `implement-coordinator` | sonnet | Chia wave + commit + ghi state theo quy trình có sẵn |
+| `feature-builder` | sonnet | Có design + task spec rõ trong tay |
+| `test-strategist`, `qa-guard` | sonnet | Chạy checklist, viết test theo bảng quyết định |
+
+**Vì sao phase 1-3 dùng `inherit` chứ không ghim `opus`:** alias `opus` resolve về bản Opus mặc định của
+tier, không nhất thiết là bản user đang chủ động chọn ở conversation chính. `inherit` tôn trọng lựa chọn
+đó — user chọn Opus nào thì 4 agent này chạy đúng bản ấy. Hệ quả cần biết: **conversation chính chạy
+Sonnet thì phase 1-3 cũng chạy Sonnet**. Vì vậy `/sdlc:sprint-plan` nhắc user bật Opus ngay ở điểm vào.
+
+Phase 4-6 thì ngược lại — ghim cứng `sonnet`, KHÔNG `inherit`, vì mục đích của chúng chính là **hạ** model
+xuống bất kể conversation chính đang chạy gì. Để `inherit` ở đây sẽ kéo cả chặng thực thi lên Opus và xoá
+sạch lợi ích tốc độ/chi phí — đúng thứ mà thiết kế này nhắm tới.
+
+### Leo thang lên Opus — do agent thực thi tự quyết
+
+Agent điều phối (`implement-coordinator`, `test-strategist`, `qa-guard`) tự nâng `feature-builder` lên
+Opus qua tham số `model` của tool `Agent`. Hạn mức đếm **theo từng task / từng chỗ hỏng**, không gộp cả sprint:
+
+- **Lượt 1-5: Sonnet.** Mỗi lần thất bại, respawn kèm **lịch sử đã thử** — agent cold-start mỗi lần, không
+  truyền lịch sử thì nó lặp lại đúng sai lầm cũ và đốt sạch hạn mức vào một hướng.
+- **Lượt 6: Opus**, lượt cuối. Vẫn không xong → `BLOCKED`, cần người quyết định.
+- **Leo sớm**: ba lượt liên tiếp thất bại y hệt (cùng test đỏ, cùng lỗi, cùng file) → lên Opus ngay,
+  đừng chờ đủ 5. Lặp lại một hướng sai không tạo ra thông tin mới.
+- **Dùng Opus ngay từ lượt đầu** khi task được đánh `Độ khó: cao`, hoặc đụng thuật toán / đồng thời /
+  giao dịch phân tán / mật mã — loại việc sai một chút là hỏng ngầm, test khó bắt.
+- **`DESIGN_GAP` và `NEEDS_SERVICE` KHÔNG tính vào hạn mức.** Design thiếu thì model to hơn cũng không
+  đoán ra được ý đồ, còn service chưa bật thì đổi model vô nghĩa. Dừng và xử lý đúng gốc.
+
+Nhận `BLOCKED` rồi thì **đừng spawn lại bằng Opus** — hạn mức leo thang đã dùng hết trước khi status đó
+tới tay conversation chính.
+
+### Đổi chính sách cho một dự án cụ thể
+
+Sửa dòng `model:` trong frontmatter của agent tương ứng ở `.claude/agents/` của dự án. Installer nhận ra
+file bạn đã sửa và sẽ hỏi trước khi ghi đè ở lần cài sau, nên chỉnh tay là an toàn.
 
 ## Pre-flight trước khi execute (RẤT QUAN TRỌNG)
 

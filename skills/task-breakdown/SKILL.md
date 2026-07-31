@@ -38,6 +38,7 @@ Mỗi task có status: `todo` / `doing` / `done` (+ `blocked` kèm lý do nếu 
   File dự kiến: src/routes/orders.ts, src/services/order.ts
   Phụ thuộc: TASK-01 (Order schema)
   Skill gợi ý: <tên skill nếu có — vd migration, component-gen, e2e-test; để trống nếu không>
+  Độ khó: thường | cao
   Test: unit cho service + smoke POST endpoint
 ```
 
@@ -46,9 +47,24 @@ task này nên dùng. Căn cứ vào loại việc (migration DB → skill migra
 component-gen; test E2E → skill e2e; ...). Để trống nếu không có skill nào phù hợp hơn cách mặc định.
 Đây là gợi ý cho feature-builder — không bắt buộc dùng nếu skill không khớp thực tế.
 
+Trường `Độ khó`: mặc định `thường`. Chặng implement chạy bằng Sonnet, và `cao` là tín hiệu để
+`implement-coordinator` giao task đó cho Opus ngay từ lượt đầu thay vì chờ Sonnet thất bại 5 lượt.
+Vì vậy đánh `cao` phải **có căn cứ, không phải cảm tính** — chỉ dùng khi task rơi vào một trong số:
+
+- Thuật toán không tầm thường (tối ưu, đồ thị, lập lịch, tính toán tài chính).
+- Đồng thời / race condition / khoá / idempotency.
+- Giao dịch nhiều bước phải nhất quán (phân tán, rollback, saga).
+- Mật mã, xác thực, phân quyền ở tầng thiết kế (không phải chỉ gọi thư viện có sẵn).
+- Refactor đụng nhiều module đang chạy, rủi ro regression rộng.
+
+Task dài hoặc nhiều file **không** đồng nghĩa với `cao` — đó là task nên chẻ nhỏ. Đánh `cao` tràn lan
+làm mất toàn bộ lợi ích tốc độ/chi phí của chặng thực thi; giữ nó cho đúng loại việc mà sai sót không
+lộ ra qua test.
+
 ## Checklist tự soi trước khi chốt
 
 - [ ] Mọi AC-xx / EC-xx có ít nhất một task phụ trách (có bảng mapping)?
 - [ ] Task nào chạy song song được đã đánh dấu?
 - [ ] Phụ thuộc giữa task đã ghi đúng thứ tự?
 - [ ] Mỗi task có tiêu chí test rõ để mark done?
+- [ ] Task đánh `Độ khó: cao` có đúng căn cứ trong danh sách trên, không phải chỉ vì task dài?

@@ -177,6 +177,45 @@ Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (comm
 
 ---
 
+## Model: Opus điều phối, Sonnet thực thi
+
+Sprint được thiết kế để chạy một mạch, không ngắt để approve từng bước — nên model được phân bổ theo
+**nơi sai lầm đắt nhất**. Quyết định sai ở phase đầu thì mọi phase sau kế thừa lỗi; code sai ở phase
+thực thi thì test bắt được và fix được.
+
+| Vai | Model |
+|---|---|
+| Session chính chạy `/sdlc:*` | **Opus** — bạn tự chọn bằng `/model` |
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` → chạy đúng Opus bạn đã chọn |
+| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | **Sonnet** (ghim cứng) |
+
+Model của subagent khai trong frontmatter `agents/*.md`, nên **chính sách này đi theo khi cài vào dự án
+khác** — không cần cấu hình gì thêm. Bạn chỉ cần bật Opus cho session chính bằng `/model` trước khi chạy
+`/sdlc:sprint-plan`.
+
+Phase 1-3 dùng `inherit` thay vì ghim `opus` để tôn trọng đúng bản Opus bạn chọn (alias `opus` resolve về
+bản mặc định của tier, không nhất thiết là bản bạn đang dùng). Đánh đổi: **quên bật Opus thì phase 1-3
+chạy Sonnet**. Phase 4-6 ghim cứng `sonnet` vì mục đích của chúng là hạ model xuống bất kể session chính
+chạy gì — để `inherit` ở đó sẽ kéo cả chặng thực thi lên Opus và mất sạch lợi ích tốc độ/chi phí.
+
+### Khi nào Opus được gọi vào chặng thực thi
+
+Agent điều phối tự nâng `feature-builder` lên Opus, đếm theo **từng task / từng chỗ hỏng**:
+
+- Lượt 1-5 Sonnet (mỗi lượt respawn kèm lịch sử đã thử) → lượt 6 Opus → vẫn không xong thì `BLOCKED`.
+- **Leo sớm** nếu ba lượt liên tiếp thất bại y hệt nhau — lặp lại một hướng sai không tạo thông tin mới.
+- **Opus ngay từ lượt đầu** với task được `tasks.md` đánh `Độ khó: cao` (thuật toán, đồng thời, giao
+  dịch phân tán, mật mã, refactor rủi ro regression rộng).
+- `DESIGN_GAP` / `NEEDS_SERVICE` **không** tính vào hạn mức — design thiếu thì model to hơn cũng không
+  đoán ra ý đồ, service chưa bật thì đổi model vô nghĩa.
+
+### Đổi chính sách cho dự án của bạn
+
+Sửa dòng `model:` trong frontmatter agent tương ứng tại `.claude/agents/`. Installer nhận ra file bạn đã
+sửa (qua checksum trong `.sdlc-install.json`) và hỏi trước khi ghi đè ở lần cài sau, nên chỉnh tay an toàn.
+
+---
+
 ## Dự án có UI — nguồn thiết kế đến từ đâu cũng được
 
 Khi sprint có màn hình, UI là "requirement" ngang hàng nghiệp vụ. Phase design chạy 2 nhánh song song:
