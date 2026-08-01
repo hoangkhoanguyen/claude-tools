@@ -1,7 +1,7 @@
 {
   "name": "sdlc-workflow",
   "version": "0.2.0",
-  "description": "Plugin SDLC end-to-end cho Claude Code: chia sprint, phân tích requirements, thiết kế, chia tasks, execute + test tự động, resume được, bàn giao sạch để manual test. Stack-agnostic.",
+  "description": "End-to-end SDLC plugin for Claude Code: split into sprints, analyze requirements, design, break down tasks, execute + test automatically, resumable, clean handoff for manual testing. Stack-agnostic.",
   "author": {
     "name": "hoangkhoanguyen"
   },
