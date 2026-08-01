@@ -35,8 +35,16 @@ const PLUGIN_NAME = PKG.name || 'sdlc-workflow';
 const PLUGIN_VERSION = PKG.version || '0.0.0';
 const MANIFEST_NAME = '.sdlc-install.json';
 const HOOK_SCRIPT = 'sdlc-session-start.sh';
-const CLAUDE_MD_START = '<!-- sdlc-workflow:start (managed — đừng sửa tay trong block này) -->';
+const CLAUDE_MD_START = '<!-- sdlc-workflow:start (managed — do not hand-edit inside this block) -->';
 const CLAUDE_MD_END = '<!-- sdlc-workflow:end -->';
+
+// Marker start tags used by earlier releases. Installs made with those still carry
+// the old tag in their CLAUDE.md, so detection must match them too — otherwise an
+// update would append a second block instead of replacing the existing one.
+// We only ever WRITE CLAUDE_MD_START, so old installs migrate on their next update.
+const CLAUDE_MD_START_LEGACY = [
+  '<!-- sdlc-workflow:start (managed — đừng sửa tay trong block này) -->',
+];
 
 // Thành phần cài được. `dir` = thư mục nguồn; `type` quyết định cách xử lý.
 const COMPONENTS = {
@@ -310,8 +318,13 @@ function planClaudeMd(target, base) {
 
   let current = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8') : '';
   let next;
+  // Match the current start tag OR any legacy one, so blocks written by an older
+  // release get replaced in place (and thereby migrated to the new tag).
+  const startAlternatives = [CLAUDE_MD_START, ...CLAUDE_MD_START_LEGACY]
+    .map(escapeRe)
+    .join('|');
   const re = new RegExp(
-    `${escapeRe(CLAUDE_MD_START)}[\\s\\S]*?${escapeRe(CLAUDE_MD_END)}`,
+    `(?:${startAlternatives})[\\s\\S]*?${escapeRe(CLAUDE_MD_END)}`,
     'm'
   );
   if (re.test(current)) {

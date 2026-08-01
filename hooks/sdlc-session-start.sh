@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # SDLC plugin — SessionStart hook.
-# Nếu dự án đang có tiến trình SDLC dở, in ra để nhắc chỗ tiếp tục.
-# Thuần đọc, không thay đổi gì trong repo.
+# If the project has an SDLC run in progress, print it as a reminder of where to continue.
+# Read-only; changes nothing in the repo.
 
 set -euo pipefail
 
-# Layout chuẩn theo version: .sdlc/<version>/state.md (xem CLAUDE.md nguyên tắc 4a).
-# Nhiều version → lấy file sửa gần nhất = version đang làm.
-# Vẫn nhận .sdlc/state.md để tương thích layout cũ.
+# Standard per-version layout: .sdlc/<version>/state.md (see CLAUDE.md principle 4a).
+# Multiple versions → take the most recently modified file = the version being worked on.
+# Still accepts .sdlc/state.md for compatibility with the old layout.
 shopt -s nullglob
 candidates=(.sdlc/*/state.md .sdlc/state.md)
 shopt -u nullglob
@@ -24,11 +24,11 @@ for f in "${candidates[@]}"; do
 done
 
 if [[ -f "$STATE_FILE" ]]; then
-  echo "── SDLC: phát hiện tiến trình đang dở ($STATE_FILE) ──"
-  # In tối đa 40 dòng đầu của state để không làm ngập context.
+  echo "── SDLC: run in progress ($STATE_FILE) ──"
+  # Print at most the first 40 lines of state so the context isn't flooded.
   head -n 40 "$STATE_FILE"
   echo "────────────────────────────────────────"
-  echo "Gợi ý: chạy /sdlc:status để xem tiến độ, hoặc /sdlc:run <version> <sprint> để làm tiếp."
+  echo "Next: /sdlc:status for progress, or /sdlc:run <version> <sprint> to continue."
 fi
 
 exit 0
