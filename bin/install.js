@@ -2,18 +2,19 @@
 /**
  * SDLC Workflow — installer.
  *
- * Copy tài nguyên (agents / commands / skills / hooks / CLAUDE.md) từ repo này
- * sang thư mục .claude của DỰ ÁN ĐÍCH. Thiết kế để chạy online, ví dụ:
+ * Copies resources (agents / commands / skills / hooks / CLAUDE.md) from this repo
+ * into the TARGET PROJECT's .claude directory. Designed to run online, e.g.:
  *
- *   npx github:hoangkhoanguyen/claude-tools            # cài vào ./.claude của dự án hiện tại
- *   npx github:hoangkhoanguyen/claude-tools --global   # cài vào ~/.claude
+ *   npx github:hoangkhoanguyen/claude-tools            # install into the current project's ./.claude
+ *   npx github:hoangkhoanguyen/claude-tools --global   # install into ~/.claude
  *
- * Đặc điểm:
- *   - Zero-dependency (chỉ dùng built-in Node) → npx chạy nhanh, không cài thêm gì.
- *   - Idempotent: chạy lại sau khi update repo chỉ ghi đè file mà user CHƯA sửa;
- *     file user đã sửa thì hỏi (nhờ manifest .sdlc-install.json ghi checksum lúc cài).
- *   - Merge an toàn cho settings.json (hooks) và CLAUDE.md (managed block) — không đè mù.
- *   - Chọn lọc thành phần, dry-run, backup, hỏi từng file.
+ * Characteristics:
+ *   - Zero-dependency (Node built-ins only) → npx runs fast and installs nothing extra.
+ *   - Idempotent: re-running after a repo update only overwrites files the user has NOT
+ *     edited; edited files prompt (thanks to the .sdlc-install.json manifest recording
+ *     checksums at install time).
+ *   - Safe merging for settings.json (hooks) and CLAUDE.md (managed block) — no blind overwrite.
+ *   - Component selection, dry-run, backup, per-file prompting.
  */
 
 'use strict';
@@ -26,7 +27,7 @@ const readline = require('readline');
 const { spawnSync } = require('child_process');
 
 // ---------------------------------------------------------------------------
-// Hằng số & metadata
+// Constants & metadata
 // ---------------------------------------------------------------------------
 
 const SRC_ROOT = path.resolve(__dirname, '..');
@@ -46,19 +47,19 @@ const CLAUDE_MD_START_LEGACY = [
   '<!-- sdlc-workflow:start (managed — đừng sửa tay trong block này) -->',
 ];
 
-// Thành phần cài được. `dir` = thư mục nguồn; `type` quyết định cách xử lý.
+// Installable components. `dir` = source directory; `type` decides how it's handled.
 const COMPONENTS = {
   agents:    { type: 'files', dir: 'agents',   label: 'Custom agents' },
   commands:  { type: 'files', dir: 'commands', label: 'Slash commands (/sdlc:*)' },
   skills:    { type: 'files', dir: 'skills',   label: 'Skills' },
-  templates: { type: 'files', dir: 'templates', label: 'Templates (state.template.md — commands tham chiếu)' },
-  hooks:     { type: 'hooks', dir: 'hooks',    label: 'SessionStart hook + đăng ký vào settings.json' },
-  'claude-md': { type: 'claude-md',            label: 'Nguyên tắc SDLC (managed block trong CLAUDE.md)' },
+  templates: { type: 'files', dir: 'templates', label: 'Templates (state.template.md — referenced by commands)' },
+  hooks:     { type: 'hooks', dir: 'hooks',    label: 'SessionStart hook + registration in settings.json' },
+  'claude-md': { type: 'claude-md',            label: 'SDLC principles (managed block in CLAUDE.md)' },
 };
 const DEFAULT_COMPONENTS = ['agents', 'commands', 'skills', 'templates', 'hooks'];
 
 // ---------------------------------------------------------------------------
-// Tô màu terminal (tự tắt khi không phải TTY hoặc NO_COLOR)
+// Terminal colors (auto-disabled when not a TTY or when NO_COLOR is set)
 // ---------------------------------------------------------------------------
 
 const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -72,7 +73,7 @@ const c = {
 };
 
 // ---------------------------------------------------------------------------
-// Parse tham số dòng lệnh
+// Command-line argument parsing
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
@@ -108,11 +109,11 @@ function parseArgs(argv) {
         else if (a.startsWith('--skip=')) opts.skip = splitList(a.slice(7));
         else if (a.startsWith('--dir=')) opts.dir = a.slice(6);
         else if (a.startsWith('--on-conflict=')) opts.onConflict = a.slice(14);
-        else fail(`Tham số không hợp lệ: ${a} (chạy --help để xem hướng dẫn)`);
+        else fail(`Invalid argument: ${a} (run --help for usage)`);
     }
   }
   if (!['ask', 'overwrite', 'skip', 'backup'].includes(opts.onConflict)) {
-    fail(`--on-conflict phải là ask|overwrite|skip|backup (nhận: ${opts.onConflict})`);
+    fail(`--on-conflict must be ask|overwrite|skip|backup (got: ${opts.onConflict})`);
   }
   return opts;
 }
@@ -122,7 +123,7 @@ function splitList(s) {
 }
 
 // ---------------------------------------------------------------------------
-// Tiện ích fs / hash / json
+// fs / hash / json utilities
 // ---------------------------------------------------------------------------
 
 function readJsonSafe(p) {
@@ -149,7 +150,7 @@ function ensureDir(p) {
 }
 
 // ---------------------------------------------------------------------------
-// Xác định thư mục đích
+// Resolving the target directory
 // ---------------------------------------------------------------------------
 
 function resolveTarget(opts) {
@@ -163,11 +164,11 @@ function resolveTarget(opts) {
 }
 
 // ---------------------------------------------------------------------------
-// Thu thập danh sách file cần cài theo thành phần
+// Collecting the files to install, per component
 // ---------------------------------------------------------------------------
 
 function collectFiles(componentKeys, base) {
-  // Trả về mảng { component, src, dest, rel } cho các thành phần dạng 'files'/'hooks'.
+  // Returns an array of { component, src, dest, rel } for 'files'/'hooks' components.
   const items = [];
   for (const key of componentKeys) {
     const comp = COMPONENTS[key];
@@ -175,10 +176,10 @@ function collectFiles(componentKeys, base) {
     const srcDir = path.join(SRC_ROOT, comp.dir);
     for (const src of walk(srcDir)) {
       const relInDir = path.relative(srcDir, src);
-      // hooks.json là format của plugin (${CLAUDE_PLUGIN_ROOT}); ở target ta
-      // đăng ký hook qua settings.json nên bỏ qua file này khi copy.
+      // hooks.json is the plugin-side format (${CLAUDE_PLUGIN_ROOT}); in the target we
+      // register the hook via settings.json instead, so skip this file when copying.
       if (key === 'hooks' && relInDir === 'hooks.json') continue;
-      const rel = path.join(comp.dir, relInDir); // ví dụ: agents/architect.md
+      const rel = path.join(comp.dir, relInDir); // e.g. agents/architect.md
       items.push({ component: key, src, dest: path.join(base, rel), rel });
     }
   }
@@ -186,7 +187,7 @@ function collectFiles(componentKeys, base) {
 }
 
 // ---------------------------------------------------------------------------
-// Quyết định hành động cho 1 file thường
+// Deciding the action for a single ordinary file
 // ---------------------------------------------------------------------------
 
 function decideFile(item, manifest) {
@@ -200,10 +201,10 @@ function decideFile(item, manifest) {
   }
   const prev = manifest.files && manifest.files[item.rel];
   if (prev && prev.installedHash === destHash) {
-    // User chưa đụng vào file kể từ lần cài trước → update an toàn.
+    // The user hasn't touched the file since the last install → safe to update.
     return { ...item, action: 'update', srcHash };
   }
-  // dest tồn tại, khác src, và user đã sửa (hoặc chưa từng cài) → xung đột.
+  // dest exists, differs from src, and the user edited it (or it was never installed) → conflict.
   return { ...item, action: 'conflict', srcHash, destHash };
 }
 
@@ -220,7 +221,7 @@ function makePrompter() {
 }
 
 // ---------------------------------------------------------------------------
-// Ghi file + backup
+// Writing files + backups
 // ---------------------------------------------------------------------------
 
 function backupFile(dest) {
@@ -238,31 +239,31 @@ function writeFile(dest, src) {
 }
 
 // ---------------------------------------------------------------------------
-// Diff (dùng lệnh diff hệ thống nếu có)
+// Diff (uses the system `diff` command when available)
 // ---------------------------------------------------------------------------
 
 function showDiff(dest, src) {
   const r = spawnSync('diff', ['-u', dest, src], { encoding: 'utf8' });
   if (r.error) {
-    console.log(c.dim('  (không tìm thấy lệnh `diff` trên máy — bỏ qua)'));
+    console.log(c.dim('  (no `diff` command found on this machine — skipping)'));
     return;
   }
   const body = (r.stdout || '').split('\n').slice(0, 60).join('\n');
-  console.log(c.dim(body || '  (không có khác biệt hiển thị)'));
-  if ((r.stdout || '').split('\n').length > 60) console.log(c.dim('  … (đã cắt bớt)'));
+  console.log(c.dim(body || '  (no differences to show)'));
+  if ((r.stdout || '').split('\n').length > 60) console.log(c.dim('  … (truncated)'));
 }
 
 // ---------------------------------------------------------------------------
-// Merge hook vào settings.json của target
+// Merging the hook into the target's settings.json
 // ---------------------------------------------------------------------------
 
 function hookCommandFor(target, base) {
   const scriptPath = path.join(base, 'hooks', HOOK_SCRIPT);
-  // Project cài vào ./.claude → dùng $CLAUDE_PROJECT_DIR cho portable (commit được).
+  // Project installs into ./.claude → use $CLAUDE_PROJECT_DIR so it stays portable (committable).
   if (target.mode === 'project' && base === path.join(process.cwd(), '.claude')) {
     return `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/${HOOK_SCRIPT}"`;
   }
-  // Global / custom → path tuyệt đối.
+  // Global / custom → absolute path.
   return `bash "${scriptPath}"`;
 }
 
@@ -275,7 +276,7 @@ function planHookRegistration(target, base) {
   const next = JSON.parse(JSON.stringify(existing));
   next.hooks = next.hooks || {};
   const arr = Array.isArray(next.hooks.SessionStart) ? next.hooks.SessionStart : [];
-  // Xoá mọi entry SDLC cũ (nhận diện qua tên script) để idempotent, rồi thêm mới.
+  // Remove any old SDLC entry (identified by the script name) to stay idempotent, then add the new one.
   const cleaned = arr.filter((e) => {
     const cmds = (e && Array.isArray(e.hooks)) ? e.hooks.map((h) => h && h.command).join(' ') : '';
     return !cmds.includes(HOOK_SCRIPT);
@@ -295,11 +296,11 @@ function planHookRegistration(target, base) {
 }
 
 // ---------------------------------------------------------------------------
-// Merge CLAUDE.md (managed block)
+// Merging CLAUDE.md (managed block)
 // ---------------------------------------------------------------------------
 
 function claudeMdTargetPath(target, base) {
-  // Nguyên tắc SDLC nên nằm ở CLAUDE.md mà Claude Code đọc:
+  // The SDLC principles belong in the CLAUDE.md that Claude Code reads:
   //  - project: <cwd>/CLAUDE.md
   //  - global:  ~/.claude/CLAUDE.md
   //  - custom:  <base>/CLAUDE.md
@@ -328,11 +329,11 @@ function planClaudeMd(target, base) {
     'm'
   );
   if (re.test(current)) {
-    next = current.replace(re, block); // update block cũ
+    next = current.replace(re, block); // update the existing block
   } else {
     next = current
       ? current.replace(/\s*$/, '') + `\n\n${block}\n`
-      : `${block}\n`; // append vào cuối, hoặc tạo mới
+      : `${block}\n`; // append at the end, or create the file
   }
   return {
     dest,
@@ -364,57 +365,57 @@ function printHelp() {
   console.log(`
 ${c.bold('SDLC Workflow installer')} ${c.dim('v' + PLUGIN_VERSION)}
 
-Cài agents / commands / skills / hooks vào .claude của dự án đích.
+Installs agents / commands / skills / hooks into the target project's .claude.
 
-${c.bold('Dùng:')}
+${c.bold('Usage:')}
   npx github:hoangkhoanguyen/claude-tools [options]
 
-${c.bold('Đích cài (mặc định: ./.claude của dự án hiện tại):')}
-  -g, --global            Cài vào ~/.claude (dùng cho mọi dự án)
-      --dir <path>        Cài vào .claude tại thư mục chỉ định
+${c.bold('Install target (default: ./.claude of the current project):')}
+  -g, --global            Install into ~/.claude (used by every project)
+      --dir <path>        Install into .claude at the given directory
 
-${c.bold('Chọn thành phần:')}
-      --only a,b,c        Chỉ cài các thành phần này
-      --skip a,b,c        Cài tất cả trừ các thành phần này
-      --list              Liệt kê thành phần rồi thoát
-  ${c.dim('Thành phần: ' + Object.keys(COMPONENTS).join(', '))}
-  ${c.dim('Mặc định:   ' + DEFAULT_COMPONENTS.join(', ') + '  (claude-md phải bật thủ công qua --only)')}
+${c.bold('Component selection:')}
+      --only a,b,c        Install only these components
+      --skip a,b,c        Install everything except these components
+      --list              List the components and exit
+  ${c.dim('Components: ' + Object.keys(COMPONENTS).join(', '))}
+  ${c.dim('Default:    ' + DEFAULT_COMPONENTS.join(', ') + '  (claude-md must be enabled explicitly via --only)')}
 
-${c.bold('Xử lý xung đột khi file đã tồn tại:')}
-      --on-conflict ask       Hỏi từng file (mặc định khi có bàn phím)
-      --on-conflict overwrite Ghi đè (alias: --force)
-      --on-conflict skip      Giữ nguyên file của bạn
-      --on-conflict backup    Backup .bak rồi ghi đè
-  ${c.dim('File bạn CHƯA sửa kể từ lần cài trước luôn được update tự động, không hỏi.')}
+${c.bold('Handling conflicts when a file already exists:')}
+      --on-conflict ask       Prompt per file (the default when a TTY is available)
+      --on-conflict overwrite Overwrite (alias: --force)
+      --on-conflict skip      Keep your file as-is
+      --on-conflict backup    Back up to .bak, then overwrite
+  ${c.dim('Files you have NOT edited since the last install are always updated automatically, without prompting.')}
 
-${c.bold('Khác:')}
-  -n, --dry-run           Chỉ hiển thị sẽ làm gì, không ghi gì
-  -y, --yes               Không hỏi (non-TTY tự dùng --on-conflict backup)
-  -v, --version           In version
-  -h, --help              Trợ giúp
+${c.bold('Other:')}
+  -n, --dry-run           Only show what would happen, write nothing
+  -y, --yes               Don't prompt (non-TTY defaults to --on-conflict backup)
+  -v, --version           Print the version
+  -h, --help              Show this help
 
-${c.bold('Repo private:')} đặt GITHUB_TOKEN trong môi trường trước khi chạy npx,
-hoặc dùng: npx git+https://<token>@github.com/owner/repo
+${c.bold('Private repo:')} set GITHUB_TOKEN in the environment before running npx,
+or use: npx git+https://<token>@github.com/owner/repo
 `);
 }
 
 function printList() {
-  console.log(c.bold('\nThành phần cài được:\n'));
+  console.log(c.bold('\nInstallable components:\n'));
   for (const [key, comp] of Object.entries(COMPONENTS)) {
-    const def = DEFAULT_COMPONENTS.includes(key) ? c.green(' [mặc định]') : c.dim(' [opt-in]');
+    const def = DEFAULT_COMPONENTS.includes(key) ? c.green(' [default]') : c.dim(' [opt-in]');
     console.log(`  ${c.cyan(key.padEnd(11))} ${comp.label}${def}`);
   }
   console.log('');
 }
 
 // ---------------------------------------------------------------------------
-// Chọn danh sách thành phần
+// Resolving the component list
 // ---------------------------------------------------------------------------
 
 function resolveComponents(opts) {
   let keys = opts.only ? opts.only.slice() : DEFAULT_COMPONENTS.slice();
   for (const k of keys) {
-    if (!COMPONENTS[k]) fail(`Thành phần không tồn tại: ${k} (xem --list)`);
+    if (!COMPONENTS[k]) fail(`No such component: ${k} (see --list)`);
   }
   if (opts.skip.length) keys = keys.filter((k) => !opts.skip.includes(k));
   return keys;
@@ -434,35 +435,35 @@ async function main() {
   const base = target.base;
   const components = resolveComponents(opts);
 
-  // Non-TTY mà để 'ask' → không thể hỏi, chuyển sang backup (an toàn, không mất dữ liệu).
+  // Non-TTY with 'ask' → can't prompt, fall back to backup (safe, loses no data).
   const interactive = process.stdin.isTTY && process.stdout.isTTY && !opts.yes;
   if (opts.onConflict === 'ask' && !interactive) {
     opts.onConflict = 'backup';
   }
 
   console.log(c.bold(`\n${PLUGIN_NAME} v${PLUGIN_VERSION}`));
-  console.log(`Đích:        ${c.cyan(base)} ${c.dim('(' + target.mode + ')')}`);
-  console.log(`Thành phần:  ${c.cyan(components.join(', '))}`);
-  console.log(`Xung đột:    ${c.cyan(opts.onConflict)}${opts.dryRun ? c.yellow('   [DRY-RUN]') : ''}\n`);
+  console.log(`Target:      ${c.cyan(base)} ${c.dim('(' + target.mode + ')')}`);
+  console.log(`Components:  ${c.cyan(components.join(', '))}`);
+  console.log(`Conflicts:   ${c.cyan(opts.onConflict)}${opts.dryRun ? c.yellow('   [DRY-RUN]') : ''}\n`);
 
   const manifest = loadManifest(base);
 
-  // 1) Lập kế hoạch cho các file thường (agents/commands/skills/hooks scripts)
+  // 1) Plan the ordinary files (agents/commands/skills/hooks scripts)
   const fileItems = collectFiles(components, base).map((it) => decideFile(it, manifest));
 
-  // 2) Kế hoạch cho hook registration & claude-md
+  // 2) Plan the hook registration & claude-md
   const hookPlan = components.includes('hooks') ? planHookRegistration(target, base) : null;
   const claudeMdPlan = components.includes('claude-md') ? planClaudeMd(target, base) : null;
 
-  // Đếm nhanh
+  // Running tallies
   const counts = { install: 0, update: 0, 'up-to-date': 0, conflict: 0, skipped: 0, backup: 0 };
 
   const prompter = interactive ? makePrompter() : null;
-  let bulkChoice = null; // 'O'|'S'|'B' áp cho mọi conflict còn lại
+  let bulkChoice = null; // 'O'|'S'|'B' applied to every remaining conflict
 
   const newManifestFiles = { ...(manifest.files || {}) };
 
-  // 3) Thực thi từng file
+  // 3) Process each file
   for (const item of fileItems) {
     const tag = c.dim(item.rel);
     if (item.action === 'install' || item.action === 'update') {
@@ -475,7 +476,7 @@ async function main() {
     if (item.action === 'up-to-date') {
       counts['up-to-date']++;
       newManifestFiles[item.rel] = { installedHash: item.srcHash };
-      continue; // im lặng
+      continue; // silent
     }
     // action === 'conflict'
     let decision = opts.onConflict; // overwrite | skip | backup | ask
@@ -491,51 +492,51 @@ async function main() {
 
   if (prompter) prompter.close();
 
-  // 3b) Dọn file cũ (obsolete): có trong manifest trước nhưng không còn trong source.
-  // Xảy ra khi repo đổi cấu trúc (vd: commands/run.md → commands/sdlc/run.md).
-  // Chỉ xóa file mà user chưa sửa (installedHash khớp) để tránh mất dữ liệu.
+  // 3b) Clean up obsolete files: present in the previous manifest but no longer in the source.
+  // Happens when the repo restructures (e.g. commands/run.md → commands/sdlc/run.md).
+  // Only delete files the user hasn't edited (installedHash matches) to avoid data loss.
   const currentRelPaths = new Set(fileItems.map((it) => it.rel));
   for (const [rel, meta] of Object.entries(manifest.files || {})) {
-    if (currentRelPaths.has(rel)) continue; // còn trong source → giữ
+    if (currentRelPaths.has(rel)) continue; // still in the source → keep
     const dest = path.join(base, rel);
     if (!fs.existsSync(dest)) {
-      delete newManifestFiles[rel]; // file đã mất tự nhiên, dọn manifest
+      delete newManifestFiles[rel]; // file is already gone, clean up the manifest
       continue;
     }
     const destHash = sha256(dest);
     if (meta.installedHash && destHash === meta.installedHash) {
-      // User chưa sửa → xóa an toàn
-      console.log(`  ${c.yellow('remove  ')} ${c.dim(rel)} ${c.dim('(đã đổi path trong repo mới)')}`);
+      // User hasn't edited it → safe to delete
+      console.log(`  ${c.yellow('remove  ')} ${c.dim(rel)} ${c.dim('(path changed in the new repo)')}`);
       if (!opts.dryRun) fs.unlinkSync(dest);
       delete newManifestFiles[rel];
     } else {
-      // User đã sửa → cảnh báo, không xóa
-      console.log(`  ${c.dim('obsolete')} ${c.dim(rel)} ${c.yellow('← bạn đã sửa file này; xóa tay nếu không cần')}`);
+      // User has edited it → warn, don't delete
+      console.log(`  ${c.dim('obsolete')} ${c.dim(rel)} ${c.yellow('← you edited this file; delete it manually if unneeded')}`);
     }
   }
 
   // 4) Hook registration
   if (hookPlan) {
     if (hookPlan.changed) {
-      console.log(`  ${c.green('settings')} ${c.dim(path.relative(base, hookPlan.settingsPath) + ' ← đăng ký SessionStart hook')}`);
+      console.log(`  ${c.green('settings')} ${c.dim(path.relative(base, hookPlan.settingsPath) + ' ← registered the SessionStart hook')}`);
       if (!opts.dryRun) hookPlan.write();
     } else {
-      console.log(c.dim(`  settings  hooks đã đăng ký sẵn — bỏ qua`));
+      console.log(c.dim(`  settings  hook already registered — skipping`));
     }
   }
 
   // 5) CLAUDE.md managed block
   if (claudeMdPlan) {
     if (claudeMdPlan.changed) {
-      const verb = claudeMdPlan.isNew ? 'tạo' : 'cập nhật block';
+      const verb = claudeMdPlan.isNew ? 'created' : 'block updated';
       console.log(`  ${c.green('claude-md')} ${c.dim(claudeMdPlan.dest + ' ← ' + verb)}`);
       if (!opts.dryRun) claudeMdPlan.write();
     } else {
-      console.log(c.dim(`  claude-md CLAUDE.md đã có block mới nhất — bỏ qua`));
+      console.log(c.dim(`  claude-md CLAUDE.md already has the latest block — skipping`));
     }
   }
 
-  // 6) Lưu manifest
+  // 6) Save the manifest
   if (!opts.dryRun) {
     saveManifest(base, {
       plugin: PLUGIN_NAME,
@@ -547,7 +548,7 @@ async function main() {
     });
   }
 
-  // 7) Tổng kết
+  // 7) Summary
   printSummary(counts, opts, base, target);
 }
 
@@ -556,10 +557,10 @@ function bulkMap(ch) {
 }
 
 async function askConflict(prompter, item) {
-  console.log(`\n  ${c.yellow('⚠ xung đột')} ${c.bold(item.rel)} ${c.dim('(bạn đã sửa file này, hoặc nó có sẵn từ trước)')}`);
+  console.log(`\n  ${c.yellow('⚠ conflict')} ${c.bold(item.rel)} ${c.dim('(you edited this file, or it already existed)')}`);
   while (true) {
     const ans = (await prompter.ask(
-      `    [o]verwrite  [s]kip  [b]ackup+overwrite  [d]iff  ${c.dim('| viết hoa = áp cho tất cả:')} [O/S/B]  → `
+      `    [o]verwrite  [s]kip  [b]ackup+overwrite  [d]iff  ${c.dim('| uppercase = apply to all:')} [O/S/B]  → `
     )) || 's';
     switch (ans) {
       case 'o': return 'overwrite';
@@ -569,7 +570,7 @@ async function askConflict(prompter, item) {
       case 'O': return 'bulk:O';
       case 'S': return 'bulk:S';
       case 'B': return 'bulk:B';
-      default: console.log(c.dim('    Nhập o / s / b / d / O / S / B'));
+      default: console.log(c.dim('    Enter o / s / b / d / O / S / B'));
     }
   }
 }
@@ -579,13 +580,13 @@ async function applyConflict(decision, item, opts, counts, manifestFiles) {
   if (decision === 'skip') {
     counts.skipped++;
     console.log(`  ${c.yellow('skip    ')} ${tag}`);
-    return; // giữ manifest cũ (nếu có)
+    return; // keep the old manifest entry (if any)
   }
   if (decision === 'backup') {
     counts.backup++;
     let bakName = '';
     if (!opts.dryRun) bakName = path.basename(backupFile(item.dest));
-    console.log(`  ${c.green('backup  ')} ${tag} ${c.dim('→ ' + (bakName || item.rel + '.bak') + ' rồi ghi đè')}`);
+    console.log(`  ${c.green('backup  ')} ${tag} ${c.dim('→ ' + (bakName || item.rel + '.bak') + ' then overwritten')}`);
     if (!opts.dryRun) writeFile(item.dest, item.src);
     manifestFiles[item.rel] = { installedHash: item.srcHash };
     return;
@@ -600,33 +601,33 @@ async function applyConflict(decision, item, opts, counts, manifestFiles) {
 function printSummary(counts, opts, base, target) {
   console.log('');
   const parts = [];
-  if (counts.install) parts.push(c.green(`${counts.install} cài mới`));
-  if (counts.update) parts.push(c.green(`${counts.update} cập nhật`));
-  if (counts.backup) parts.push(c.cyan(`${counts.backup} backup+ghi đè`));
-  if (counts.skipped) parts.push(c.yellow(`${counts.skipped} bỏ qua`));
-  if (counts['up-to-date']) parts.push(c.dim(`${counts['up-to-date']} đã mới nhất`));
-  console.log(c.bold('Kết quả: ') + (parts.length ? parts.join(c.dim(' · ')) : c.dim('không có gì thay đổi')));
+  if (counts.install) parts.push(c.green(`${counts.install} installed`));
+  if (counts.update) parts.push(c.green(`${counts.update} updated`));
+  if (counts.backup) parts.push(c.cyan(`${counts.backup} backed up+overwritten`));
+  if (counts.skipped) parts.push(c.yellow(`${counts.skipped} skipped`));
+  if (counts['up-to-date']) parts.push(c.dim(`${counts['up-to-date']} already up to date`));
+  console.log(c.bold('Result: ') + (parts.length ? parts.join(c.dim(' · ')) : c.dim('nothing changed')));
 
   if (opts.dryRun) {
-    console.log(c.yellow('\nĐây là DRY-RUN — chưa ghi gì. Bỏ --dry-run để cài thật.'));
+    console.log(c.yellow('\nThis was a DRY-RUN — nothing was written. Drop --dry-run to install for real.'));
     return;
   }
   console.log(c.dim(`Manifest: ${path.join(base, MANIFEST_NAME)}`));
   if (target.mode === 'project') {
-    console.log('\nXong. Mở Claude Code trong dự án này để dùng ' + c.cyan('/sdlc:*') + '.');
+    console.log('\nDone. Open Claude Code in this project to use ' + c.cyan('/sdlc:*') + '.');
   } else {
-    console.log('\nXong.');
+    console.log('\nDone.');
   }
 }
 
 // ---------------------------------------------------------------------------
 
 function fail(msg) {
-  console.error(c.red('Lỗi: ') + msg);
+  console.error(c.red('Error: ') + msg);
   process.exit(1);
 }
 
 main().catch((err) => {
-  console.error(c.red('\nInstaller lỗi:'), err && err.stack ? err.stack : err);
+  console.error(c.red('\nInstaller failed:'), err && err.stack ? err.stack : err);
   process.exit(1);
 });

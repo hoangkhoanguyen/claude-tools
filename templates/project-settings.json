@@ -1,6 +1,6 @@
 {
-  "//": "Copy nội dung này vào .claude/settings.json của DỰ ÁN bạn muốn dùng plugin. Sửa đường dẫn cho đúng nơi bạn đặt claude-tools.",
+  "//": "Copy this into the .claude/settings.json of the PROJECT where you want the plugin. Fix the path to point at wherever you put claude-tools.",
   "pluginDirs": [
-    "/đường/dẫn/tuyệt/đối/tới/claude-tools"
+    "/absolute/path/to/claude-tools"
   ]
 }

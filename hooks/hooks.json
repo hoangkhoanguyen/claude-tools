@@ -1,5 +1,5 @@
 {
-  "//": "Hooks của plugin SDLC. SessionStart: nếu dự án có .sdlc/state.md thì in ra để nhắc chỗ đang làm dở (hỗ trợ resume). Chỉ đọc, không sửa gì.",
+  "//": "SDLC plugin hooks. SessionStart: if the project has a .sdlc/state.md, print it as a reminder of the work in progress (supports resuming). Read-only, changes nothing.",
   "hooks": {
     "SessionStart": [
       {
