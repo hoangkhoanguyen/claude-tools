@@ -1,253 +1,239 @@
 # SDLC Workflow — Claude Code Plugin
 
-Một plugin **cắm vào bất kỳ dự án nào** để Claude chạy trọn vòng đời phát triển theo từng sprint:
-phân tích requirements → thiết kế → chia tasks → **execute + test tự động** → bàn giao sạch để bạn manual test.
+A plugin that **drops into any project** so Claude can run the full development lifecycle sprint by sprint:
+analyze requirements → design → break down tasks → **execute + automated testing** → clean handoff for manual QA.
 
-Thiết kế cho dự án lớn, nhiều feature, hoặc thêm feature vào codebase có sẵn. **Stack-agnostic** — không gắn với ngôn ngữ/framework nào.
-
----
-
-## Triết lý
-
-1. **Review nhẹ, tin tưởng downstream.** Bạn chỉ review vài section ưu tiên ở đầu mỗi output; phần còn lại được viết cho agent đọc, đảm bảo các bước sau làm đúng.
-2. **Mỗi sprint là một vòng khép kín.** Analyze → Design → Tasks → Execute → Test — xong sprint mới sang sprint sau.
-3. **Resume được.** Hết limit / ngắt giữa chừng → chạy lại đúng lệnh cũ, tự biết làm tiếp từ đâu.
-4. **Bàn giao sạch.** Khi xong, mọi lỗi vặt (validation, API error, empty state...) đã được test tự động catch. Bạn chỉ verify *trải nghiệm nghiệp vụ*, không debug.
-5. **Tự soi lại mình.** Mỗi phase tự review output của chính nó và cross-check với phase trước — không cần bạn nhắc.
-6. **Tận dụng built-in Claude.** Subagents, TodoWrite, Bash, Playwright, Skills, Hooks — dùng cái có sẵn thay vì tự chế.
+Built for large projects, multi-feature work, or adding features to an existing codebase. **Stack-agnostic** — not tied to any language or framework.
 
 ---
 
-## Cài đặt
+## Philosophy
 
-### Cách 1 — `npx` (khuyến nghị, cài online 1 lệnh)
+1. **Light review, trust downstream.** You only review a few priority sections at the top of each output; the rest is written for agent consumption, ensuring subsequent steps are done correctly.
+2. **Each sprint is a closed loop.** Analyze → Design → Tasks → Execute → Test — one sprint completes before the next begins.
+3. **Resumable.** Hit a limit or get interrupted mid-way → re-run the same command, it picks up exactly where it left off.
+4. **Clean handoff.** When done, all minor bugs (validation, API errors, empty states…) have already been caught by automated tests. You only verify *business experience*, not debug.
+5. **Self-review built in.** Each phase reviews its own output and cross-checks against the previous phase — no prompting needed.
+6. **Leverages Claude's built-ins.** Subagents, TodoWrite, Bash, Playwright, Skills, Hooks — uses what's already there instead of reinventing.
 
-Từ thư mục **dự án đích**, chạy:
+---
+
+## Installation
+
+### Option 1 — `npx` (recommended, one-command online install)
+
+From your **target project** directory, run:
 
 ```bash
 npx github:hoangkhoanguyen/claude-tools
 ```
 
-Lệnh này tải installer từ branch `main`, copy `agents/`, `commands/`, `skills/`, `templates/`
-và đăng ký `SessionStart` hook vào `.claude/` của dự án hiện tại. Xong là dùng được `/sdlc:*` ngay.
+This fetches the installer from the `main` branch, copies `agents/`, `commands/`, `skills/`, `templates/`
+and registers the `SessionStart` hook into your project's `.claude/`. You can use `/sdlc:*` immediately.
 
-**Các tuỳ chọn:**
+**Options:**
 
 ```bash
-npx github:hoangkhoanguyen/claude-tools --global           # cài vào ~/.claude (mọi dự án)
-npx github:hoangkhoanguyen/claude-tools --dir ./path        # cài vào .claude ở nơi khác
-npx github:hoangkhoanguyen/claude-tools --only skills       # chỉ cài một phần
-npx github:hoangkhoanguyen/claude-tools --skip hooks        # bỏ qua một phần
-npx github:hoangkhoanguyen/claude-tools --only claude-md    # thêm nguyên tắc SDLC vào CLAUDE.md
-npx github:hoangkhoanguyen/claude-tools --dry-run           # xem sẽ làm gì, không ghi gì
-npx github:hoangkhoanguyen/claude-tools --list              # liệt kê thành phần
-npx github:hoangkhoanguyen/claude-tools --help              # đầy đủ tuỳ chọn
+npx github:hoangkhoanguyen/claude-tools --global           # install into ~/.claude (all projects)
+npx github:hoangkhoanguyen/claude-tools --dir ./path        # install into .claude at a custom path
+npx github:hoangkhoanguyen/claude-tools --only skills       # install only a specific component
+npx github:hoangkhoanguyen/claude-tools --skip hooks        # skip a specific component
+npx github:hoangkhoanguyen/claude-tools --only claude-md    # add SDLC principles to CLAUDE.md
+npx github:hoangkhoanguyen/claude-tools --dry-run           # preview what would happen, no writes
+npx github:hoangkhoanguyen/claude-tools --list              # list available components
+npx github:hoangkhoanguyen/claude-tools --help              # full options
 ```
 
-Thành phần: `agents`, `commands`, `skills`, `templates`, `hooks` (mặc định) và
-`claude-md` (opt-in — chèn nguyên tắc SDLC vào `CLAUDE.md` dưới dạng managed block).
+Components: `agents`, `commands`, `skills`, `templates`, `hooks` (default) and
+`claude-md` (opt-in — inserts SDLC principles into `CLAUDE.md` as a managed block).
 
-**An toàn khi dự án đã có sẵn `.claude/`:**
+**Safe when your project already has `.claude/`:**
 
-- **Merge, không đè mù.** `settings.json` được merge (giữ nguyên permissions/hooks của bạn,
-  chỉ thêm 1 SessionStart hook); `CLAUDE.md` chỉ cập nhật phần giữa 2 marker `sdlc-workflow`,
-  không đụng nội dung khác của bạn.
-- **Update idempotent.** Chạy lại lệnh sau khi repo có bản mới: file bạn **chưa sửa** được
-  cập nhật tự động; file bạn **đã chỉnh tay** sẽ được hỏi
-  (`--on-conflict ask|overwrite|skip|backup`, mặc định hỏi từng file khi có bàn phím).
-  Installer theo dõi qua `.claude/.sdlc-install.json` (checksum lúc cài) để biết file nào bạn đã đổi.
-- **Backup được.** `--on-conflict backup` giữ bản cũ thành `*.bak` trước khi ghi đè.
+- **Merge, not overwrite.** `settings.json` is merged (your existing permissions/hooks are preserved,
+  only a SessionStart hook is added); `CLAUDE.md` only updates the content between two `sdlc-workflow`
+  markers, leaving the rest of your file untouched.
+- **Idempotent updates.** Re-run after a new release: files you **haven't modified** are updated automatically;
+  files you **have edited** will prompt you
+  (`--on-conflict ask|overwrite|skip|backup`, defaults to asking per file when a TTY is available).
+  The installer tracks changes via `.claude/.sdlc-install.json` (checksums at install time) to know which files you've customized.
+- **Backups available.** `--on-conflict backup` keeps the old version as `*.bak` before overwriting.
 
-> **Repo private:** đặt `GITHUB_TOKEN` trong môi trường trước khi chạy, hoặc dùng
+> **Private repo:** set `GITHUB_TOKEN` in your environment before running, or use
 > `GITHUB_TOKEN=xxx npx github:hoangkhoanguyen/claude-tools`.
 
-### Cách 2 — plugin đọc trực tiếp (không copy file, update bằng `git pull`)
+### Option 2 — Plugin directory (no file copying, update with `git pull`)
 
-Clone repo 1 lần rồi trỏ Claude Code vào:
+Clone the repo once and point Claude Code at it:
 
 ```bash
-claude --plugin-dir /đường/dẫn/tới/claude-tools
+claude --plugin-dir /path/to/claude-tools
 ```
 
-Hoặc thêm vào `.claude/settings.json` của dự án (copy từ `templates/project-settings.json`):
+Or add it to your project's `.claude/settings.json` (copy from `templates/project-settings.json`):
 
 ```json
 {
-  "pluginDirs": ["/đường/dẫn/tới/claude-tools"]
+  "pluginDirs": ["/path/to/claude-tools"]
 }
 ```
 
-Cách này **không đụng gì** vào `.claude/` của dự án; muốn cập nhật chỉ cần `git pull` trong repo đã clone.
+This approach **does not touch** your project's `.claude/`; to update just run `git pull` in the cloned repo.
 
-Sau đó các slash command `/sdlc:*` sẽ khả dụng trong mọi session.
+The `/sdlc:*` slash commands will then be available in every session.
 
 ---
 
-## Luồng làm việc
+## Workflow
 
 ```
-[Tài liệu business logic của bạn — plugin dùng làm ĐẦU VÀO, không tự sinh ra]
-[Thiết kế UI (tùy chọn): DESIGN.md có sẵn / bản design ngoài đưa vào phase design / hoặc để plugin tự lo]
+[Your business logic documentation — the plugin uses this as INPUT, it does not generate it]
+[UI design (optional): existing DESIGN.md / external design handed to the design phase / or let the plugin figure it out]
           │
           ▼
-  /sdlc:sprint-plan          ← đọc tài liệu, chia thành các sprint
-          │                     bạn review danh sách sprint + chốt tech stack mỗi sprint
+  /sdlc:sprint-plan          ← reads your docs, splits into sprints
+          │                     you review the sprint list + confirm tech stack per sprint
           ▼
-  /sdlc:run <version> <sprint>         ← MỘT lệnh làm tất cả cho 1 sprint:
+  /sdlc:run <version> <sprint>         ← ONE command does everything for 1 sprint:
           │                     analyze → design → tasks → execute → test
-          │                     (tự lưu state sau mỗi bước)
+          │                     (saves state after each step)
           ▼
-  (hết limit / ngắt giữa chừng?)
-  /sdlc:run <version> <sprint>         ← chạy lại y lệnh cũ → tự đọc state, làm tiếp
+  (hit a limit or interrupted?)
+  /sdlc:run <version> <sprint>         ← re-run the same command → reads state, continues from where it stopped
           │
           ▼
-  Bạn manual test            ← chỉ verify nghiệp vụ, không gặp lỗi vặt
+  You manual test            ← verify business behavior only, no minor bugs to chase
 ```
 
-Ngoài `run`, mỗi phase cũng có command riêng nếu bạn muốn chạy từng bước:
+Besides `run`, each phase also has its own command if you want to run steps individually:
 `/sdlc:analyze`, `/sdlc:design`, `/sdlc:tasks`, `/sdlc:execute`, `/sdlc:test`.
 
-`/sdlc:tasks` chỉ tạo tài liệu (chia task, không code) và sinh `commands.md` liệt kê lệnh chạy.
-Từ đó có 2 cách thực thi:
-- **Từng task thủ công**: gõ `/sdlc:task` (không tham số) để chọn task chưa done từ list, hoặc đích
-  danh `/sdlc:task <version> <sprint> <task-id>`.
-- **Đến hết**: `/sdlc:execute <version> <sprint>` — implement toàn bộ tasks rồi chạy luôn test + QA
-  gate + bàn giao.
+`/sdlc:tasks` only creates documentation (breaks down tasks, no code) and generates `commands.md` listing run commands.
+From there you have two execution options:
+- **Task by task manually**: type `/sdlc:task` (no args) to pick an unfinished task from the list, or explicitly `/sdlc:task <version> <sprint> <task-id>`.
+- **Run to completion**: `/sdlc:execute <version> <sprint>` — implements all tasks then immediately runs tests + QA gate + handoff.
 
-`/sdlc:status` để xem tiến độ bất cứ lúc nào. `/sdlc:replan` để cập nhật sprint khi business logic đổi
-giữa chừng mà không mất state.
+`/sdlc:status` shows progress at any time. `/sdlc:replan` updates the sprint when business logic changes mid-flight without losing state.
 
 ---
 
-## State lưu ở đâu
+## Where State Lives
 
-Plugin ghi mọi thứ vào thư mục `.sdlc/` trong dự án của bạn (commit được để team thấy & resume):
+The plugin writes everything to the `.sdlc/` directory in your project (committable so your team can see it and resume):
 
 ```
 .sdlc/
-├── versions.md              ← registry các version (v1, v2...) + trạng thái
-├── architecture.md          ← kiến trúc nền tảng xuyên version (mọi sprint tham chiếu)
-├── design-system.md         ← design tokens xuyên version (khi có UI — từ DESIGN.md, bản ngoài, hoặc suy ra)
-└── <version>/               ← vd v1, v2
-    ├── sprints.md           ← danh sách sprint + tech stack + dependency + trạng thái
-    ├── state.md             ← con trỏ resume (schema cố định — xem templates/state.template.md)
+├── versions.md              ← registry of versions (v1, v2…) + status
+├── architecture.md          ← foundational architecture across versions (all sprints reference this)
+├── design-system.md         ← design tokens across versions (when UI is involved — from DESIGN.md, external source, or derived)
+└── <version>/               ← e.g. v1, v2
+    ├── sprints.md           ← sprint list + tech stack + dependencies + status
+    ├── state.md             ← resume pointer (fixed schema — see templates/state.template.md)
     └── <sprint-slug>/
-        ├── requirements.md      ← output analyze (gồm NFR + regression impact)
-        ├── design.md            ← output design hệ thống (bảng mapping RULE/EC/NFR)
-        ├── ui-design.input.md   ← (tùy chọn) bản design từ ngoài đưa vào — ui-designer ingest thành ui-design.md
-        ├── ui-design.md         ← output design giao diện (tokens, component spec, Design AC) — nếu có UI
+        ├── requirements.md      ← analyze output (includes NFR + regression impact)
+        ├── design.md            ← system design output (RULE/EC/NFR mapping table)
+        ├── ui-design.input.md   ← (optional) external design handed in — ui-designer ingests this into ui-design.md
+        ├── ui-design.md         ← UI design output (tokens, component spec, Design AC) — when UI is involved
         ├── tasks.md             ← task list + status (todo/doing/done)
-        ├── commands.md          ← lệnh chạy từng task / chạy đến hết (sinh ở phase Tasks)
-        ├── test-report.md       ← kết quả test + việc cần bạn verify tay
-        └── visual-baseline/     ← screenshot baseline cho visual regression — nếu có UI
+        ├── commands.md          ← commands to run individual tasks / run to completion (generated at Tasks phase)
+        ├── test-report.md       ← test results + items you need to verify manually
+        └── visual-baseline/     ← screenshot baseline for visual regression — when UI is involved
 ```
 
-> Định dạng file (md/json/...) do agent chọn cho phù hợp — không cố định. Riêng `state.md` theo schema cố
-> định (`templates/state.template.md`) để resume đáng tin cậy.
+> File format (md/json/…) is chosen by the agent to fit the content — not fixed. Only `state.md` follows a fixed schema
+> (`templates/state.template.md`) to ensure reliable resume.
 
 ---
 
-## Thành phần
+## Components
 
-| Loại | Tên | Vai trò |
-|------|-----|---------|
-| Command | `sprint-plan` | Chia sprint + tạo architecture.md nền tảng |
-| Command | `run` | Chạy trọn 1 sprint, resume được |
-| Command | `analyze` / `design` / `tasks` / `test` | Chạy từng phase riêng lẻ (`tasks` chỉ tạo tài liệu) |
-| Command | `task` | Thực thi lẻ 1 task (không tham số → chọn từ list) |
-| Command | `execute` | Thực thi đến hết: implement toàn bộ tasks + test + QA + bàn giao |
-| Command | `status` | Xem tiến độ |
-| Command | `replan` | Cập nhật sprint khi business logic đổi, giữ state |
+| Type | Name | Role |
+|------|------|------|
+| Command | `sprint-plan` | Split into sprints + create foundational architecture.md |
+| Command | `run` | Run a full sprint, resumable |
+| Command | `analyze` / `design` / `tasks` / `test` | Run individual phases (`tasks` only creates documentation) |
+| Command | `task` | Execute a single task (no args → pick from list) |
+| Command | `execute` | Run to completion: implement all tasks + test + QA + handoff |
+| Command | `status` | Check progress |
+| Command | `replan` | Update sprint when business logic changes, preserves state |
 | Agent | `product-analyst` | Requirements → user stories, AC, business rules, edge cases, NFR, regression |
 | Agent | `architect` | System design: API, DB, architecture, UI flow, NFR, regression-safe |
-| Agent | `preflight-scout` | Soi config → bảng service + port + trạng thái + lệnh bật + lệnh migrate (read-only) |
-| Agent | `implement-coordinator` | Chạy trọn chặng implement của sprint: chia wave, giao task, commit, ghi state — cô lập context khỏi conversation chính |
-| Agent | `feature-builder` | Implement từng task rồi báo kết quả (state + commit do bên gọi ghi) |
-| Agent | `test-strategist` | Chọn chiến lược test theo stack + viết/chạy test; tự đóng vòng fix + commit |
-| Agent | `qa-guard` | Soát lỗi vặt + regression + NFR, xác nhận sạch trước bàn giao; tự đóng vòng fix + commit |
-| Agent | `ui-designer` | Nguồn thiết kế (bản ngoài / DESIGN.md / app cũ / hỏi user) → tokens, component spec, Design AC (khi có UI) |
-| Agent | `reviewer` | Kiểm chéo độc lập output analyze/design/ui-design so với đầu vào |
-| Skill | `requirements-analysis` | Chuẩn output của analyze |
-| Skill | `system-design` | Chuẩn output của design |
-| Skill | `task-breakdown` | Cách chia task đúng, không sót AC |
-| Skill | `test-strategy` | Bảng quyết định test theo loại feature |
-| Skill | `design-fidelity` | Đối chiếu UI với DESIGN.md: token, contrast, responsive, dark/light |
-| Skill | `self-review` | Checklist tự soi lại sau mỗi phase |
-| Hook | `SessionStart` | In tiến trình SDLC đang dở khi mở session (hỗ trợ resume) |
+| Agent | `preflight-scout` | Reads config → service table with ports + status + startup commands + migrate commands (read-only) |
+| Agent | `implement-coordinator` | Runs the full implement leg of a sprint: splits waves, delegates tasks, commits, writes state — context-isolated from main conversation |
+| Agent | `feature-builder` | Implements individual tasks and reports results (state + commit written by caller) |
+| Agent | `test-strategist` | Chooses test strategy by stack + writes/runs tests; self-closes fix loop + commits |
+| Agent | `qa-guard` | Catches minor bugs + regression + NFR, confirms clean before handoff; self-closes fix loop + commits |
+| Agent | `ui-designer` | Design source (external / DESIGN.md / existing app / ask user) → tokens, component spec, Design AC (when UI is involved) |
+| Agent | `reviewer` | Independent cross-check of analyze/design/ui-design output against input |
+| Skill | `requirements-analysis` | Output standard for the analyze phase |
+| Skill | `system-design` | Output standard for the design phase |
+| Skill | `task-breakdown` | How to break down tasks correctly without missing AC |
+| Skill | `test-strategy` | Test decision table by feature type |
+| Skill | `design-fidelity` | Compares UI against DESIGN.md: tokens, contrast, responsive, dark/light |
+| Skill | `self-review` | Self-review checklist after each phase |
+| Hook | `SessionStart` | Prints in-progress SDLC state when a session opens (supports resume) |
 
 ---
 
-## Model: Opus điều phối, Sonnet thực thi
+## Models: Opus Orchestrates, Sonnet Executes
 
-Sprint được thiết kế để chạy một mạch, không ngắt để approve từng bước — nên model được phân bổ theo
-**nơi sai lầm đắt nhất**. Quyết định sai ở phase đầu thì mọi phase sau kế thừa lỗi; code sai ở phase
-thực thi thì test bắt được và fix được.
+Sprints are designed to run in one continuous pass without pausing for approval at each step — so models are allocated by **where mistakes are most expensive**. A wrong decision in an early phase cascades into every subsequent phase; wrong code in the execute phase gets caught and fixed by tests.
 
-| Vai | Model |
+| Role | Model |
 |---|---|
-| Session chính chạy `/sdlc:*` | **Opus** — bạn tự chọn bằng `/model` |
-| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` → chạy đúng Opus bạn đã chọn |
-| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | **Sonnet** (ghim cứng) |
+| Main session running `/sdlc:*` | **Opus** — you set this with `/model` |
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` → runs the exact Opus version you chose |
+| `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | **Sonnet** (hard-pinned) |
 
-Model của subagent khai trong frontmatter `agents/*.md`, nên **chính sách này đi theo khi cài vào dự án
-khác** — không cần cấu hình gì thêm. Bạn chỉ cần bật Opus cho session chính bằng `/model` trước khi chạy
-`/sdlc:sprint-plan`.
+The subagent model is declared in each agent's `agents/*.md` frontmatter, so **this policy travels with the plugin when installed into another project** — no extra configuration needed. You just need to activate Opus for the main session with `/model` before running `/sdlc:sprint-plan`.
 
-Phase 1-3 dùng `inherit` thay vì ghim `opus` để tôn trọng đúng bản Opus bạn chọn (alias `opus` resolve về
-bản mặc định của tier, không nhất thiết là bản bạn đang dùng). Đánh đổi: **quên bật Opus thì phase 1-3
-chạy Sonnet**. Phase 4-6 ghim cứng `sonnet` vì mục đích của chúng là hạ model xuống bất kể session chính
-chạy gì — để `inherit` ở đó sẽ kéo cả chặng thực thi lên Opus và mất sạch lợi ích tốc độ/chi phí.
+Phases 1-3 use `inherit` instead of pinning `opus` to respect the exact Opus version you chose (the `opus` alias resolves to the tier default, not necessarily the version you're actively using). Trade-off: **forget to activate Opus and phases 1-3 run on Sonnet**. Phases 4-6 hard-pin `sonnet` because their purpose is to *lower* the model regardless of what the main session is running — leaving `inherit` there would pull the entire execute leg up to Opus and erase all the speed/cost benefits.
 
-### Khi nào Opus được gọi vào chặng thực thi
+### When Opus Gets Called Into the Execute Leg
 
-Agent điều phối tự nâng `feature-builder` lên Opus, đếm theo **từng task / từng chỗ hỏng**:
+The orchestrating agent promotes `feature-builder` to Opus autonomously, counted **per task / per failure point**:
 
-- Lượt 1-5 Sonnet (mỗi lượt respawn kèm lịch sử đã thử) → lượt 6 Opus → vẫn không xong thì `BLOCKED`.
-- **Leo sớm** nếu ba lượt liên tiếp thất bại y hệt nhau — lặp lại một hướng sai không tạo thông tin mới.
-- **Opus ngay từ lượt đầu** với task được `tasks.md` đánh `Độ khó: cao` (thuật toán, đồng thời, giao
-  dịch phân tán, mật mã, refactor rủi ro regression rộng).
-- `DESIGN_GAP` / `NEEDS_SERVICE` **không** tính vào hạn mức — design thiếu thì model to hơn cũng không
-  đoán ra ý đồ, service chưa bật thì đổi model vô nghĩa.
+- Attempts 1-5 on Sonnet (each attempt respawns with the history of what was tried) → attempt 6 on Opus → still not done → `BLOCKED`.
+- **Early escalation** if three consecutive attempts fail identically — repeating the same wrong direction generates no new information.
+- **Opus from attempt 1** for tasks marked `Difficulty: high` in `tasks.md` (algorithms, concurrency, distributed transactions, cryptography, refactors with wide regression risk).
+- `DESIGN_GAP` / `NEEDS_SERVICE` **do not count** against the attempt limit — a bigger model can't guess missing intent, and switching models when a service is down is pointless.
 
-### Đổi chính sách cho dự án của bạn
+### Changing the Policy for Your Project
 
-Sửa dòng `model:` trong frontmatter agent tương ứng tại `.claude/agents/`. Installer nhận ra file bạn đã
-sửa (qua checksum trong `.sdlc-install.json`) và hỏi trước khi ghi đè ở lần cài sau, nên chỉnh tay an toàn.
+Edit the `model:` line in the relevant agent's frontmatter under `.claude/agents/`. The installer detects files you've modified (via checksums in `.sdlc-install.json`) and will ask before overwriting on a future install, so manual edits are safe.
 
 ---
 
-## Dự án có UI — nguồn thiết kế đến từ đâu cũng được
+## Projects With UI — Any Design Source Works
 
-Khi sprint có màn hình, UI là "requirement" ngang hàng nghiệp vụ. Phase design chạy 2 nhánh song song:
-`architect` (hệ thống: API, DB) + `ui-designer` (giao diện). ui-designer **không tự chế thẩm mỹ** — nó
-xác định nguồn thiết kế **theo từng màn hình** (bên ngoài cấp được bao nhiêu dùng bấy nhiêu, phần thiếu tự xử):
+When a sprint has screens, UI is a requirement on par with business logic. The design phase runs two branches in parallel:
+`architect` (system: API, DB) + `ui-designer` (interface). The ui-designer **does not invent aesthetics** — it identifies the design source **per screen** (uses whatever is provided externally, fills in the gaps itself):
 
-| Tình huống | ui-designer làm gì |
+| Situation | What ui-designer does |
 |---|---|
-| Có bản design ngoài (`.sdlc/<version>/<sprint>/ui-design.input.md` — từ Claude Design / designer) | **Ingest + chuẩn hóa** thành `ui-design.md` (thêm Design AC/state/token nếu bản ngoài thiếu). Nguồn `external` |
-| Bản ngoài chỉ cấp một phần màn | Màn có → ingest; màn thiếu → **tự sinh** bám tokens của phần external. Nguồn `mixed` |
-| Có `DESIGN.md` / design system | Tự sinh spec từ đó. Nguồn `internal` |
-| **Dự án CŨ** (đã có UI chạy được), không DESIGN.md | Bám phong cách app hiện có — không hỏi, không đổi style |
-| **Dự án MỚI**, không nguồn nào | Hỏi bạn 1 lần (có DESIGN.md? / mô tả phong cách / để Claude tự quyết) → **sinh `DESIGN.md`** làm nguồn xuyên sprint |
+| External design available (`.sdlc/<version>/<sprint>/ui-design.input.md` — from Claude Design / a designer) | **Ingest + normalize** into `ui-design.md` (adds Design AC/states/tokens where the external source is missing). Source: `external` |
+| External design covers only some screens | Screens with designs → ingest; missing screens → **generate** following tokens from the external portion. Source: `mixed` |
+| `DESIGN.md` / design system exists | Generate spec from it. Source: `internal` |
+| **Existing project** (UI already running), no DESIGN.md | Follow the existing app's style — no asking, no style changes |
+| **New project**, no source at all | Ask you once (have a DESIGN.md? / describe the style / let Claude decide) → **generates `DESIGN.md`** as the cross-sprint source |
 
-- **Design tokens chuẩn hóa** vào `.sdlc/design-system.md` (xuyên sprint). Execute build UI qua token,
-  KHÔNG hardcode màu/spacing/font. Mỗi màn đánh dấu `[external]`/`[generated]` để biết phần nào cần đối chiếu mockup gốc.
-- **Phase test có visual verification**: Playwright chụp screenshot đối chiếu Design AC + baseline →
-  bắt "lệch màu / vỡ layout / mất tương phản" tự động.
-- **qa-guard có design fidelity check** trước khi bàn giao.
+- **Design tokens normalized** into `.sdlc/design-system.md` (cross-sprint). Execute builds UI via tokens,
+  NO hardcoded colors/spacing/fonts. Each screen is marked `[external]`/`[generated]` so you know which parts to compare against the original mockup.
+- **Test phase includes visual verification**: Playwright captures screenshots and compares against Design AC + baseline →
+  automatically catches "wrong color / broken layout / lost contrast".
+- **qa-guard includes a design fidelity check** before handoff.
 
-→ Kết quả: khi manual test, bạn CHỈ xét *trải nghiệm/thẩm mỹ tổng thể*, không phải soi *đúng thiết kế chưa*.
+→ Result: when you manual test, you only assess *overall experience and aesthetics*, not *whether it matches the design*.
 
-Nếu sprint không có màn hình nào, nhánh này tự tắt.
+If a sprint has no screens, this branch shuts off automatically.
 
-## Nguyên tắc "không lỗi vặt khi manual test"
+## The "No Minor Bugs During Manual Test" Guarantee
 
-Trước khi báo sprint xong, `qa-guard` đảm bảo:
+Before declaring a sprint done, `qa-guard` ensures:
 
-- Mọi task đã pass test của nó (không đợi cuối mới test)
-- API endpoints đã smoke test (không có 500 / call lỗi)
-- Không unhandled exception, không hardcode credential, không TODO sót
-- Mọi edge case đã-define trong requirements đều có handling + test
-- Đi hết happy path của từng user story không vấp lỗi
+- Every task has passed its own tests (not saved until the end)
+- API endpoints have been smoke-tested (no 500s / failed calls)
+- No unhandled exceptions, no hardcoded credentials, no leftover TODOs
+- Every edge case defined in requirements has handling + a test
+- Walking through the happy path of each user story hits no errors
 
-→ Report cuối phân rõ 3 nhóm: **đã tự động cover** / **cần bạn verify tay** / **edge case chưa define** (nếu có).
+→ The final report clearly separates 3 groups: **automatically covered** / **needs your manual verification** / **undefined edge cases** (if any).
