@@ -1,20 +1,21 @@
 ---
-description: Xem tiến độ SDLC tổng thể — version nào đang làm, sprint nào xong/đang làm/chưa làm, phase và task hiện tại. Đọc từ .sdlc/.
+description: View overall SDLC progress — which version is active, which sprints are done/in progress/pending, and the current phase and task. Reads from .sdlc/.
 ---
 
 # /sdlc:status
 
-Hiển thị tiến độ hiện tại của dự án. Không thay đổi gì, chỉ đọc.
+Show the project's current progress. Changes nothing, read-only.
 
-## Các bước
+## Steps
 
-1. Đọc `.sdlc/versions.md` → danh sách versions và trạng thái từng version.
-2. Với mỗi version, đọc `.sdlc/<version>/sprints.md` → trạng thái từng sprint.
-3. Đọc `.sdlc/<version>/state.md` của version đang active → sprint hiện tại, phase đang ở, task đang dở.
-   Kiểm tra approval gate: phase `done` mà `*_approved: pending` → đang chờ user duyệt (hiện rõ ở phần Resume).
-4. Với sprint đang làm, đọc `.sdlc/<version>/<sprint>/tasks.md` → đếm task todo/doing/done.
+1. Read `.sdlc/versions.md` → list of versions and each version's status.
+2. For each version, read `.sdlc/<version>/sprints.md` → status of each sprint.
+3. Read `.sdlc/<version>/state.md` for the active version → current sprint, current phase, in-progress task.
+   Check the approval gates: a phase marked `done` with `*_approved: pending` → waiting on user approval
+   (surface this clearly in the Resume section).
+4. For the in-progress sprint, read `.sdlc/<version>/<sprint>/tasks.md` → count todo/doing/done tasks.
 
-## Trình bày
+## Presenting
 
 ```
 📊 SDLC Status
@@ -24,33 +25,33 @@ Versions:
   🔄 v2   in-progress → sprint-1-upgrade › phase: execute (task 3/5)
   ⬜ v3   planned
 
-Version active: v2
-  Sprint: sprint-1-upgrade
-  Phase:  execute
-  Tasks:  3 done, 1 doing, 1 todo
-  Đang làm: TASK-03 (tạo endpoint POST /upgrade)
+Active version: v2
+  Sprint:  sprint-1-upgrade
+  Phase:   execute
+  Tasks:   3 done, 1 doing, 1 todo
+  Current: TASK-03 (create POST /upgrade endpoint)
 
 ▶ Resume:
   /sdlc:run v2 sprint-1-upgrade
-  └─ Sẽ tiếp tục từ: execute › TASK-03
+  └─ Will continue from: execute › TASK-03
 ```
 
-Nếu đang chờ approve ở một gate (vd tasks xong nhưng `tasks_approved: pending`), hiện rõ:
+If waiting at an approval gate (e.g. tasks done but `tasks_approved: pending`), surface it clearly:
 
 ```
 ▶ Resume:
   /sdlc:run v2 sprint-1-upgrade
-  └─ ⏸ Chờ bạn approve task list trước khi Execute (reply "ok" khi chạy /sdlc:run)
+  └─ ⏸ Waiting for you to approve the task list before Execute (reply "ok" when running /sdlc:run)
 ```
 
-Nếu version đang làm đã xong hết sprint, gợi ý:
+If the active version has finished all its sprints, suggest:
 
 ```
-▶ Bắt đầu sprint tiếp theo trong v2:
+▶ Start the next sprint in v2:
   /sdlc:run v2 sprint-2-...
 
-▶ Hoặc bắt đầu version mới:
-  /sdlc:sprint-plan v3 <tài liệu>
+▶ Or start a new version:
+  /sdlc:sprint-plan v3 <docs>
 ```
 
-Nếu chưa có `.sdlc/`, gợi ý chạy `/sdlc:sprint-plan v1 <tài liệu>` trước.
+If `.sdlc/` doesn't exist yet, suggest running `/sdlc:sprint-plan v1 <docs>` first.

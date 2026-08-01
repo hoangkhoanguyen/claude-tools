@@ -1,49 +1,50 @@
 ---
 name: test-strategy
-description: Bảng quyết định chọn cách test theo tech stack và loại feature — unit test, API test, Playwright UI automation, 3rd party sandbox, mock webhook. Dùng ở phase test trong SDLC để tự động hóa tối đa và chỉ để lại phần thực sự cần user verify tay.
+description: A decision table for choosing the testing approach by tech stack and feature type — unit tests, API tests, Playwright UI automation, 3rd party sandboxes, mock webhooks. Use in the SDLC test phase to automate as much as possible and leave only what genuinely needs manual verification.
 ---
 
 # Test Strategy
 
-Kỹ năng tự phát hiện cách test phù hợp và tự thực thi, để khi user manual test họ CHỈ verify nghiệp vụ,
-KHÔNG gặp lỗi vặt.
+The skill of detecting the right testing approach and executing it, so that when the user manual tests they
+ONLY verify business behavior and hit NO minor bugs.
 
-## Nguyên tắc tối cao: tự động hóa tối đa
+## The overriding principle: automate as much as possible
 
-Chỉ đẩy sang "cần user verify tay" khi thực sự KHÔNG thể tự động (OTP SMS thật, Face ID, tiền thật,
-xác nhận cảm quan UX). Mọi thứ khác phải được test tự động.
+Only push something to "needs manual verification" when it TRULY can't be automated (real SMS OTP, Face ID,
+real money, subjective UX judgment). Everything else must be tested automatically.
 
-## Bảng quyết định theo loại feature
+## Decision table by feature type
 
-| Loại feature | Cách test | Công cụ |
+| Feature type | How to test | Tooling |
 |---|---|---|
-| Logic thuần (util, tính toán, validation) | Unit test | test runner của stack (jest/vitest/pytest/go test...) |
-| API endpoint | Gọi HTTP thật, assert status + shape + business rule | curl / supertest / requests |
-| UI flow (không 3rd party) | Điều khiển browser: navigate/fill/click/assert | Playwright (đã cài sẵn) |
-| Flow có 3rd party (OAuth, payment) | Browser + sandbox/test mode | Playwright + Stripe test keys / OAuth sandbox |
-| Webhook / async | Trigger + mock callback + verify side effect | test runner + kiểm tra DB/state |
-| UI có design (DESIGN.md/ui-design.md) | Visual verification: screenshot đối chiếu Design AC + baseline | Playwright + skill `design-fidelity` |
-| Cần người thật (OTP SMS, Face ID, tiền thật) | Không tự động → liệt kê verify tay | — |
+| Pure logic (utils, calculations, validation) | Unit tests | the stack's test runner (jest/vitest/pytest/go test…) |
+| API endpoint | Real HTTP calls, assert status + shape + business rules | curl / supertest / requests |
+| UI flow (no 3rd party) | Drive the browser: navigate/fill/click/assert | Playwright (pre-installed) |
+| Flow with a 3rd party (OAuth, payment) | Browser + sandbox/test mode | Playwright + Stripe test keys / OAuth sandbox |
+| Webhook / async | Trigger + mock callback + verify the side effect | test runner + DB/state checks |
+| UI with a design (DESIGN.md/ui-design.md) | Visual verification: screenshots checked against Design AC + baseline | Playwright + skill `design-fidelity` |
+| Requires a real human (SMS OTP, Face ID, real money) | Can't be automated → list for manual verification | — |
 
-## Phối hợp môi trường
+## Environment coordination
 
-- Playwright đã cài sẵn trong môi trường Claude Code web. KHÔNG chạy `playwright install`.
-  Nếu project pin version khác, launch với `executablePath: '/opt/pw-browsers/chromium'`.
-- Cần app/service chạy để test → phối hợp với pre-flight của phase execute (yêu cầu user bật trước).
+- Playwright is pre-installed in the Claude Code web environment. Do NOT run `playwright install`.
+  If the project pins a different version, launch with `executablePath: '/opt/pw-browsers/chromium'`.
+- If an app/service must be running to test → coordinate with the execute phase's pre-flight (ask the user
+  to start it first).
 
-## Phủ requirements
+## Covering the requirements
 
-Mỗi `AC-xx` (GIVEN/WHEN/THEN), `EC-xx` và `NFR-xx` phải có ≥1 test/kiểm tra, hoặc được liệt kê rõ là
-verify-tay. Kèm bảng **AC/EC/NFR → test** trong report. NFR test tùy loại: performance (đo thời gian/tải),
-security (thử truy cập trái phép, injection), a11y (kiểm tra role/label). Nếu có Regression Impact trong
-requirements → thêm test/đi lại happy path của feature cũ bị ảnh hưởng.
+Every `AC-xx` (GIVEN/WHEN/THEN), `EC-xx`, and `NFR-xx` must have ≥1 test/check, or be explicitly listed as
+manual-verify. Include an **AC/EC/NFR → test** table in the report. NFR testing varies by type: performance
+(measure timing/load), security (attempt unauthorized access, injection), a11y (check roles/labels). If the
+requirements include Regression Impact → add tests / re-walk the happy path of the affected existing features.
 
-## Chạy thật, không giả định
+## Actually run them, don't assume
 
-Viết test xong PHẢI chạy. Fail → fix → chạy lại đến khi xanh. Smoke test endpoint chính: không 500.
+Once tests are written they MUST be run. Fail → fix → re-run until green. Smoke test the main endpoints: no 500s.
 
-## Checklist tự soi trước khi chốt
+## Self-review checklist before finalizing
 
-- [ ] Mọi AC/EC có test hoặc được liệt kê verify-tay?
-- [ ] Test đã CHẠY và xanh thật (không chỉ viết ra)?
-- [ ] Phần đẩy sang "verify tay" có thật sự không tự động được không?
+- [ ] Does every AC/EC have a test or appear on the manual-verify list?
+- [ ] Have the tests actually RUN and passed (not just been written)?
+- [ ] Is everything pushed to "manual verification" genuinely un-automatable?

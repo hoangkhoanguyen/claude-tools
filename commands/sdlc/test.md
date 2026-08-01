@@ -1,44 +1,50 @@
 ---
-description: Chạy riêng phase test cho một sprint — tự phát hiện cách test theo stack (unit, API, Playwright UI, 3rd party sandbox), viết + chạy test, rồi QA gate để bàn giao sạch.
+description: Run the test phase alone for one sprint — auto-detect the testing approach for the stack (unit, API, Playwright UI, 3rd party sandbox), write + run tests, then the QA gate for a clean handoff.
 argument-hint: <version-slug> <sprint-slug>
 ---
 
 # /sdlc:test
 
-Chạy riêng phase test + QA gate cho sprint `$2` thuộc version `$1`
-(nếu trống, lấy từ `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
+Run the test phase + QA gate alone for sprint `$2` in version `$1`
+(if empty, read from `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
 
-**Nạp context trước (nguyên tắc 0):** Glob toàn repo liệt kê mọi `CLAUDE.md`; đọc file gốc + các
-`CLAUDE.md` liên quan. Đọc `.sdlc/architecture.md`. Nắm lệnh test, convention của dự án.
+**Load context first (principle 0):** Glob the whole repo to list every `CLAUDE.md`; read the root file
++ the relevant ones. Read `.sdlc/architecture.md`. Learn the project's test commands and conventions.
 
-## Chính sách model
+## Model policy
 
-`test-strategist` và `qa-guard` đã khai `model: sonnet` trong frontmatter — **không truyền tham số
-`model` khi spawn**. Cả hai tự nâng `feature-builder` lên Opus ở vòng fix cuối khi Sonnet đã thất bại đủ
-5 vòng. Nhận `BLOCKED` thì đừng spawn lại bằng Opus: hạn mức leo thang đã dùng hết, `BLOCKED` nghĩa là
-cần người quyết định.
+`test-strategist` and `qa-guard` declare `model: sonnet` in their frontmatter — **do not pass a `model`
+parameter when spawning them**. Both escalate `feature-builder` to Opus on the final fix round once
+Sonnet has failed 5 rounds. On `BLOCKED`, do not respawn with Opus: the escalation budget is already
+spent, and `BLOCKED` means a human decision is needed.
 
 ## Test
-Spawn subagent `test-strategist`, dùng skill `test-strategy`. Tự phát hiện stack & công cụ, chọn cách
-test theo loại feature (unit / API / Playwright UI / 3rd party sandbox / mock webhook). Nếu có UI design →
-thêm visual verification (skill `design-fidelity`): screenshot đối chiếu Design AC + baseline trong
-`.sdlc/<version>/<sprint>/visual-baseline/`. Viết test và CHẠY thật đến khi xanh.
-Mọi AC/EC/NFR/DAC phải có test hoặc được liệt kê verify-tay.
-Ghi `.sdlc/<version>/<sprint>/test-report.md`.
 
-**Nó tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus) và tự commit test file + fix.** Bạn KHÔNG điều phối vòng fix,
-KHÔNG chạm git index khi nó đang chạy. Nó trả status ở dòng đầu: `DONE` → sang QA gate; `BLOCKED` →
-dừng, báo user; `DESIGN_GAP` → vá design nếu nhỏ & rõ, không thì đề nghị `/sdlc:replan`, rồi spawn lại;
-`NEEDS_SERVICE` → hỏi user bật service kèm lệnh gợi ý, đợi "ok", spawn lại; `CONTEXT_LIMIT` → spawn
-agent mới tiếp tục. Relay tóm tắt ngắn cho user.
+Spawn subagent `test-strategist` with skill `test-strategy`. It auto-detects the stack & tooling and
+picks the testing approach per feature type (unit / API / Playwright UI / 3rd party sandbox / mock
+webhook). If a UI design exists → add visual verification (skill `design-fidelity`): screenshots compared
+against Design AC + the baseline in `.sdlc/<version>/<sprint>/visual-baseline/`. It writes tests and
+ACTUALLY RUNS them until green.
+Every AC/EC/NFR/DAC must have a test or be listed as manual-verify.
+Writes `.sdlc/<version>/<sprint>/test-report.md`.
+
+**It closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits its own test
+files + fixes.** You do NOT orchestrate the fix loop and do NOT touch the git index while it runs.
+It returns a status on the first line: `DONE` → proceed to the QA gate; `BLOCKED` → stop, report to the
+user; `DESIGN_GAP` → patch the design if small and clear, otherwise suggest `/sdlc:replan`, then respawn;
+`NEEDS_SERVICE` → ask the user to start the service with the suggested command, wait for "ok", respawn;
+`CONTEXT_LIMIT` → spawn a new agent to continue. Relay a short summary to the user.
 
 ## QA Gate
-Spawn subagent `qa-guard`: chạy full test + happy path từng story + regression happy path feature cũ liên
-quan + NFR check + design fidelity check (nếu có UI) + quét hardcode/TODO/unhandled error.
-**Cũng tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus, mỗi vòng chạy lại checklist từ đầu) và tự commit** — bạn chỉ
-nhận status, không tự fix, không chạm git. Chỉ khi status `DONE` mới trình bày Pre-manual Report:
-- Đã tự động cover (không cần user kiểm)
-- Cần user verify tay (chỉ nghiệp vụ)
-- Edge case chưa define (nếu có)
 
-Kết thúc: chạy skill `self-review`. Cập nhật `.sdlc/<version>/state.md`.
+Spawn subagent `qa-guard`: full test run + happy path per story + regression happy path for related
+existing features + NFR check + design fidelity check (if UI) + scan for hardcoded values/TODOs/unhandled
+errors.
+**It also closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round, re-running the full
+checklist each round) and commits itself** — you only receive the status, you do not fix anything and do
+not touch git. Only on status `DONE` do you present the Pre-manual Report:
+- Automatically covered (no user check needed)
+- Needs manual verification (business behavior only)
+- Undefined edge cases (if any)
+
+Finish: run skill `self-review`. Update `.sdlc/<version>/state.md`.

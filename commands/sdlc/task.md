@@ -1,77 +1,83 @@
 ---
-description: Thực thi MỘT task cụ thể trong sprint — pre-flight, implement, test cục bộ, cập nhật status. Dùng khi muốn chạy thủ công từng task thay vì cả sprint.
+description: Execute ONE specific task in a sprint — pre-flight, implement, local tests, update status. Use it to run tasks manually one at a time instead of the whole sprint.
 argument-hint: [version-slug] [sprint-slug] [task-id]
 ---
 
 # /sdlc:task
 
-Thực thi thủ công MỘT task trong sprint. (Muốn thực thi đến hết cả sprint — implement + test + qa —
-→ dùng `/sdlc:execute`.)
+Manually execute ONE task in a sprint. (To run the whole sprint to completion — implement + test + qa —
+→ use `/sdlc:execute`.)
 
-## Xác định task cần chạy
+## Identifying the task to run
 
-- **Đủ tham số** (`$1 $2 $3`): chạy task `$3` trong sprint `$2` version `$1`.
-- **Thiếu version/sprint**: lấy từ `.sdlc/versions.md` (version active) + `.sdlc/<version>/state.md`
-  (sprint đang dở).
-- **Thiếu task-id (`$3` trống)**: đọc `.sdlc/<version>/<sprint>/tasks.md`, in danh sách các task
-  **chưa done** (kèm ID + mô tả ngắn + trạng thái phụ thuộc) và để user chọn — ưu tiên `AskUserQuestion`
-  render chip bấm được; nếu không thì đánh số cho user chọn. Chỉ liệt kê task còn phải làm, không hiện task done.
+- **All arguments given** (`$1 $2 $3`): run task `$3` in sprint `$2` of version `$1`.
+- **Missing version/sprint**: take them from `.sdlc/versions.md` (active version) +
+  `.sdlc/<version>/state.md` (in-progress sprint).
+- **Missing task-id (`$3` empty)**: read `.sdlc/<version>/<sprint>/tasks.md`, print the list of
+  **unfinished** tasks (with ID + short description + dependency status) and let the user choose —
+  prefer `AskUserQuestion` to render clickable chips; otherwise number them for the user to pick. Only
+  list tasks still to do, don't show completed ones.
 
-Yêu cầu `.sdlc/<version>/<sprint>/tasks.md` đã tồn tại (chạy `/sdlc:tasks` trước nếu chưa).
-Task đã chọn phải có status `todo` hoặc `doing`. Nếu đã `done` → báo user, không làm lại.
+Requires `.sdlc/<version>/<sprint>/tasks.md` to exist (run `/sdlc:tasks` first if not).
+The chosen task must have status `todo` or `doing`. If already `done` → tell the user, don't redo it.
 
 ## Dependency check
 
-Đọc phần "Phụ thuộc" của task đã chọn trong `tasks.md`. Nếu có task phụ thuộc mà CHƯA `done`
-→ DỪNG, cảnh báo user và gợi ý chạy task phụ thuộc trước (trừ khi user yêu cầu vẫn tiếp).
+Read the "Dependencies" section of the chosen task in `tasks.md`. If it depends on a task that is NOT
+`done` → STOP, warn the user and suggest running the dependency first (unless the user asks to proceed).
 
 ## Pre-flight
 
-Đọc `.sdlc/<version>/state.md`, xem `services_up` đã liệt kê service cần cho task này chưa.
+Read `.sdlc/<version>/state.md` and check whether `services_up` already lists the services this task needs.
 
-**Chưa đủ**: suy ra service ngoài cần thiết từ config dự án (docker-compose, .env.example,
-package.json scripts, Makefile, Procfile). Bash ping/check port từng cái. Hỏi user bật cái còn
-thiếu kèm lệnh gợi ý, đợi xác nhận "ok". Ghi service đã xác nhận vào `services_up` trong state.
-Migration nếu sprint đổi schema.
+**Not sufficient**: infer the required external services from the project config (docker-compose,
+.env.example, package.json scripts, Makefile, Procfile). Bash ping/check each port. Ask the user to start
+what's missing with a suggested command, wait for an "ok" confirmation. Write the confirmed services into
+`services_up` in state. Run migrations if the sprint changes the schema.
 
-**Đã đủ**: bỏ qua, không hỏi lại.
+**Sufficient**: skip, don't ask again.
 
 ## Implement
 
-Nạp context: đọc các `CLAUDE.md` liên quan (nguyên tắc 0) + `.sdlc/architecture.md` + design của sprint.
-Đọc chi tiết task đã chọn từ `tasks.md` (mô tả, AC/EC phục vụ, design ref, file dự kiến, tiêu chí test).
+Load context: read the relevant `CLAUDE.md` files (principle 0) + `.sdlc/architecture.md` + the sprint's
+design. Read the chosen task's details from `tasks.md` (description, AC/EC served, design refs, expected
+files, test criteria).
 
-Trước khi code: đặt task đã chọn = `doing` trong `tasks.md`; trong state đặt
+Before coding: set the chosen task to `doing` in `tasks.md`; in state set
 `current_phase: execute`, `current_task: <task-id>`, `execute: doing`.
 
-Spawn `feature-builder` (nó đã khai `model: sonnet` trong frontmatter — **không truyền tham số `model`**
-ở lượt đầu):
-- Implement theo đúng phạm vi task — không làm thêm task khác.
-- Chạy test cục bộ đến khi pass.
-- Self-review (skill `self-review`): đủ EC? không còn TODO/hardcode? test xanh thật?
-- Báo kết quả về: file đã đụng, test đã chạy, commit message đề xuất.
+Spawn `feature-builder` (it declares `model: sonnet` in its frontmatter — **do not pass a `model`
+parameter** on the first attempt):
+- Implement exactly the task's scope — don't do other tasks.
+- Run local tests until they pass.
+- Self-review (skill `self-review`): all EC handled? no TODOs/hardcoded values left? tests actually green?
+- Report back: files touched, tests run, suggested commit message.
 
-**Leo thang khi task không xong** (ở lệnh này bạn là người điều phối, nên bạn giữ hạn mức):
+**Escalating when the task doesn't finish** (in this command you are the orchestrator, so you hold the budget):
 
-- Trả `blocked` → spawn lại `feature-builder`, **kèm nguyên phần "Đã thử gì" của lượt trước**. Nó
-  cold-start mỗi lần; không truyền lịch sử thì nó lặp lại đúng sai lầm cũ.
-- Tối đa **5 lượt Sonnet**. Lượt thứ **6** spawn với `model: "opus"`, nói rõ đây là lượt escalate cuối và
-  liệt kê đủ 5 hướng đã thử. Vẫn không xong → đặt task `blocked` trong `tasks.md` kèm lý do, báo user.
-- **Leo sớm** nếu ba lượt liên tiếp thất bại y hệt nhau (cùng test đỏ, cùng lỗi) — đừng chờ đủ 5.
-- Task được `tasks.md` đánh `Độ khó: cao`, hoặc đụng thuật toán / đồng thời / giao dịch / mật mã →
-  spawn thẳng `model: "opus"` ngay lượt đầu.
-- Báo `khoảng trống design` → **không tính vào hạn mức**, và đổi model cũng vô ích: dừng, cho `architect`
-  vá `design.md` (nó chạy Opus) rồi chạy lại task.
+- Returns `blocked` → respawn `feature-builder`, **including the full "What was tried" section from the
+  previous attempt**. It cold-starts each time; without the history it repeats the same mistakes.
+- Max **5 Sonnet attempts**. Attempt **6** spawns with `model: "opus"`, stating clearly this is the final
+  escalation attempt and listing all 5 approaches already tried. Still not done → mark the task `blocked`
+  in `tasks.md` with the reason, and report to the user.
+- **Escalate early** if three consecutive attempts fail identically (same red test, same error) — don't
+  wait for all 5.
+- If `tasks.md` marks the task `Difficulty: high`, or it touches algorithms / concurrency / transactions /
+  cryptography → spawn with `model: "opus"` directly on the first attempt.
+- Reports a `design gap` → **does not count against the budget**, and changing models won't help: stop,
+  have `architect` patch `design.md` (it runs on Opus), then re-run the task.
 
-Nhận báo cáo xong, **bạn (lệnh này) ghi state** — subagent không tự ghi:
-- `git commit` task trên sprint branch (không push/tạo PR trừ khi user yêu cầu).
-- Đặt task = `done` trong `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite. Nếu không hoàn thành được
-  (thiếu điều kiện, lỗi ngoài phạm vi) → đặt `blocked` kèm lý do, KHÔNG đặt `done`.
-- Cập nhật `.sdlc/<version>/state.md` (`current_task`, `updated_at`; nếu MỌI task đã `done` thì `execute: done`).
+Once you receive the report, **you (this command) write the state** — the subagent does not:
+- `git commit` the task on the sprint branch (no push / no PR unless the user asks).
+- Set the task to `done` in `.sdlc/<version>/<sprint>/tasks.md` + TodoWrite. If it couldn't be completed
+  (missing prerequisites, errors outside scope) → set `blocked` with the reason, do NOT set `done`.
+- Update `.sdlc/<version>/state.md` (`current_task`, `updated_at`; if EVERY task is `done` then
+  `execute: done`).
 
-## Kết thúc
+## Finishing
 
-Báo task done. Đọc `tasks.md`, xác định task tiếp theo chưa done (theo thứ tự phụ thuộc), gợi ý:
+Report the task done. Read `tasks.md`, identify the next unfinished task (in dependency order), and suggest:
 
-> ✅ TASK-XX done. Task tiếp: TASK-YY — <mô tả ngắn>.
-> Chạy tiếp: `/sdlc:task` (chọn từ list) — hoặc chạy tất cả còn lại: `/sdlc:execute <version> <sprint>`
+> ✅ TASK-XX done. Next task: TASK-YY — <short description>.
+> Continue with: `/sdlc:task` (pick from the list) — or run everything remaining:
+> `/sdlc:execute <version> <sprint>`

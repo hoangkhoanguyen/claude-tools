@@ -1,90 +1,99 @@
 ---
-description: Đọc tài liệu business logic và chia thành các sprint cho một version mới. Chạy lần đầu với v1; dùng lại khi bắt đầu đợt phát triển mới (v2, v3,...).
-argument-hint: <version-slug> [đường dẫn tài liệu business logic]
+description: Read the business logic docs and split them into sprints for a new version. Run it first with v1; reuse it when starting a new development cycle (v2, v3, …).
+argument-hint: <version-slug> [path to business logic docs]
 ---
 
 # /sdlc:sprint-plan
 
-Chia sprint từ tài liệu business logic cho **một version cụ thể**.
+Break business logic docs into sprints for **one specific version**.
 
-## Đầu vào
+## Input
 
-- `$1`: version slug — vd `v1`, `v2`, `phase-2`. Nếu trống, tự xác định:
-  - Chưa có `.sdlc/versions.md` → đây là lần đầu, dùng `v1`.
-  - Đã có → đọc version tiếp theo (v cuối + 1) và xác nhận với user.
-- `$2`: tài liệu business logic (file / URL / paste). Nếu trống, hỏi user.
+- `$1`: version slug — e.g. `v1`, `v2`, `phase-2`. If empty, determine it:
+  - No `.sdlc/versions.md` yet → this is the first run, use `v1`.
+  - Already exists → read the next version (last v + 1) and confirm with the user.
+- `$2`: business logic docs (file / URL / paste). If empty, ask the user.
 
-Plugin KHÔNG tự sinh tài liệu business logic — đây là đầu vào do user cung cấp.
+The plugin does NOT generate business logic docs — this is user-supplied input.
 
-## Model — nhắc user một lần, ở đây
+## Model — remind the user once, here
 
-Đây là điểm vào đầu tiên của plugin, nên nhắc user **một lần duy nhất** rồi thôi: session chạy `/sdlc:*`
-nên để **Opus** (`/model opus`), vì nó giữ mọi quyết định và approval gate suốt cả sprint — **và vì các
-agent phase 1-3 (`product-analyst`, `architect`, `ui-designer`, `reviewer`) khai `model: inherit`, tức
-chúng chạy đúng model của session này.** Để session ở Sonnet thì cả 3 phase đầu cũng chạy Sonnet.
+This is the plugin's first entry point, so remind the user **exactly once** and then drop it: the session
+running `/sdlc:*` should use **Opus** (`/model opus`), because it holds every decision and approval gate
+across the whole sprint — **and because the phase 1-3 agents (`product-analyst`, `architect`,
+`ui-designer`, `reviewer`) declare `model: inherit`, meaning they run on this session's model.** Leave the
+session on Sonnet and all three early phases run on Sonnet too.
 
-Phase 4-6 không bị ảnh hưởng: chúng ghim cứng `sonnet` để hạ model bất kể session chính chạy gì. Nên
-**không cần cấu hình gì thêm** ngoài việc chọn model cho session.
+Phases 4-6 are unaffected: they hard-pin `sonnet` to lower the model regardless of what the main session
+runs. So **no extra configuration is needed** beyond choosing the session model.
 
-Nhắc xong thì chạy tiếp bình thường — đừng dừng lại chờ user đổi model, và đừng nhắc lại ở các lệnh sau.
+After the reminder, carry on normally — don't stop and wait for the user to change models, and don't
+repeat the reminder in later commands.
 
-## Các bước
+## Steps
 
-1. **Delegate đọc tài liệu cho subagent (KHÔNG tự Read).** Business docs của user thường dài
-   (BRD/PRD/SRS 20-50 trang) và cả team CLAUDE.md có thể 5-10 file — nếu conversation chính tự đọc,
-   context này còn phải sống suốt cả version. Spawn subagent `product-analyst` với nhiệm vụ đặc biệt
-   "sprint decomposition": truyền path business docs + version slug. Nó tự Glob CLAUDE.md, tự đọc
-   `.sdlc/architecture.md` (nếu có), tự đọc business docs, và trả về **bảng sprint đề xuất** (slug,
-   goal 1-2 dòng, features, dependencies, tech stack suggestion) + block Human Review sẵn để relay.
-   Conversation chính chỉ nhận bảng cô đọng — không giữ raw docs.
+1. **Delegate reading the docs to a subagent (do NOT Read them yourself).** User business docs are
+   usually long (BRD/PRD/SRS, 20-50 pages) and a team's CLAUDE.md files can number 5-10 — if the main
+   conversation reads them itself, that context has to survive the entire version. Spawn subagent
+   `product-analyst` with the special "sprint decomposition" task: pass the business doc paths + version
+   slug. It globs CLAUDE.md itself, reads `.sdlc/architecture.md` (if present) itself, reads the business
+   docs itself, and returns a **proposed sprint table** (slug, 1-2 line goal, features, dependencies,
+   tech stack suggestion) + a ready Human Review block to relay. The main conversation only receives the
+   condensed table — it never holds the raw docs.
 
-2. **Nhận bảng sprint từ subagent.** Mỗi sprint là một khối feature khép kín, có thể deliver độc lập.
-   Nếu bảng nó trả có vấn đề về phụ thuộc/thứ tự, feedback lại cho nó chỉnh — đừng tự sửa bằng cách
-   đọc lại docs.
+2. **Receive the sprint table from the subagent.** Each sprint is a self-contained feature block that can
+   be delivered independently. If the returned table has dependency/ordering problems, send feedback for
+   it to revise — don't fix it yourself by re-reading the docs.
 
-3. **Ghi `.sdlc/<version>/sprints.md`** với, cho mỗi sprint:
-   - Slug ngắn, **bắt buộc theo pattern `sprint-<số>-<tên>`** (vd `sprint-1-auth`, `sprint-2-orders`).
-     Số thứ tự bắt đầu lại từ 1 trong mỗi version — namespace version đã tách biệt, không lo trùng.
-   - Tên & mô tả 1-2 dòng (deliver gì)
-   - Feature chính nằm trong sprint
-   - Phụ thuộc vào sprint nào (trong version này hoặc version trước)
-   - Tech stack đề xuất (để user chốt) — nếu dự án đã có stack thì kế thừa
-   - Trạng thái: `planned`
+3. **Write `.sdlc/<version>/sprints.md`** with, for each sprint:
+   - A short slug, **required to follow the pattern `sprint-<number>-<name>`** (e.g. `sprint-1-auth`,
+     `sprint-2-orders`). Numbering restarts at 1 in each version — the version namespace keeps them
+     separate, so collisions aren't a concern.
+   - Name & 1-2 line description (what it delivers)
+   - The main features in the sprint
+   - Which sprints it depends on (in this version or a previous one)
+   - Suggested tech stack (for the user to confirm) — inherit the existing stack if the project has one
+   - Status: `planned`
 
-4. **Khởi tạo `.sdlc/<version>/state.md`** theo schema `templates/state.template.md`:
-   đặt `version: <version-slug>`, chưa bắt đầu sprint nào.
+4. **Initialize `.sdlc/<version>/state.md`** per the `templates/state.template.md` schema:
+   set `version: <version-slug>`, no sprint started yet.
 
-5. **Cập nhật `.sdlc/versions.md`** (tạo nếu chưa có): thêm dòng version mới với trạng thái `planned`.
-   File này là registry tất cả các version, giúp `/sdlc:status` và `/sdlc:run` xác định version active.
+5. **Update `.sdlc/versions.md`** (create it if missing): add a row for the new version with status
+   `planned`. This file is the registry of all versions, letting `/sdlc:status` and `/sdlc:run` identify
+   the active version.
 
-6. **Thiết lập gitignore** (chỉ lần đầu — khi chưa có `.sdlc/` hoặc chưa có dòng này):
-   thêm vào `.gitignore` của dự án:
+6. **Set up gitignore** (first time only — when `.sdlc/` doesn't exist yet or the line is missing):
+   add to the project's `.gitignore`:
    ```
    .sdlc/*/*/visual-baseline/
    ```
-   Toàn bộ `.sdlc/` còn lại được commit — đây là tài liệu sống của dự án, cả team theo dõi qua git.
+   Everything else in `.sdlc/` is committed — it's the project's living documentation, tracked by the
+   whole team through git.
 
-7. **Khởi tạo/cập nhật `.sdlc/architecture.md`** (xuyên version, ở gốc `.sdlc/`):
-   - Lần đầu (v1): ghi quyết định nền tảng — stack tổng thể, cấu trúc thư mục, cơ chế auth,
-     mô hình dữ liệu lõi, convention chung. Với dự án có sẵn: mô tả kiến trúc HIỆN CÓ.
-   - Version sau: chỉ bổ sung thay đổi nền tảng mới, không xóa lịch sử version trước.
-   File này là nguồn tham chiếu cho `architect` ở mọi sprint mọi version.
+7. **Initialize/update `.sdlc/architecture.md`** (cross-version, at the `.sdlc/` root):
+   - First time (v1): record foundational decisions — overall stack, directory structure, auth mechanism,
+     core data model, shared conventions. For an existing project: describe the CURRENT architecture.
+   - Later versions: only add new foundational changes, never delete previous versions' history.
+   This file is the reference source for `architect` in every sprint of every version.
 
-8. **Phát hiện định hướng thiết kế thị giác.** Xác định dự án CŨ hay MỚI, nguồn thẩm mỹ sẵn có:
-   - **Có DESIGN.md / design system** → khởi tạo/cập nhật `.sdlc/design-system.md` (xuyên version),
-     trích design tokens. Nguồn tham chiếu cho ui-designer.
-   - **Dự án CŨ, không DESIGN.md** → ghi chú: UI bám phong cách app hiện có. KHÔNG hỏi phong cách.
-   - **Dự án MỚI, chưa có nguồn thẩm mỹ** → sprint đầu tiên có màn hình sẽ hỏi user 1 lần rồi sinh `DESIGN.md`.
+8. **Detect the visual design direction.** Determine whether the project is existing or new, and what
+   aesthetic source is available:
+   - **Has DESIGN.md / design system** → initialize/update `.sdlc/design-system.md` (cross-version),
+     extracting design tokens. This is the reference source for ui-designer.
+   - **Existing project, no DESIGN.md** → note it: UI follows the current app's style. Do NOT ask about style.
+   - **New project, no aesthetic source** → the first sprint with screens will ask the user once, then
+     generate `DESIGN.md`.
 
-9. **Trình bày danh sách sprint cho user** ở mức cao. Mời user: reorder, gộp/tách, chốt tech stack.
+9. **Present the sprint list to the user** at a high level. Invite them to: reorder, merge/split, confirm
+   the tech stack.
 
-## Self-review trước khi trình bày (dùng skill self-review)
+## Self-review before presenting (use the self-review skill)
 
-- Mọi feature trong tài liệu có nằm trong ít nhất một sprint không? (không sót)
-- Thứ tự sprint có tôn trọng phụ thuộc không?
-- Sprint có đủ nhỏ để review nhẹ, nhưng đủ lớn để deliver có nghĩa không?
+- Is every feature in the docs covered by at least one sprint? (nothing missed)
+- Does the sprint order respect dependencies?
+- Is each sprint small enough for light review, but large enough to deliver something meaningful?
 
-## Sau khi user chốt
+## After the user confirms
 
-Cập nhật `.sdlc/<version>/sprints.md` theo chỉnh sửa của user.
-Hướng dẫn: chạy `/sdlc:run <version> <sprint-slug>` để bắt đầu.
+Update `.sdlc/<version>/sprints.md` with the user's edits.
+Tell them: run `/sdlc:run <version> <sprint-slug>` to begin.

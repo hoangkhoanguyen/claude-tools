@@ -1,11 +1,11 @@
 # SDLC Versions
 
-Danh sách các đợt phát triển của dự án. Mỗi version là một đợt có tài liệu business logic riêng.
-Cập nhật khi thêm version mới hoặc version hoàn thành.
+The project's development cycles. Each version is one cycle with its own business logic docs.
+Update this when adding a new version or when a version completes.
 
-| Version | Tên / Mô tả         | Trạng thái   | Bắt đầu    | Hoàn thành  |
+| Version | Name / Description   | Status       | Started    | Completed   |
 |---------|----------------------|--------------|------------|-------------|
-| v1      | <mô tả đợt 1>       | in-progress  | YYYY-MM-DD | -           |
+| v1      | <description of cycle 1> | in-progress | YYYY-MM-DD | -         |
 
-<!-- Trạng thái: planned | in-progress | done -->
-<!-- Version active = in-progress gần nhất. Nếu nhiều version in-progress: version số lớn nhất ưu tiên. -->
+<!-- Status: planned | in-progress | done -->
+<!-- The active version = the most recent in-progress one. If several are in-progress: the highest number wins. -->

@@ -1,70 +1,73 @@
 ---
 name: task-breakdown
-description: Cách chia design của một sprint thành danh sách task thực thi được, có thứ tự phụ thuộc, checkpoint-able và resume-able, không bỏ sót AC nào. Dùng ở phase tasks trong SDLC trước khi execute.
+description: How to split a sprint's design into an executable task list with dependency ordering, checkpointable and resumable, missing no AC. Use in the SDLC tasks phase before execute.
 ---
 
 # Task Breakdown
 
-Kỹ năng biến `design.md` thành danh sách task để feature-builder thực thi tuần tự, mỗi task là một đơn
-vị hoàn chỉnh có thể checkpoint (để resume khi bị ngắt).
+The skill of turning `design.md` into a task list for feature-builder to execute in order, each task being
+a complete, checkpointable unit (so work can resume after an interruption).
 
-## Nguyên tắc chia task
+## Task-splitting principles
 
-- **Mỗi task đủ nhỏ để hoàn thành + test trong một lần**, nhưng đủ lớn để là một đơn vị có nghĩa
-  (vd "tạo endpoint POST /orders + validation", không phải "viết 1 dòng if").
-- **Task độc lập chạy song song được** thì đánh dấu để execute tận dụng subagent song song.
-- **Task có phụ thuộc** thì ghi rõ thứ tự (task B cần task A xong trước).
-- **Mỗi task trỏ về**: story/AC nó phục vụ, phần design liên quan, file dự kiến đụng tới, EC cần handle.
+- **Each task small enough to complete + test in one go**, but large enough to be a meaningful unit
+  (e.g. "create the POST /orders endpoint + validation", not "write one if statement").
+- **Independent tasks that can run in parallel** are marked so execute can use parallel subagents.
+- **Tasks with dependencies** state the order explicitly (task B needs task A finished first).
+- **Each task points back to**: the story/AC it serves, the relevant design section, the files it's expected
+  to touch, and the ECs it must handle.
 
-## Không bỏ sót AC
+## Miss no AC
 
-Mỗi `AC-xx`, `EC-xx`, `NFR-xx` trong requirements — và `DAC-xx` trong ui-design (nếu có UI) — phải được ít
-nhất một task phụ trách. Kèm bảng **AC/EC/NFR/DAC → task** để chứng minh phủ đủ. Đây là chốt chặn: thiếu
-ánh xạ = sẽ có tính năng/thiết kế không được build. Cân nhắc tách task UI và task hệ thống để chạy song song.
+Every `AC-xx`, `EC-xx`, and `NFR-xx` in the requirements — and every `DAC-xx` in the ui-design (if there's
+UI) — must be owned by at least one task. Include an **AC/EC/NFR/DAC → task** table as proof of coverage.
+This is the checkpoint: a missing mapping means a feature/design element won't get built. Consider
+splitting UI tasks and system tasks so they can run in parallel.
 
-## Trạng thái task (để resume)
+## Task status (for resuming)
 
-Mỗi task có status: `todo` / `doing` / `done` (+ `blocked` kèm lý do nếu có). Ghi vào
-`.sdlc/<version>/<sprint>/tasks.md`. Khi execute, đồng bộ với TodoWrite trong session; cập nhật file sau mỗi task
-để lần chạy sau biết chỗ tiếp tục.
+Each task has a status: `todo` / `doing` / `done` (+ `blocked` with a reason if applicable). Written to
+`.sdlc/<version>/<sprint>/tasks.md`. During execute, sync with TodoWrite in the session; update the file
+after each task so the next run knows where to continue.
 
-## Mẫu một task
+## Task template
 
 ```
 - [ ] TASK-03  (todo)
-  Mô tả: Tạo endpoint POST /orders với validation stock
-  Phục vụ: Story-02 (AC-02.1, AC-02.2), EC-01, EC-04
+  Description: Create the POST /orders endpoint with stock validation
+  Serves: Story-02 (AC-02.1, AC-02.2), EC-01, EC-04
   Design ref: API Contracts §POST /orders, Data Model §Order
-  File dự kiến: src/routes/orders.ts, src/services/order.ts
-  Phụ thuộc: TASK-01 (Order schema)
-  Skill gợi ý: <tên skill nếu có — vd migration, component-gen, e2e-test; để trống nếu không>
-  Độ khó: thường | cao
-  Test: unit cho service + smoke POST endpoint
+  Expected files: src/routes/orders.ts, src/services/order.ts
+  Dependencies: TASK-01 (Order schema)
+  Suggested skill: <skill name if any — e.g. migration, component-gen, e2e-test; leave empty if none>
+  Difficulty: normal | high
+  Test: unit tests for the service + smoke test the POST endpoint
 ```
 
-Trường `Skill gợi ý`: điền tên skill của dự án (trong `.claude/skills/`, plugin, hoặc built-in) mà
-task này nên dùng. Căn cứ vào loại việc (migration DB → skill migration; sinh component → skill
-component-gen; test E2E → skill e2e; ...). Để trống nếu không có skill nào phù hợp hơn cách mặc định.
-Đây là gợi ý cho feature-builder — không bắt buộc dùng nếu skill không khớp thực tế.
+The `Suggested skill` field: fill in the name of a project skill (in `.claude/skills/`, a plugin, or
+built-in) that this task should use. Base it on the kind of work (DB migration → migration skill;
+generating components → component-gen skill; E2E testing → e2e skill; …). Leave it empty if no skill beats
+the default approach. This is a hint for feature-builder — not mandatory if the skill doesn't match reality.
 
-Trường `Độ khó`: mặc định `thường`. Chặng implement chạy bằng Sonnet, và `cao` là tín hiệu để
-`implement-coordinator` giao task đó cho Opus ngay từ lượt đầu thay vì chờ Sonnet thất bại 5 lượt.
-Vì vậy đánh `cao` phải **có căn cứ, không phải cảm tính** — chỉ dùng khi task rơi vào một trong số:
+The `Difficulty` field: defaults to `normal`. The implement leg runs on Sonnet, and `high` is the signal for
+`implement-coordinator` to assign that task to Opus from the very first attempt instead of waiting for
+Sonnet to fail 5 times. So marking `high` must be **justified, not a gut feeling** — only use it when the
+task falls into one of these:
 
-- Thuật toán không tầm thường (tối ưu, đồ thị, lập lịch, tính toán tài chính).
-- Đồng thời / race condition / khoá / idempotency.
-- Giao dịch nhiều bước phải nhất quán (phân tán, rollback, saga).
-- Mật mã, xác thực, phân quyền ở tầng thiết kế (không phải chỉ gọi thư viện có sẵn).
-- Refactor đụng nhiều module đang chạy, rủi ro regression rộng.
+- Non-trivial algorithms (optimization, graphs, scheduling, financial calculations).
+- Concurrency / race conditions / locking / idempotency.
+- Multi-step transactions requiring consistency (distributed, rollback, saga).
+- Cryptography, authentication, or authorization at the design level (not just calling an existing library).
+- Refactors touching many working modules, with wide regression risk.
 
-Task dài hoặc nhiều file **không** đồng nghĩa với `cao` — đó là task nên chẻ nhỏ. Đánh `cao` tràn lan
-làm mất toàn bộ lợi ích tốc độ/chi phí của chặng thực thi; giữ nó cho đúng loại việc mà sai sót không
-lộ ra qua test.
+A long task or one spanning many files is **not** the same as `high` — that's a task that should be split.
+Marking `high` liberally destroys the entire speed/cost benefit of the execution leg; save it for the kind
+of work where mistakes don't surface through tests.
 
-## Checklist tự soi trước khi chốt
+## Self-review checklist before finalizing
 
-- [ ] Mọi AC-xx / EC-xx có ít nhất một task phụ trách (có bảng mapping)?
-- [ ] Task nào chạy song song được đã đánh dấu?
-- [ ] Phụ thuộc giữa task đã ghi đúng thứ tự?
-- [ ] Mỗi task có tiêu chí test rõ để mark done?
-- [ ] Task đánh `Độ khó: cao` có đúng căn cứ trong danh sách trên, không phải chỉ vì task dài?
+- [ ] Does every AC-xx / EC-xx have at least one owning task (with a mapping table)?
+- [ ] Are the parallelizable tasks marked?
+- [ ] Are the dependencies between tasks in the right order?
+- [ ] Does each task have clear test criteria for marking it done?
+- [ ] Is every task marked `Difficulty: high` genuinely justified by the list above, not just long?

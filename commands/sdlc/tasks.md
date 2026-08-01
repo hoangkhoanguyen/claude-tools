@@ -1,50 +1,52 @@
 ---
-description: Chạy riêng phase chia tasks cho một sprint — từ design tạo danh sách task thực thi được, có phụ thuộc, checkpoint-able, phủ đủ AC/EC. Chỉ tạo tài liệu, không execute.
+description: Run the task breakdown phase alone for one sprint — turn the design into an executable task list with dependencies, checkpoints, and full AC/EC coverage. Documentation only, no execution.
 argument-hint: <version-slug> <sprint-slug>
 ---
 
 # /sdlc:tasks
 
-Chạy riêng phase chia task cho sprint `$2` thuộc version `$1`
-(nếu trống, lấy từ `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
+Run the task breakdown phase alone for sprint `$2` in version `$1`
+(if empty, read from `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
 
-Yêu cầu `.sdlc/<version>/<sprint>/design.md` đã tồn tại (chạy `/sdlc:design` trước nếu chưa).
+Requires `.sdlc/<version>/<sprint>/design.md` to exist (run `/sdlc:design` first if not).
 
-**KHÔNG tự Glob CLAUDE.md / Read design.md / architecture.md.** Spawn subagent (dùng skill
-`task-breakdown`) — nó tự nạp CLAUDE.md liên quan theo File Change Plan trong `design.md`, tự đọc
-`architecture.md`, tự chạy `self-review` trước khi trả file.
+**Do NOT Glob CLAUDE.md / Read design.md / architecture.md yourself.** Spawn a subagent (with skill
+`task-breakdown`) — it loads the relevant CLAUDE.md files per the File Change Plan in `design.md`, reads
+`architecture.md`, and runs `self-review` itself before returning the file.
 
-## Chỉ tạo tài liệu — KHÔNG execute
+## Documentation only — NO execution
 
-Phase này **chỉ chia task và ghi tài liệu**. Không implement code, không pre-flight service.
-Thực thi bắt đầu từ `/sdlc:task` (từng task thủ công) hoặc `/sdlc:execute` (toàn sprint tuần tự).
+This phase **only breaks down tasks and writes documentation**. No code implementation, no service
+pre-flight. Execution starts with `/sdlc:task` (one task at a time, manually) or `/sdlc:execute`
+(the whole sprint, sequentially).
 
-## Quy trình
+## Process
 
-Subagent ghi `.sdlc/<version>/<sprint>/tasks.md` với các task (status `todo`), phụ thuộc, đánh dấu
-task chạy song song được, và bảng AC/EC → task. Trả về block Human Review để relay + list ID/mô tả
-ngắn để conversation chính đồng bộ TodoWrite (không Read trọn `tasks.md`).
+The subagent writes `.sdlc/<version>/<sprint>/tasks.md` with the tasks (status `todo`), dependencies,
+markers for tasks that can run in parallel, and an AC/EC → task table. It returns a Human Review block
+to relay + a short list of IDs/descriptions for the main conversation to sync into TodoWrite (do not
+Read all of `tasks.md`).
 
-Cập nhật `.sdlc/<version>/state.md`.
+Update `.sdlc/<version>/state.md`.
 
-## Sinh command shortcuts
+## Generating command shortcuts
 
-Sau khi `tasks.md` hoàn chỉnh và self-review pass, ghi `.sdlc/<version>/<sprint>/commands.md`
-theo mẫu sau (điền đúng version, sprint, task IDs và mô tả ngắn từ tasks.md):
+Once `tasks.md` is complete and self-review passes, write `.sdlc/<version>/<sprint>/commands.md`
+using this template (fill in the real version, sprint, task IDs and short descriptions from tasks.md):
 
 ```
 # Sprint Commands — <sprint-slug>
 
-## Chạy từng task (thủ công)
-# Gõ /sdlc:task (không tham số) để chọn task từ list; hoặc chỉ đích danh:
-/sdlc:task <version> <sprint> TASK-01   # <mô tả ngắn task 01>
-/sdlc:task <version> <sprint> TASK-02   # <mô tả ngắn task 02>
+## Run tasks one at a time (manual)
+# Type /sdlc:task (no args) to pick a task from the list; or target one directly:
+/sdlc:task <version> <sprint> TASK-01   # <short description of task 01>
+/sdlc:task <version> <sprint> TASK-02   # <short description of task 02>
 ...
 
-## Chạy phần thực thi đến hết (implement + test + qa + bàn giao)
+## Run execution to completion (implement + test + qa + handoff)
 /sdlc:execute <version> <sprint>
 ```
 
-Sau khi ghi xong `commands.md`, in nội dung file đó ra cho user thấy ngay.
+After writing `commands.md`, print its contents so the user sees it immediately.
 
-Đây là phase con của `/sdlc:run`; dùng khi muốn chạy/rà lại riêng phase chia task.
+This is a sub-phase of `/sdlc:run`; use it when you want to run or redo the task breakdown phase alone.

@@ -1,236 +1,239 @@
 ---
-description: Nhận file tech stack đã soạn sẵn → init các app còn thiếu trong monorepo → viết CLAUDE.md cho root và từng app.
-argument-hint: [đường dẫn file tech stack]
+description: Take a prepared tech stack file → init the missing apps in the monorepo → write CLAUDE.md for the root and each app.
+argument-hint: [path to tech stack file]
 ---
 
 # /init-project
 
-Nhận file tech stack đã soạn sẵn → init các app còn thiếu trong monorepo → viết CLAUDE.md cho root và từng app.
-Chạy tự động hết 2 bước, không hỏi thêm sau khi bắt đầu.
+Take a prepared tech stack file → init the missing apps in the monorepo → write CLAUDE.md for the root and each app.
+Runs both steps automatically, asking nothing further once started.
 
-## Bước 0 — Tìm file tech stack
+## Step 0 — Find the tech stack file
 
-Nếu user cung cấp path khi gọi lệnh → đọc file đó.
+If the user provides a path when invoking the command → read that file.
 
-Nếu không có path, tìm theo thứ tự ưu tiên:
+If no path is given, search in priority order:
 1. `.sdlc/versions.md`
 2. `.sdlc/architecture.md`
-3. `TECH_STACK.md`, `STACK.md`, `tech-stack.md` ở root
-4. Glob `.sdlc/**/*.md` → đọc file có từ khoá "tech", "stack", "architecture", "framework"
-5. `CLAUDE.md` ở root nếu có section tech stack
+3. `TECH_STACK.md`, `STACK.md`, `tech-stack.md` at the root
+4. Glob `.sdlc/**/*.md` → read files containing the keywords "tech", "stack", "architecture", "framework"
+5. Root `CLAUDE.md` if it has a tech stack section
 
-Extract từ file tìm được:
-- Danh sách apps/services (tên, loại, framework, port)
-- Packages/libraries chính cho từng app
-- Monorepo tooling (pnpm workspaces, turborepo...)
+Extract from whichever file you find:
+- List of apps/services (name, type, framework, port)
+- Main packages/libraries per app
+- Monorepo tooling (pnpm workspaces, turborepo…)
 - Database, external services
 
-Nếu không tìm được file nào → báo user và dừng.
+If no file can be found → tell the user and stop.
 
-## Bước 1 — Init codebase
+## Step 1 — Init the codebase
 
-### Kiểm tra trạng thái
+### Check current state
 
-Với mỗi app trong tech stack:
-- Đã có `package.json` → skip
-- Chưa có hoặc thư mục rỗng → cần init
+For each app in the tech stack:
+- Has a `package.json` → skip
+- Missing or empty directory → needs init
 
-Với root monorepo:
-- `pnpm-workspace.yaml`, `package.json` root, `turbo.json` đã có chưa
+For the monorepo root:
+- Do `pnpm-workspace.yaml`, the root `package.json`, and `turbo.json` already exist?
 
-### Init theo đúng thứ tự
+### Init in the correct order
 
-**Thứ tự:** root setup → shared packages → apps
+**Order:** root setup → shared packages → apps
 
-**Root (nếu chưa có):**
-- Tạo `package.json` root với `pnpm init`
-- Tạo `pnpm-workspace.yaml` với globs `apps/*` và `packages/*`
-- Tạo `turbo.json` nếu tech stack chỉ định dùng Turborepo
+**Root (if missing):**
+- Create the root `package.json` with `pnpm init`
+- Create `pnpm-workspace.yaml` with the globs `apps/*` and `packages/*`
+- Create `turbo.json` if the tech stack specifies Turborepo
 
-**Init từng app — dùng đúng CLI:**
+**Init each app — use the right CLI:**
 
-| Framework | Lệnh |
+| Framework | Command |
 |---|---|
 | Next.js | `pnpm create next-app@latest apps/[name] --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --no-git` |
 | NestJS | `pnpm dlx @nestjs/cli new apps/[name] --package-manager pnpm --skip-git` |
 | Vite + React | `pnpm create vite apps/[name] --template react-ts` |
 | Remix | `pnpm create remix apps/[name] --no-git-init` |
-| Express/Fastify | Tạo thủ công: `mkdir -p apps/[name]/src`, `pnpm init`, cài deps |
-| Shared package | `mkdir -p packages/[name]/src`, `pnpm init`, cài deps phù hợp |
+| Express/Fastify | Create manually: `mkdir -p apps/[name]/src`, `pnpm init`, install deps |
+| Shared package | `mkdir -p packages/[name]/src`, `pnpm init`, install the appropriate deps |
 | Prisma package | `pnpm init` + `pnpm add prisma @prisma/client` + `pnpm dlx prisma init` |
 
-Sau khi init:
-- Xoá `.git` folder nếu CLI tạo trong app con
-- Cài thêm dependencies chính được chỉ định trong tech stack
-- Thêm workspace reference (`"@repo/[name]": "workspace:*"`) vào app nào dùng shared package
+After init:
+- Delete the `.git` folder if the CLI created one inside a sub-app
+- Install the additional main dependencies specified in the tech stack
+- Add workspace references (`"@repo/[name]": "workspace:*"`) to any app using a shared package
 
-### GIỚI HẠN — KHÔNG được làm
+### LIMITS — what NOT to do
 
-Bước 1 CHỈ scaffold project trống bằng CLI. KHÔNG làm bất kỳ điều nào sau:
-- Tạo/sửa page, component, provider, layout, hook, service, controller, hoặc bất kỳ file business logic nào
-- Viết App.tsx/App.vue custom, wiring providers, đăng ký resource/route
-- Chạy typecheck, build, hoặc verify build
-- Boot server/backend, curl endpoint, probe health check
-- Xoá/thay thế file mặc định của CLI (giữ nguyên scaffold gốc)
+Step 1 ONLY scaffolds empty projects via CLI. Do NOT do any of the following:
+- Create/edit pages, components, providers, layouts, hooks, services, controllers, or any business logic file
+- Write custom App.tsx/App.vue, wire up providers, register resources/routes
+- Run typecheck, build, or verify the build
+- Boot the server/backend, curl endpoints, probe health checks
+- Delete/replace the CLI's default files (keep the original scaffold intact)
 
-Output bước 1 = project chạy được `pnpm dev` với **trang mặc định của framework** (Hello World). Mọi customization thuộc về `/sdlc:run` phase execute.
+Step 1's output = a project that runs `pnpm dev` showing the **framework's default page** (Hello World).
+All customization belongs to the `/sdlc:run` execute phase.
 
-### Báo cáo bước 1
+### Step 1 report
 ```
 ✓ Init: apps/web (Next.js 14)
 ✓ Init: apps/api (NestJS 10)
 ✓ Init: packages/ui
-→ Skip: packages/db (đã tồn tại)
+→ Skip: packages/db (already exists)
 ```
 
-## Bước 2 — Viết CLAUDE.md
+## Step 2 — Write CLAUDE.md
 
-### Đọc cấu trúc thực tế trước khi viết
+### Read the actual structure before writing
 
-Đọc lại sau khi init xong:
-- Folder structure thực tế của từng app
-- `package.json` thực tế (CLI có thể thêm/bỏ package)
+Re-read after init completes:
+- Each app's actual folder structure
+- The actual `package.json` (the CLI may add/remove packages)
 - Config files (`tsconfig.json`, framework config, `.env.example`)
-- Path aliases đã được setup
+- Path aliases that were set up
 
 ### Persona
 
-Đóng vai **senior developer** am hiểu sâu toàn bộ tech stack của dự án này.
-Viết rules dựa trên kiến thức thực tế về framework — không chung chung, phải đủ cụ thể để agent đọc vào biết ngay phải làm gì và không được làm gì.
+Act as a **senior developer** with deep knowledge of this project's entire tech stack.
+Write rules based on real framework knowledge — not generic advice; specific enough that an agent reading
+them immediately knows what to do and what not to do.
 
 ### Root CLAUDE.md
 
 ```markdown
-# [Tên repo]
+# [Repo name]
 
 ## Workspace overview
-| App/Package | Vai trò | Tech chính | Port |
+| App/Package | Role | Main tech | Port |
 |---|---|---|---|
-[Điền từ tech stack thực tế]
+[Fill from the actual tech stack]
 
 ## Shared packages
-[Danh sách packages/* và mục đích, cách import]
+[List of packages/* with their purpose and how to import them]
 
-## Lệnh pnpm
-[Lấy từ scripts thực tế trong package.json — không bịa]
+## pnpm commands
+[Take from the actual scripts in package.json — don't invent any]
 
-## Nguyên tắc chung
-- Tận dụng built-in của framework/library; extend nếu cần; chỉ tự viết khi thực sự không có
-- Shared logic → packages/, không duplicate giữa các apps
-- Không thêm package mới khi workspace đã có thứ đủ dùng
-- Config tập trung tại một chỗ, không hardcode rải rác
+## General principles
+- Use the framework/library's built-ins; extend when needed; only write your own when nothing exists
+- Shared logic → packages/, don't duplicate across apps
+- Don't add new packages when the workspace already has something sufficient
+- Centralize config in one place, don't hardcode it in scattered spots
 
-## Convention
-[Từ config thực tế: ESLint, Prettier, TypeScript, commit convention nếu có]
+## Conventions
+[From the actual config: ESLint, Prettier, TypeScript, commit conventions if any]
 ```
 
 ### App CLAUDE.md
 
-Với mỗi app, viết `[app-path]/CLAUDE.md`:
+For each app, write `[app-path]/CLAUDE.md`:
 
 ```markdown
-# [Tên app]
+# [App name]
 
-[Một dòng mô tả app làm gì]
+[One line describing what the app does]
 
-## Lệnh
-[Từ scripts thực tế — bao gồm cách chạy từ root và từ thư mục app]
+## Commands
+[From the actual scripts — including how to run from the root and from the app directory]
 
 ## Tech stack
-[Danh sách tech chính với version thực tế]
+[List of main tech with actual versions]
 
-## Cấu trúc thư mục
-[Folder structure thực tế, vai trò từng thư mục]
+## Directory structure
+[Actual folder structure, role of each directory]
 
-## [Framework] — Cách dùng đúng
-[Rules cụ thể theo framework — xem hướng dẫn bên dưới]
+## [Framework] — correct usage
+[Framework-specific rules — see the guidance below]
 
-## Anti-patterns — Không làm
-[Những gì agent hay sai với framework này — phải cụ thể, không chung chung]
+## Anti-patterns — don't do this
+[What agents commonly get wrong with this framework — must be specific, not generic]
 
-## Shared packages đang dùng
-[packages/* nào, import path thực tế]
+## Shared packages in use
+[Which packages/*, actual import paths]
 
 ## Env vars
-[Từ .env.example nếu có]
+[From .env.example if present]
 ```
 
-### Framework rules — viết thế nào cho đúng
+### Framework rules — how to write them well
 
-Mỗi rule phải trả lời được: *"Nếu không ghi điều này, agent có tự làm đúng không?"*
-Nếu câu trả lời là "không chắc" → ghi. Nếu là "chắc chắn đúng" → bỏ qua.
+Every rule must answer: *"If I don't write this down, will the agent get it right on its own?"*
+If the answer is "not sure" → write it. If it's "definitely right" → skip it.
 
-**Ví dụ xấu** (quá chung):
+**Bad example** (too generic):
 ```
-Dùng React Query để fetch data
+Use React Query to fetch data
 ```
 
-**Ví dụ tốt** (cụ thể, actionable):
+**Good example** (specific, actionable):
 ```
-## Data fetching — flow bắt buộc
-src/api/[resource].ts     → hàm gọi API thuần (axios, không hook)
-src/hooks/use[Resource].ts → wrap useQuery/useMutation
-Component                  → chỉ gọi hook, không fetch trực tiếp
+## Data fetching — required flow
+src/api/[resource].ts      → plain API call functions (axios, no hooks)
+src/hooks/use[Resource].ts → wraps useQuery/useMutation
+Component                  → only calls the hook, never fetches directly
 
 Anti-pattern:
-- useEffect + fetch trong component
-- Gọi axios trực tiếp trong component
-- Tạo axios instance mới ngoài src/api/
+- useEffect + fetch inside a component
+- Calling axios directly in a component
+- Creating a new axios instance outside src/api/
 ```
 
-**Rules theo framework phổ biến:**
+**Rules for common frameworks:**
 
 *React + TanStack Query:*
-- Flow: api function → useQuery hook → component (không shortcut)
-- Mutations: useMutation + invalidateQueries, không tự refetch
-- Server data vs UI state: React Query cho server data, useState/Zustand cho UI state
+- Flow: api function → useQuery hook → component (no shortcuts)
+- Mutations: useMutation + invalidateQueries, don't refetch manually
+- Server data vs UI state: React Query for server data, useState/Zustand for UI state
 
 *Next.js App Router:*
-- Server Component fetch trực tiếp (async/await), không useEffect
-- `use client` chỉ khi cần: event handlers, browser APIs, stateful UI
-- next/image thay img, next/link thay a, next/font thay CDN font
-- Env vars client-side phải có prefix NEXT_PUBLIC_
+- Server Components fetch directly (async/await), not useEffect
+- `use client` only when needed: event handlers, browser APIs, stateful UI
+- next/image instead of img, next/link instead of a, next/font instead of CDN fonts
+- Client-side env vars must have the NEXT_PUBLIC_ prefix
 
 *NestJS:*
-- Tạo module/service/controller bằng CLI (`nest g module`, `nest g service`...), không viết tay
-- Validate bằng class-validator + ValidationPipe, không validate thủ công trong controller
-- Inject qua constructor, không new service thủ công
-- Auth → Guard, không check token trong service/controller
+- Create modules/services/controllers via the CLI (`nest g module`, `nest g service`…), not by hand
+- Validate with class-validator + ValidationPipe, don't validate manually in the controller
+- Inject via the constructor, don't `new` a service manually
+- Auth → Guard, don't check tokens inside a service/controller
 
 *Prisma:*
-- Singleton PrismaClient, không new PrismaClient() trong từng file
-- Dùng prisma migrate dev khi sửa schema, không sửa migration file đã commit
-- Prisma.$transaction() cho operations cần atomic
+- Singleton PrismaClient, don't `new PrismaClient()` in every file
+- Use prisma migrate dev when changing the schema, don't edit committed migration files
+- Prisma.$transaction() for operations that need to be atomic
 
 *tRPC:*
-- Định nghĩa router tập trung, export appRouter duy nhất
-- Không gọi procedure trực tiếp từ server khác — dùng server-side caller
-- Input validation bằng Zod schema trong procedure definition
+- Define routers centrally, export a single appRouter
+- Don't call procedures directly from another server — use the server-side caller
+- Input validation via Zod schemas in the procedure definition
 
 *Zustand:*
-- Một store per domain, không một store global khổng lồ
-- Actions trong store, không define ngoài
-- Không store server data vào Zustand — dùng React Query
+- One store per domain, not one giant global store
+- Actions live in the store, don't define them outside
+- Don't store server data in Zustand — use React Query
 
-### Merge nếu file đã tồn tại
+### Merge if the file already exists
 
-Nếu CLAUDE.md đã có nội dung → merge: giữ nội dung cũ còn giá trị, bổ sung section còn thiếu, cập nhật section lỗi thời. Không overwrite toàn bộ.
+If CLAUDE.md already has content → merge: keep what's still valuable, add the missing sections, update
+outdated ones. Don't overwrite the whole file.
 
-## Báo cáo cuối
+## Final report
 
 ```
-Bước 1 — Codebase:
+Step 1 — Codebase:
   ✓ Init: apps/web (Next.js 14 App Router)
   ✓ Init: apps/api (NestJS 10)
   ✓ Init: packages/ui
-  → Skip: packages/db (đã tồn tại)
+  → Skip: packages/db (already exists)
 
-Bước 2 — CLAUDE.md:
+Step 2 — CLAUDE.md:
   ✓ CLAUDE.md (root)
   ✓ apps/web/CLAUDE.md
   ✓ apps/api/CLAUDE.md
   ✓ packages/ui/CLAUDE.md
 
-Cần bổ sung thủ công:
-  [Liệt kê nếu có thông tin không detect được từ config]
+Needs manual completion:
+  [List anything that couldn't be detected from config]
 ```

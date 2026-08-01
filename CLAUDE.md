@@ -1,198 +1,217 @@
-# SDLC Workflow Plugin — Hướng dẫn cho Claude
+# SDLC Workflow Plugin — Guide for Claude
 
-Đây là plugin điều phối vòng đời phát triển phần mềm theo sprint. Khi plugin này active,
-bạn áp dụng các nguyên tắc dưới đây cho MỌI command `/sdlc:*`.
+This plugin orchestrates the software development lifecycle sprint by sprint. When it's active,
+apply the principles below to EVERY `/sdlc:*` command.
 
-## Nguyên tắc cốt lõi (áp dụng xuyên suốt)
+## Core principles (apply throughout)
 
-0. **LUÔN đọc context của dự án ở MỌI phase — trước khi làm bất cứ gì.** Đầu mỗi command/phase:
-   - **Xác định các `CLAUDE.md` liên quan tới việc đang làm.** Một dự án có thể có NHIỀU `CLAUDE.md`
-     (gốc + lồng trong từng module/package). Đừng đọc mù tất cả, cũng đừng chỉ đọc file gốc. Cách làm:
-     1. Glob toàn repo để liệt kê mọi `CLAUDE.md` (và `AGENTS.md`/`.cursorrules` nếu có).
-     2. TỰ ĐÁNH GIÁ file nào liên quan tới phạm vi phase/task hiện tại: luôn đọc file gốc (context chung);
-        cộng thêm các `CLAUDE.md` nằm trong thư mục mà sprint/task này sẽ đụng tới (theo File Change Plan
-        trong design). CLAUDE.md của module không liên quan thì bỏ qua.
-     3. Quy tắc kế thừa: file lồng sâu hơn ghi đè/bổ sung file gốc cho phạm vi thư mục của nó — khi mâu
-        thuẫn, file gần code hơn thắng.
-   - Nắm convention, quy tắc, ràng buộc, lệnh build/test từ các file đã chọn. Tuân thủ tuyệt đối.
-   - Phát hiện & tận dụng skill/command/agent sẵn có trong repo (xem nguyên tắc 7).
-   Không bao giờ giả định convention — luôn xác nhận từ CLAUDE.md liên quan và codebase trước.
+0. **ALWAYS read the project's context in EVERY phase — before doing anything.** At the start of each
+   command/phase:
+   - **Identify the `CLAUDE.md` files relevant to the work at hand.** A project may have MANY `CLAUDE.md`
+     files (root + nested in each module/package). Don't read them all blindly, and don't read only the
+     root. The method:
+     1. Glob the whole repo to list every `CLAUDE.md` (and `AGENTS.md`/`.cursorrules` if present).
+     2. JUDGE FOR YOURSELF which ones are relevant to the current phase/task scope: always read the root
+        file (general context); plus any `CLAUDE.md` in directories this sprint/task will touch (per the
+        File Change Plan in the design). Skip CLAUDE.md files for unrelated modules.
+     3. Inheritance rule: more deeply nested files override/extend the root file for their directory
+        scope — on conflict, the file closer to the code wins.
+   - Learn the conventions, rules, constraints, and build/test commands from the files you selected.
+     Follow them absolutely.
+   - Detect & use the skills/commands/agents already in the repo (see principle 7).
+   Never assume conventions — always confirm from the relevant CLAUDE.md and the codebase first.
 
-1. **Đầu vào là tài liệu business logic có sẵn của user.** Plugin KHÔNG tự sinh ra tài liệu
-   business logic — user cung cấp (file, đường dẫn, hoặc chỉ chỗ). Nhiệm vụ của bạn bắt đầu
-   từ việc chia sprint trở đi.
+1. **The input is the user's existing business logic documentation.** The plugin does NOT generate
+   business logic docs — the user supplies them (a file, a path, or a pointer). Your job starts from
+   splitting into sprints onward.
 
-2. **Sprint-first.** Với dự án lớn: chia sprint TRƯỚC, rồi mới analyze/design/tasks cho TỪNG
-   sprint. Không bao giờ analyze toàn bộ dự án cùng lúc — user sẽ quá tải khi review.
+2. **Sprint-first.** For large projects: split into sprints FIRST, then analyze/design/task EACH sprint.
+   Never analyze the entire project at once — the user would be overwhelmed reviewing it.
 
-3. **Review 2 tầng.** Mọi output có phần đầu "Human Review" (ngắn, đưa lên đầu file) và phần
-   sau "Agent Reference" (chi tiết, cho downstream agent đọc). User thường chỉ đọc phần đầu.
-   Vì vậy phần sau PHẢI đủ tường minh để agent kế tiếp không phải đoán mò.
+3. **Two-layer review.** Every output has a "Human Review" section first (short, at the top of the file)
+   and an "Agent Reference" section after (detailed, for downstream agents). Users usually read only the
+   first part. So the second part MUST be explicit enough that the next agent never has to guess.
 
-4. **State-driven & resume-được.** Trước khi làm bất cứ gì trong `/sdlc:run`, ĐỌC `.sdlc/<version>/state.md`
-   để biết đang ở đâu. Sau MỖI đơn vị công việc (mỗi task, mỗi phase), CẬP NHẬT state ngay.
-   Nếu bị ngắt, lần chạy sau phải tiếp tục đúng chỗ — không làm lại việc đã done.
+4. **State-driven & resumable.** Before doing anything in `/sdlc:run`, READ `.sdlc/<version>/state.md` to
+   know where you are. After EVERY unit of work (each task, each phase), UPDATE the state immediately.
+   If interrupted, the next run must continue in exactly the right place — never redoing finished work.
 
-4a. **Vị trí `.sdlc/` — luôn ở thư mục gốc repo.** Không đặt lồng trong sub-package hay app con.
-    Cấu trúc: `.sdlc/versions.md`, `.sdlc/architecture.md`, `.sdlc/design-system.md` ở gốc (xuyên version);
-    mọi thứ còn lại theo version: `.sdlc/<version>/state.md`, `.sdlc/<version>/<sprint>/`.
-    Với monorepo nhiều app: vẫn một `.sdlc/` duy nhất ở gốc; slug sprint phản ánh app liên quan
-    (vd `sprint-1-web-auth`, `sprint-2-api-orders`) để phân biệt.
+4a. **`.sdlc/` location — always at the repo root.** Never nested inside a sub-package or sub-app.
+    Structure: `.sdlc/versions.md`, `.sdlc/architecture.md`, `.sdlc/design-system.md` at the root
+    (cross-version); everything else per version: `.sdlc/<version>/state.md`, `.sdlc/<version>/<sprint>/`.
+    For a multi-app monorepo: still one single `.sdlc/` at the root; sprint slugs reflect the relevant app
+    (e.g. `sprint-1-web-auth`, `sprint-2-api-orders`) to tell them apart.
 
-4b. **`.sdlc/` luôn được commit lên git — cả team cùng thấy.** Khi khởi tạo lần đầu (`/sdlc:sprint-plan`),
-    thêm vào `.gitignore` của dự án dòng sau để loại phần nặng/không cần thiết:
+4b. **`.sdlc/` is always committed to git — the whole team sees it.** On first initialization
+    (`/sdlc:sprint-plan`), add this line to the project's `.gitignore` to exclude the heavy/unnecessary part:
     ```
     .sdlc/*/*/visual-baseline/
     ```
-    Còn lại (`versions.md`, `sprints.md`, `state.md`, `architecture.md`, `design-system.md`, mọi
-    `requirements.md`, `design.md`, `ui-design.md`, `tasks.md`, `test-report.md`) đều commit — đây là
-    tài liệu sống của dự án, team review được qua PR, lịch sử rõ ràng.
+    Everything else (`versions.md`, `sprints.md`, `state.md`, `architecture.md`, `design-system.md`, and
+    every `requirements.md`, `design.md`, `ui-design.md`, `tasks.md`, `test-report.md`) gets committed —
+    this is the project's living documentation, reviewable by the team through PRs, with clear history.
 
-5. **Tự soi lại (self-review) — không cần user nhắc.** Sau mỗi phase, tự chạy checklist trong
-   skill `self-review`. Không coi "làm xong = đạt". Luôn hỏi: "output này có đủ cho bước sau
-   không? có mâu thuẫn với phase trước không?". Thiếu thì bổ sung TRƯỚC khi ghi file / báo xong.
+5. **Self-review — without the user asking.** After each phase, run the checklist in the `self-review`
+   skill yourself. Don't treat "finished" as "good enough". Always ask: "is this output sufficient for the
+   next step? does it contradict the previous phase?". If something's missing, add it BEFORE writing the
+   file / reporting done.
 
-6. **Bàn giao sạch.** Mục tiêu cuối: khi user manual test, họ CHỈ verify nghiệp vụ, KHÔNG gặp
-   lỗi vặt (validation, API 500, empty state, crash...). Mọi thứ tự động hóa được thì phải được
-   test tự động trước khi báo xong.
+6. **Clean handoff.** The end goal: when the user manual tests, they ONLY verify business behavior and
+   hit NO minor bugs (validation, API 500s, empty states, crashes…). Anything automatable must be tested
+   automatically before reporting done.
 
-7. **Phát hiện & tận dụng skill sẵn có trong repo.** Trước khi tự làm theo cách mặc định, quét
-   `.claude/skills`, `.claude/agents`, `.claude/commands` của DỰ ÁN, skill từ `pluginDirs`, và skill
-   built-in đang khả dụng trong session. Đọc mô tả; cái nào khớp việc đang làm thì DÙNG qua tool Skill.
-   Ưu tiên skill của dự án hơn cách mặc định vì nó mã hóa convention riêng của họ. Áp dụng ở mọi phase,
-   đặc biệt execute (sinh code) và test (skill test riêng của dự án).
+7. **Detect & use the skills already in the repo.** Before doing something the default way, scan the
+   PROJECT's `.claude/skills`, `.claude/agents`, `.claude/commands`, skills from `pluginDirs`, and the
+   built-in skills available in the session. Read the descriptions; if one matches the work at hand, USE
+   it via the Skill tool. Prefer the project's skills over the default approach, because they encode the
+   team's own conventions. This applies in every phase, especially execute (code generation) and test (the
+   project's own test skills).
 
-## Tận dụng built-in của Claude (bắt buộc ưu tiên)
+## Use Claude's built-ins (required preference)
 
-- **TodoWrite**: dùng để track task trong session khi execute; đồng bộ ra `.sdlc/<version>/<sprint>/tasks.md`
-  để persist qua session.
-- **Subagents (Agent tool)**: mỗi phase nên spawn agent chuyên biệt tương ứng
+- **TodoWrite**: use it to track tasks within the session during execute; sync out to
+  `.sdlc/<version>/<sprint>/tasks.md` to persist across sessions.
+- **Subagents (Agent tool)**: each phase should spawn its corresponding specialized agent
   (product-analyst, architect, implement-coordinator → feature-builder, test-strategist, qa-guard).
-  Chặng implement giao TRỌN cho `implement-coordinator` — nó là người ghi duy nhất (commit, `tasks.md`,
-  `state.md`) và tự giao từng task cho `feature-builder`, để conversation chính không tốn context vào
-  vòng lặp report-commit-ghi-state. Cùng nguyên tắc đó, `test-strategist` và `qa-guard` TỰ đóng vòng fix
-  (tối đa 5 vòng Sonnet + 1 vòng escalate Opus rồi dừng) và TỰ commit — conversation chính không bao giờ điều phối vòng fix hay
-  chạm git index khi một agent thực thi đang chạy; nó chỉ nhận status ở dòng đầu báo cáo
-  (`DONE` / `BLOCKED` / `DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT`) và xử lý theo đó;
-  `ui-designer` cho nhánh giao
-  diện khi sprint có màn hình (nguồn thiết kế: bản ngoài / DESIGN.md / phong cách app cũ / hỏi user);
-  và `reviewer` để kiểm chéo độc lập sau analyze/design. Chạy song song khi các phần độc lập; cô lập
-  context của từng phase.
-- **Skill built-in cho thiết kế**: `artifact-design` (nguyên tắc giao diện), `dataviz` (biểu đồ/dashboard) —
-  dùng ở nhánh ui-designer.
-- **Bash**: ping port để phát hiện service đang chạy; chạy test runner; smoke test API bằng curl.
-- **Playwright** (đã cài sẵn trong môi trường): tự động hóa test UI. KHÔNG chạy `playwright install`.
-- **Skills**: load skill phù hợp theo phase (đã kèm trong plugin này).
-- **Hooks**: `SessionStart` hook in tiến trình SDLC đang dở (`.sdlc/<version>/state.md`) để hỗ trợ resume (xem `hooks/`).
+  The implement leg is handed off ENTIRELY to `implement-coordinator` — it is the sole writer (commits,
+  `tasks.md`, `state.md`) and assigns each task to `feature-builder` itself, so the main conversation
+  spends no context on the report-commit-write-state loop. By the same principle, `test-strategist` and
+  `qa-guard` close their OWN fix loops (max 5 Sonnet rounds + 1 Opus escalation round, then stop) and
+  commit THEMSELVES — the main conversation never orchestrates a fix loop or touches the git index while
+  an execution agent is running; it only receives the status on the report's first line
+  (`DONE` / `BLOCKED` / `DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT`) and acts accordingly;
+  plus `ui-designer` for the interface branch when a sprint has screens (design source: external design /
+  DESIGN.md / the existing app's style / ask the user); and `reviewer` for an independent cross-check
+  after analyze/design. Run them in parallel when the parts are independent; isolate each phase's context.
+- **Built-in design skills**: `artifact-design` (interface principles), `dataviz` (charts/dashboards) —
+  use these in the ui-designer branch.
+- **Bash**: ping ports to detect running services; run test runners; smoke test APIs with curl.
+- **Playwright** (pre-installed in the environment): automate UI testing. Do NOT run `playwright install`.
+- **Skills**: load the appropriate skill per phase (included in this plugin).
+- **Hooks**: the `SessionStart` hook prints the in-progress SDLC state (`.sdlc/<version>/state.md`) to
+  support resuming (see `hooks/`).
 
-## Chính sách model (Opus điều phối — Sonnet thực thi)
+## Model policy (Opus orchestrates — Sonnet executes)
 
-Sprint chạy trọn một mạch, không ngắt để approve từng bước, nên model phải phân bổ theo **nơi sai lầm
-đắt nhất**: quyết định sai ở phase đầu thì mọi phase sau kế thừa lỗi, còn code sai ở phase thực thi thì
-test bắt được và fix được.
+A sprint runs in one continuous pass without pausing for step-by-step approval, so models must be
+allocated by **where mistakes are most expensive**: a wrong decision in an early phase is inherited by
+every later phase, whereas wrong code in the execution phase is caught and fixed by tests.
 
-**Model đã khai sẵn trong frontmatter của từng agent (`agents/*.md`)** — đó là nguồn sự thật, và nó đi
-theo khi cài plugin vào dự án khác. Conversation chính KHÔNG truyền tham số `model` khi spawn, để khỏi
-ghi đè chính sách.
+**The model is already declared in each agent's frontmatter (`agents/*.md`)** — that's the source of
+truth, and it travels with the plugin when installed into another project. The main conversation does NOT
+pass a `model` parameter when spawning, so it never overrides the policy.
 
-| Vai | Model | Lý do |
+| Role | Model | Why |
 |---|---|---|
-| Conversation chính (`/sdlc:*`) | user tự chọn — nên là **Opus** | Giữ mọi quyết định + approval gate, sống suốt 6 phase |
-| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` | Phase 1-3: sai một lần, mọi phase sau kế thừa lỗi → chạy đúng model user đã chọn |
-| `preflight-scout` | sonnet | Đọc config, ping port — việc cơ học |
-| `implement-coordinator` | sonnet | Chia wave + commit + ghi state theo quy trình có sẵn |
-| `feature-builder` | sonnet | Có design + task spec rõ trong tay |
-| `test-strategist`, `qa-guard` | sonnet | Chạy checklist, viết test theo bảng quyết định |
+| Main conversation (`/sdlc:*`) | user's choice — should be **Opus** | Holds every decision + approval gate, lives across all 6 phases |
+| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` | Phases 1-3: one mistake here is inherited by every later phase → run the exact model the user chose |
+| `preflight-scout` | sonnet | Reading config, pinging ports — mechanical work |
+| `implement-coordinator` | sonnet | Splitting waves + committing + writing state, following an existing process |
+| `feature-builder` | sonnet | Has the design + a clear task spec in hand |
+| `test-strategist`, `qa-guard` | sonnet | Running checklists, writing tests per a decision table |
 
-**Vì sao phase 1-3 dùng `inherit` chứ không ghim `opus`:** alias `opus` resolve về bản Opus mặc định của
-tier, không nhất thiết là bản user đang chủ động chọn ở conversation chính. `inherit` tôn trọng lựa chọn
-đó — user chọn Opus nào thì 4 agent này chạy đúng bản ấy. Hệ quả cần biết: **conversation chính chạy
-Sonnet thì phase 1-3 cũng chạy Sonnet**. Vì vậy `/sdlc:sprint-plan` nhắc user bật Opus ngay ở điểm vào.
+**Why phases 1-3 use `inherit` rather than pinning `opus`:** the `opus` alias resolves to the tier's
+default Opus build, which isn't necessarily the one the user actively chose in the main conversation.
+`inherit` respects that choice — whichever Opus the user picked, these 4 agents run it. The consequence to
+know: **if the main conversation runs Sonnet, phases 1-3 run Sonnet too.** That's why `/sdlc:sprint-plan`
+reminds the user to switch to Opus right at the entry point.
 
-Phase 4-6 thì ngược lại — ghim cứng `sonnet`, KHÔNG `inherit`, vì mục đích của chúng chính là **hạ** model
-xuống bất kể conversation chính đang chạy gì. Để `inherit` ở đây sẽ kéo cả chặng thực thi lên Opus và xoá
-sạch lợi ích tốc độ/chi phí — đúng thứ mà thiết kế này nhắm tới.
+Phases 4-6 are the opposite — hard-pinned to `sonnet`, NOT `inherit`, because their whole purpose is to
+**lower** the model regardless of what the main conversation is running. Leaving `inherit` here would drag
+the entire execution leg up to Opus and erase the speed/cost benefit this design targets.
 
-### Leo thang lên Opus — do agent thực thi tự quyết
+### Escalating to Opus — decided by the execution agent
 
-Agent điều phối (`implement-coordinator`, `test-strategist`, `qa-guard`) tự nâng `feature-builder` lên
-Opus qua tham số `model` của tool `Agent`. Hạn mức đếm **theo từng task / từng chỗ hỏng**, không gộp cả sprint:
+The orchestrating agents (`implement-coordinator`, `test-strategist`, `qa-guard`) promote
+`feature-builder` to Opus themselves via the `model` parameter of the `Agent` tool. The budget is counted
+**per task / per failure point**, not pooled across the sprint:
 
-- **Lượt 1-5: Sonnet.** Mỗi lần thất bại, respawn kèm **lịch sử đã thử** — agent cold-start mỗi lần, không
-  truyền lịch sử thì nó lặp lại đúng sai lầm cũ và đốt sạch hạn mức vào một hướng.
-- **Lượt 6: Opus**, lượt cuối. Vẫn không xong → `BLOCKED`, cần người quyết định.
-- **Leo sớm**: ba lượt liên tiếp thất bại y hệt (cùng test đỏ, cùng lỗi, cùng file) → lên Opus ngay,
-  đừng chờ đủ 5. Lặp lại một hướng sai không tạo ra thông tin mới.
-- **Dùng Opus ngay từ lượt đầu** khi task được đánh `Độ khó: cao`, hoặc đụng thuật toán / đồng thời /
-  giao dịch phân tán / mật mã — loại việc sai một chút là hỏng ngầm, test khó bắt.
-- **`DESIGN_GAP` và `NEEDS_SERVICE` KHÔNG tính vào hạn mức.** Design thiếu thì model to hơn cũng không
-  đoán ra được ý đồ, còn service chưa bật thì đổi model vô nghĩa. Dừng và xử lý đúng gốc.
+- **Attempts 1-5: Sonnet.** On each failure, respawn including the **history of what was tried** — the
+  agent cold-starts every time, and without the history it repeats the same mistakes and burns the entire
+  budget on one approach.
+- **Attempt 6: Opus**, the final attempt. Still not done → `BLOCKED`, a human decision is needed.
+- **Escalate early**: three consecutive identical failures (same red test, same error, same file) → go to
+  Opus immediately, don't wait for all 5. Repeating a wrong approach produces no new information.
+- **Use Opus from the first attempt** when a task is marked `Difficulty: high`, or touches algorithms /
+  concurrency / distributed transactions / cryptography — work where being slightly wrong fails silently
+  and tests struggle to catch it.
+- **`DESIGN_GAP` and `NEEDS_SERVICE` do NOT count against the budget.** A bigger model can't guess intent
+  from a missing design, and switching models is meaningless when a service isn't running. Stop and fix
+  the actual root cause.
 
-Nhận `BLOCKED` rồi thì **đừng spawn lại bằng Opus** — hạn mức leo thang đã dùng hết trước khi status đó
-tới tay conversation chính.
+Once you receive `BLOCKED`, **do not respawn with Opus** — the escalation budget was already spent before
+that status reached the main conversation.
 
-### Đổi chính sách cho một dự án cụ thể
+### Changing the policy for a specific project
 
-Sửa dòng `model:` trong frontmatter của agent tương ứng ở `.claude/agents/` của dự án. Installer nhận ra
-file bạn đã sửa và sẽ hỏi trước khi ghi đè ở lần cài sau, nên chỉnh tay là an toàn.
+Edit the `model:` line in the corresponding agent's frontmatter under the project's `.claude/agents/`. The
+installer detects files you've edited and will ask before overwriting on a future install, so hand-editing
+is safe.
 
-## Pre-flight trước khi execute (RẤT QUAN TRỌNG)
+## Pre-flight before execute (VERY IMPORTANT)
 
-Trước khi viết dòng code đầu tiên trong execute:
-1. Phát hiện & ưu tiên dùng skill sẵn có trong repo (nguyên tắc 7) — **việc này của agent thực thi**,
-   mỗi agent tự quét khi khởi động. Conversation chính không quét hộ (xem "Kỷ luật context" bên dưới).
-2. **Spawn `preflight-scout`** để suy ra service/tool bên ngoài TỪ CONFIG dự án (docker-compose,
-   .env.example, package.json scripts, Procfile, Makefile, README) — không đoán mò. Nó trả về bảng
-   service + port + trạng thái (tự ping) + lệnh khởi động + lệnh migrate. Conversation chính KHÔNG tự
-   đọc đống config đó.
-3. Chốt service cho **cả chặng thực thi** (implement + test + qa) trong một lượt hỏi — dev server và
-   sandbox mà Test/QA cần cũng phải nằm trong danh sách, không chỉ service lúc implement.
-4. CHỈ hỏi user bật những cái scout báo "chưa chạy", kèm lệnh gợi ý nó đưa ra.
-5. Đợi user xác nhận ("ok"/"xong") RỒI mới tiếp tục. Không tự giả định service đã sẵn sàng. Ghi service
-   đã xác nhận vào `.sdlc/<version>/state.md`.
-6. **DB migration/seed**: nếu sprint đổi schema (model/migration mới), xác định lệnh migrate của dự án (từ
-   config: `package.json`, `Makefile`, framework CLI) và CHẠY nó trước khi test — schema chưa migrate là
-   nguồn "lỗi vặt" kinh điển (API 500) khi manual test. Ghi migration đã chạy vào state.
+Before writing the first line of code in execute:
+1. Detect & prefer the skills already in the repo (principle 7) — **this is the execution agent's job**,
+   each agent scans for itself at startup. The main conversation does not scan on their behalf (see
+   "Context discipline" below).
+2. **Spawn `preflight-scout`** to infer external services/tools FROM THE PROJECT CONFIG (docker-compose,
+   .env.example, package.json scripts, Procfile, Makefile, README) — not from guesswork. It returns a
+   table of services + ports + status (pinged itself) + start commands + migrate commands. The main
+   conversation does NOT read that pile of config itself.
+3. Confirm services for the **whole execution stretch** (implement + test + qa) in one pass — the dev
+   server and sandboxes that Test/QA need must be on the list too, not just the services needed during
+   implement.
+4. ONLY ask the user to start what the scout reports as "not running", with the suggested commands it provided.
+5. Wait for the user to confirm ("ok"/"done") BEFORE continuing. Never assume services are ready. Record
+   the confirmed services in `.sdlc/<version>/state.md`.
+6. **DB migration/seed**: if the sprint changes the schema (new models/migrations), determine the
+   project's migrate command (from config: `package.json`, `Makefile`, the framework CLI) and RUN it
+   before testing — an unmigrated schema is the classic source of "minor bugs" (API 500s) during manual
+   testing. Record the migration run in state.
 
-## Kỷ luật context của conversation chính (áp dụng XUYÊN SUỐT sprint, không chỉ execute)
+## Context discipline for the main conversation (applies THROUGHOUT the sprint, not just execute)
 
-Từ Phase 1 (Analyze) trở đi, conversation chính chỉ còn 2 vai: **điều phối subagent** và **nói chuyện
-với user**. Nó không tự analyze, không tự design, không tự chia task, không viết code — nên nó KHÔNG
-đọc thay ai. Trước đây quy tắc này chỉ áp cho chặng execute, nhưng thực tế Phase 1-3 mới là nơi
-conversation chính dễ "chết context" nhất (business docs + nhiều CLAUDE.md + codebase khảo sát).
+From phase 1 (Analyze) onward, the main conversation has only 2 roles: **orchestrating subagents** and
+**talking to the user**. It doesn't analyze, doesn't design, doesn't break down tasks, doesn't write code —
+so it does NOT read on anyone's behalf. This rule used to apply only to the execute leg, but in practice
+phases 1-3 are where the main conversation most easily dies of context exhaustion (business docs + many
+CLAUDE.md files + codebase exploration).
 
-**Nguyên tắc 0 (đọc CLAUDE.md liên quan) áp dụng cho AGENT thực thi phase đó, không phải conversation
-chính.** Mỗi subagent bắt đầu cold và tự Glob/đọc CLAUDE.md của scope mình. Conversation chính chỉ
-truyền path + slug + Human Review blocks nhận lại.
+**Principle 0 (reading the relevant CLAUDE.md) applies to the AGENT executing that phase, not the main
+conversation.** Each subagent starts cold and globs/reads the CLAUDE.md for its own scope. The main
+conversation only passes paths + slugs + the Human Review blocks it receives back.
 
-- **Không** Glob/đọc `CLAUDE.md` của dự án, `architecture.md`, `requirements.md`, `design.md`, business
-  docs của user, không quét skill của repo, không khảo sát codebase. Mọi agent (product-analyst,
-  architect, ui-designer, task-breakdown agent, implement-coordinator, test-strategist, qa-guard,
-  reviewer) bắt đầu cold và tự nạp hết. Đọc lại là trả tiền hai lần.
-- **Không** Read trọn `tasks.md` chỉ để đồng bộ TodoWrite — dùng list ID+mô tả agent trả về, hoặc
-  Grep có đích.
-- **Không** đọc file để tóm tắt cho user: agent sinh ra file PHẢI trả kèm block Human Review sẵn để
-  conversation chính relay nguyên văn.
-- Ở Phase 1-3, self-review là bước cuối của chính subagent trước khi trả file — conversation chính
-  KHÔNG chạy `self-review` skill hộ.
-- **Không** ghi `state.md`, không `git add/commit/push`, không sửa artifact (`design.md`,
-  `requirements.md`, `tasks.md`) khi một agent thực thi đang chạy — agent đó là người ghi duy nhất.
-  Cần vá `design.md` sau `DESIGN_GAP` → quyết định là của conversation chính, nhưng **`architect` viết**.
+- Do **not** Glob/read the project's `CLAUDE.md`, `architecture.md`, `requirements.md`, `design.md`, or the
+  user's business docs; do not scan the repo's skills; do not survey the codebase. Every agent
+  (product-analyst, architect, ui-designer, the task-breakdown agent, implement-coordinator,
+  test-strategist, qa-guard, reviewer) starts cold and loads it all itself. Reading it again means paying
+  twice.
+- Do **not** Read all of `tasks.md` just to sync TodoWrite — use the ID+description list the agent
+  returned, or a targeted Grep.
+- Do **not** read a file to summarize it for the user: the agent producing a file MUST return a ready
+  Human Review block for the main conversation to relay verbatim.
+- In phases 1-3, self-review is the subagent's own final step before returning the file — the main
+  conversation does NOT run the `self-review` skill on its behalf.
+- Do **not** write `state.md`, do not `git add/commit/push`, and do not edit artifacts (`design.md`,
+  `requirements.md`, `tasks.md`) while an execution agent is running — that agent is the sole writer.
+  Need to patch `design.md` after a `DESIGN_GAP`? → the decision belongs to the main conversation, but
+  **`architect` does the writing**.
 
-Ngoại lệ được phép ghi: pre-flight (`services_up`) và bàn giao (`sprints.md`, `versions.md`).
+Permitted exceptions to writing: pre-flight (`services_up`) and handoff (`sprints.md`, `versions.md`).
 
-## Chọn chiến lược test (tự phát hiện)
+## Choosing a test strategy (auto-detected)
 
-Xem skill `test-strategy`. Nguyên tắc: tự động hóa tối đa. Chỉ flag "cần user verify tay" khi
-thực sự không thể tự động (OTP SMS thật, Face ID, thanh toán tiền thật...).
+See the `test-strategy` skill. The principle: automate as much as possible. Only flag something as
+"needs manual user verification" when it truly can't be automated (real SMS OTP, Face ID, real money…).
 
-## Khi nào hỏi user
+## When to ask the user
 
-- Danh sách sprint sau `sprint-plan` (để user reorder/chốt tech stack).
-- Open Questions trong analyze mà bạn không thể tự resolve an toàn.
-- Design UI, **dự án MỚI chưa có nguồn thẩm mỹ nào**: hỏi 1 lần định hướng phong cách (có DESIGN.md? / mô tả
-  tone-màu-app tham chiếu / để Claude tự quyết) rồi chốt thành `DESIGN.md`. Dự án CŨ thì KHÔNG hỏi — bám app
-  hiện có. Nếu sprint nhận bản design từ ngoài mà file chưa về → hỏi/chờ (`waiting-external`).
-- Pre-flight: yêu cầu bật service ngoài.
-- Ngoài các điểm trên, trong `/sdlc:run` hãy chạy tự động hết mức có thể; báo cáo gọn sau mỗi
-  phase và tiếp tục.
+- The sprint list after `sprint-plan` (so the user can reorder / confirm the tech stack).
+- Open Questions in analyze that you can't resolve safely yourself.
+- UI design, **new project with no aesthetic source yet**: ask once about the style direction (is there a
+  DESIGN.md? / describe the tone-color-reference app / let Claude decide) then settle it into `DESIGN.md`.
+  For an existing project, do NOT ask — follow the current app. If a sprint expects an external design
+  that hasn't arrived yet → ask/wait (`waiting-external`).
+- Pre-flight: requesting that external services be started.
+- Beyond these points, in `/sdlc:run` run as automatically as possible; report briefly after each phase
+  and continue.

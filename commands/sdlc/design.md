@@ -1,43 +1,44 @@
 ---
-description: Chạy riêng phase design cho một sprint — từ requirements tạo architecture, data model, API contracts, UI flow và bảng ánh xạ rule/edge case.
+description: Run the design phase alone for one sprint — turn requirements into architecture, data model, API contracts, UI flow and a rule/edge-case mapping table.
 argument-hint: <version-slug> <sprint-slug>
 ---
 
 # /sdlc:design
 
-Chạy riêng phase thiết kế cho sprint `$2` thuộc version `$1`
-(nếu trống, lấy từ `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
+Run the design phase alone for sprint `$2` in version `$1`
+(if empty, read from `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
 
-Yêu cầu `.sdlc/<version>/<sprint>/requirements.md` đã tồn tại (chạy `/sdlc:analyze` trước nếu chưa).
+Requires `.sdlc/<version>/<sprint>/requirements.md` to exist (run `/sdlc:analyze` first if not).
 
-**KHÔNG tự Glob/Read CLAUDE.md hay `.sdlc/architecture.md`** — architect và ui-designer là subagent
-cold-start, mỗi agent tự nạp phần liên quan tới mình. Conversation chính chỉ truyền
-version/sprint slug + path `requirements.md`.
+**Do NOT Glob/Read CLAUDE.md or `.sdlc/architecture.md` yourself** — architect and ui-designer are
+cold-start subagents, each loads the parts relevant to itself. The main conversation only passes the
+version/sprint slug + the `requirements.md` path.
 
-Chạy 2 nhánh (song song, ĐỘC LẬP):
+Run 2 branches (in parallel, INDEPENDENT):
 
-**Nhánh hệ thống** — spawn `architect`, dùng skill `system-design`. Đọc codebase +
-`.sdlc/architecture.md` + CLAUDE.md liên quan. Ghi `.sdlc/<version>/<sprint>/design.md` với 2 tầng +
-bảng mapping phủ 100% RULE/EC/NFR + Regression-safe Plan. Cập nhật `.sdlc/architecture.md` nếu đổi
-thành phần nền tảng.
+**System branch** — spawn `architect` with skill `system-design`. Reads the codebase +
+`.sdlc/architecture.md` + relevant CLAUDE.md files. Writes `.sdlc/<version>/<sprint>/design.md` in two
+layers + a mapping table covering 100% of RULE/EC/NFR + a Regression-safe Plan. Updates
+`.sdlc/architecture.md` if foundational components change.
 
-**Nhánh giao diện** — spawn `ui-designer`, dùng skill `design-fidelity` + `artifact-design`.
-ui-designer xét UI scope trong `requirements.md`, rồi chọn nguồn design theo từng màn hình:
-- **Requirements KHÔNG có màn hình** → `design_ui: n/a`, bỏ nhánh này.
-- **Requirements CÓ màn hình** → cần `ui-design.md` phủ đủ mọi màn/state. Từng màn:
-  - Màn CÓ trong bản ngoài `.sdlc/<version>/<sprint>/ui-design.input.md` → ingest + chuẩn hóa.
-  - Màn KHÔNG được cấp → tự sinh, ưu tiên nguồn: `.sdlc/design-system.md` → DESIGN.md →
-    dự án CŨ: phong cách app hiện có → dự án MỚI không nguồn: hỏi user 1 lần.
-  - CHỈ `waiting-external` khi user nói rõ sẽ cấp bản ngoài mà file chưa về.
+**UI branch** — spawn `ui-designer` with skill `design-fidelity` + `artifact-design`.
+The ui-designer examines the UI scope in `requirements.md`, then picks a design source per screen:
+- **Requirements have NO screens** → `design_ui: n/a`, skip this branch.
+- **Requirements HAVE screens** → `ui-design.md` must cover every screen/state. Per screen:
+  - Screen IS in the external design `.sdlc/<version>/<sprint>/ui-design.input.md` → ingest + normalize.
+  - Screen is NOT provided → generate it, source priority: `.sdlc/design-system.md` → DESIGN.md →
+    existing project: follow the current app's style → new project with no source: ask the user once.
+  - Only use `waiting-external` when the user explicitly said they will supply an external design
+    and the file hasn't arrived yet.
 
-Ghi `.sdlc/<version>/<sprint>/ui-design.md`; cập nhật `.sdlc/design-system.md`.
+Writes `.sdlc/<version>/<sprint>/ui-design.md`; updates `.sdlc/design-system.md`.
 
-**Quan trọng — 2 nhánh độc lập:** nhánh hệ thống KHÔNG chờ UI design. Chỉ các phase SAU (Tasks
-trở đi) mới cần `ui-design.md` hoàn chỉnh.
+**Important — the 2 branches are independent:** the system branch does NOT wait for the UI design.
+Only LATER phases (Tasks onward) need a complete `ui-design.md`.
 
-Self-review: architect và ui-designer TỰ chạy `self-review` trước khi trả file (không cần bạn chạy
-thay). Sau đó spawn `reviewer` kiểm chéo `design.md` (và `ui-design.md` nếu có) so với `requirements.md`
-— chỉ `PASS` mới coi là xong.
-Cập nhật `.sdlc/<version>/state.md` theo schema.
+Self-review: architect and ui-designer run `self-review` THEMSELVES before returning the file (you do
+not run it for them). Then spawn `reviewer` to cross-check `design.md` (and `ui-design.md` if present)
+against `requirements.md` — only `PASS` counts as done.
+Update `.sdlc/<version>/state.md` per the schema.
 
-Đây là phase con của `/sdlc:run`; dùng khi muốn chạy/rà lại riêng phase design.
+This is a sub-phase of `/sdlc:run`; use it when you want to run or redo the design phase alone.

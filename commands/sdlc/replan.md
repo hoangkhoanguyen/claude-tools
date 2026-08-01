@@ -1,45 +1,49 @@
 ---
-description: Cập nhật lại danh sách sprint trong một version khi tài liệu business logic thay đổi, mà KHÔNG mất state của các sprint đã/đang làm. Dùng khi phát sinh feature mới, đổi ưu tiên, hoặc gộp/tách sprint giữa dự án.
-argument-hint: <version-slug> [đường dẫn tài liệu business logic mới/đã cập nhật]
+description: Update the sprint list in a version when the business logic docs change, WITHOUT losing the state of sprints already done or in progress. Use when new features appear, priorities shift, or sprints need merging/splitting mid-project.
+argument-hint: <version-slug> [path to new/updated business logic docs]
 ---
 
 # /sdlc:replan
 
-Điều chỉnh kế hoạch sprint trong một version khi business logic đổi giữa chừng, bảo toàn công việc đã làm.
+Adjust the sprint plan within a version when business logic changes mid-flight, preserving completed work.
 
-> Dùng lệnh này khi thay đổi xảy ra **trong phạm vi version hiện tại** (thêm/sửa/bỏ feature nhỏ,
-> đổi ưu tiên sprint). Nếu là đợt phát triển lớn hoàn toàn mới → dùng `/sdlc:sprint-plan <version-mới>`.
+> Use this command when the change falls **within the current version** (adding/editing/dropping small
+> features, reordering sprints). For an entirely new development cycle → use `/sdlc:sprint-plan <new-version>`.
 
-## Đầu vào
+## Input
 
-- `$1`: version slug cần replan (vd `v1`). Nếu trống, lấy version đang active từ `.sdlc/versions.md`.
-- `$2`: tài liệu business logic mới/đã cập nhật. Nếu trống, dùng tài liệu gốc + hỏi user điểm thay đổi.
+- `$1`: version slug to replan (e.g. `v1`). If empty, take the active version from `.sdlc/versions.md`.
+- `$2`: new/updated business logic docs. If empty, use the original docs + ask the user what changed.
 
-## Các bước
+## Steps
 
-1. **Đọc state hiện tại**: `.sdlc/versions.md` + `.sdlc/<version>/sprints.md` +
-   `.sdlc/<version>/state.md` + các thư mục `.sdlc/<version>/<sprint>/` đã có.
-   Đọc CLAUDE.md liên quan (nguyên tắc 0).
+1. **Read current state**: `.sdlc/versions.md` + `.sdlc/<version>/sprints.md` +
+   `.sdlc/<version>/state.md` + any existing `.sdlc/<version>/<sprint>/` directories.
+   Read the relevant CLAUDE.md files (principle 0).
 
-2. **Diff nghiệp vụ**: so tài liệu mới với sprint hiện có trong version này. Phân loại thay đổi:
-   - Feature MỚI chưa có sprint → tạo sprint mới (status `planned`). **Slug phải tiếp nối số thứ tự
-     của sprint cuối cùng trong `.sdlc/<version>/sprints.md`** (kể cả sprint đã `cancelled`), KHÔNG
-     đánh số lại từ 1. Ví dụ: hiện có `sprint-1-auth` đến `sprint-3-reports` thì sprint mới bắt đầu
-     từ `sprint-4-...`. Điều này đảm bảo slug luôn unique trong version và folder không bị ghi đè.
-   - Feature ĐỔI thuộc sprint CHƯA làm (`planned`) → cập nhật mô tả sprint đó.
-   - Feature ĐỔI thuộc sprint ĐÃ done/đang làm → KHÔNG sửa đè. Tạo sprint "change request" mới tham
-     chiếu sprint gốc, để xử lý như một thay đổi có kiểm soát (giữ lịch sử + tránh phá state cũ).
-   - Feature BỎ → đánh dấu sprint/feature là `cancelled`, không xóa (giữ vết).
+2. **Business diff**: compare the new docs against existing sprints in this version. Classify changes:
+   - NEW feature with no sprint → create a new sprint (status `planned`). **The slug must continue the
+     numbering from the last sprint in `.sdlc/<version>/sprints.md`** (including `cancelled` sprints);
+     do NOT renumber from 1. Example: with `sprint-1-auth` through `sprint-3-reports` existing, the new
+     sprint starts at `sprint-4-...`. This keeps slugs unique within the version and prevents folder
+     overwrites.
+   - CHANGED feature in a sprint NOT yet started (`planned`) → update that sprint's description.
+   - CHANGED feature in a sprint already done/in progress → do NOT overwrite. Create a new "change
+     request" sprint referencing the original, handling it as a controlled change (preserves history +
+     avoids corrupting existing state).
+   - DROPPED feature → mark the sprint/feature `cancelled`, do not delete (keep the trail).
 
-3. **Cập nhật `.sdlc/<version>/sprints.md`** theo phân loại trên, giữ nguyên trạng thái các sprint
-   đã done/đang làm. Cập nhật dependency nếu thứ tự đổi.
+3. **Update `.sdlc/<version>/sprints.md`** per the classification above, preserving the status of sprints
+   already done/in progress. Update dependencies if the order changed.
 
-4. **KHÔNG đụng** vào `.sdlc/<version>/<sprint>/` của sprint đã done/đang làm, trừ khi user yêu cầu rõ.
+4. **Do NOT touch** `.sdlc/<version>/<sprint>/` for sprints already done/in progress, unless the user
+   explicitly asks.
 
-5. **Self-review** (skill self-review): mọi feature trong tài liệu mới đều có sprint phụ trách?
-   Thứ tự tôn trọng dependency? Không sprint đang-làm nào bị phá state?
+5. **Self-review** (skill self-review): does every feature in the new docs have an owning sprint?
+   Does the order respect dependencies? Is any in-progress sprint's state corrupted?
 
-## Trình bày
+## Presenting
 
-Tóm tắt: sprint nào thêm/đổi/hủy trong version `<version>`, sprint nào giữ nguyên. Mời user chốt.
-Nhắc: `/sdlc:run <version> <slug>` cho sprint mới; sprint đang dở vẫn resume bình thường.
+Summarize: which sprints were added/changed/cancelled in version `<version>`, which stayed the same.
+Invite the user to confirm. Remind them: `/sdlc:run <version> <slug>` for new sprints; in-progress
+sprints still resume normally.

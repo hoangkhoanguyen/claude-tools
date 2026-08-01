@@ -1,52 +1,53 @@
 ---
 name: requirements-analysis
-description: Chuẩn cấu trúc và chất lượng cho output của phase analyze trong SDLC — user stories, acceptance criteria testable, business rules, data entities, edge cases. Dùng khi phân tích tài liệu business logic của một sprint thành requirements để agent design và task-breakdown làm đúng.
+description: The structural and quality standard for the SDLC analyze phase's output — user stories, testable acceptance criteria, business rules, data entities, edge cases. Use when turning a sprint's business logic docs into requirements so the design and task-breakdown agents get it right.
 ---
 
 # Requirements Analysis
 
-Kỹ năng biến tài liệu business logic (do user cung cấp) của MỘT sprint thành requirements có cấu trúc.
-Mục tiêu: user chỉ cần review vài section đầu, phần còn lại đủ tường minh để downstream agent không đoán mò.
+The skill of turning ONE sprint's business logic docs (supplied by the user) into structured requirements.
+Goal: the user only needs to review the first few sections, while the rest is explicit enough that
+downstream agents never have to guess.
 
-## Bố cục 2 tầng
+## Two-layer layout
 
-**PHẦN 1 — Human Review (đưa lên đầu file):**
+**PART 1 — Human Review (at the top of the file):**
 1. Sprint Goal & Scope (✅ in scope / ❌ out of scope)
-2. Open Questions (điểm mơ hồ cần user quyết)
-3. Key Assumptions (quyết định tự đưa ra, user override được)
+2. Open Questions (ambiguities the user must decide)
+3. Key Assumptions (decisions made independently, overridable by the user)
 
-**PHẦN 2 — Agent Reference (chi tiết):**
+**PART 2 — Agent Reference (the details):**
 4. User Stories + AC
 5. Business Rules
 6. Data Entities & Constraints
 7. Edge Cases Registry
 8. Integration Touchpoints
-9. Non-functional Requirements (NFR-xx): performance / security / a11y / i18n — chỉ cái liên quan sprint
-10. Regression Impact (chỉ khi thêm vào codebase có sẵn): feature/module cũ có thể bị ảnh hưởng
-11. Definition of Done (gồm NFR + không regression)
+9. Non-functional Requirements (NFR-xx): performance / security / a11y / i18n — only what's relevant to the sprint
+10. Regression Impact (only when adding to an existing codebase): existing features/modules that may be affected
+11. Definition of Done (including NFRs + no regressions)
 
-## Quy tắc chất lượng
+## Quality rules
 
-- **AC phải testable**: dùng `GIVEN <trạng thái> WHEN <hành động> THEN <kết quả>`. Không viết AC dạng
-  chung chung ("hoạt động tốt", "nhanh").
-- **Business Rule tường minh, đánh số** (`RULE-01`), không viết prose. Bao gồm điều kiện, công thức, constraint.
-- **Edge case gắn với rule/story** (`EC-01 [RULE-03]: ... → ...`) để developer và test không bỏ sót.
-- **Không bịa** requirement ngoài tài liệu nguồn. Mơ hồ → Open Questions hoặc Key Assumptions.
-- **Bám scope sprint**, không phân tích toàn dự án.
+- **AC must be testable**: use `GIVEN <state> WHEN <action> THEN <result>`. Don't write vague AC
+  ("works well", "is fast").
+- **Business rules explicit and numbered** (`RULE-01`), not prose. Include conditions, formulas, constraints.
+- **Edge cases tied to a rule/story** (`EC-01 [RULE-03]: … → …`) so developers and tests don't miss them.
+- **Don't invent** requirements beyond the source docs. Ambiguity → Open Questions or Key Assumptions.
+- **Stay within the sprint's scope**, don't analyze the whole project.
 
-## Vì sao cấu trúc này giảm sai sót downstream
+## Why this structure reduces downstream errors
 
 ```
-Business Rules + Edge Cases tường minh → architect thiết kế đúng validation/error handling
-Out of scope rõ ràng                   → không over-design, không build nhầm
-AC dạng GIVEN/WHEN/THEN                 → test-strategist & qa-guard verify tự động được
-Open Questions resolve trước Design    → execute không bị block giữa chừng
-Assumptions ghi lại                     → user catch được nếu tự-suy sai
+Explicit Business Rules + Edge Cases → architect designs the right validation/error handling
+Clear "out of scope"                 → no over-design, nothing built by mistake
+GIVEN/WHEN/THEN-style AC             → test-strategist & qa-guard can verify automatically
+Open Questions resolved before Design → execute doesn't get blocked halfway
+Assumptions recorded                 → the user catches wrong inferences
 ```
 
-## Checklist tự soi trước khi chốt
+## Self-review checklist before finalizing
 
-- [ ] Architect đọc file này có đủ để thiết kế không cần đoán?
-- [ ] Mọi story có AC testable? Mọi rule có edge case liên quan?
-- [ ] Có requirement nào bịa ngoài nguồn? (xóa)
-- [ ] Open Question nào tự resolve an toàn được? (chuyển sang Assumptions)
+- [ ] Can the architect design from this file without guessing?
+- [ ] Does every story have testable AC? Does every rule have related edge cases?
+- [ ] Any requirement invented beyond the source? (delete it)
+- [ ] Any Open Question that could be resolved safely? (move to Assumptions)

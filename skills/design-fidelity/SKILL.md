@@ -1,44 +1,44 @@
 ---
 name: design-fidelity
-description: Checklist và cách đối chiếu giao diện đã implement với định hướng thiết kế (DESIGN.md / design-system.md) — design tokens, contrast/accessibility, responsive, dark/light, spacing/typography. Dùng ở phase execute (khi build UI) và test/qa (visual verification) cho dự án có yếu tố thiết kế thị giác.
+description: A checklist and method for comparing the implemented UI against the design direction (DESIGN.md / design-system.md) — design tokens, contrast/accessibility, responsive, dark/light, spacing/typography. Use in the execute phase (when building UI) and in test/qa (visual verification) for projects with a visual design element.
 ---
 
 # Design Fidelity
 
-Kỹ năng đảm bảo giao diện build ra KHỚP thiết kế, để khi user manual test không gặp "lệch pixel / sai màu /
-vỡ layout" — chỉ còn xét trải nghiệm.
+The skill of ensuring the built UI MATCHES the design, so the user's manual test doesn't hit "pixel drift /
+wrong colors / broken layout" — leaving only the experience itself to assess.
 
-## Khi nào dùng
+## When to use it
 
-Chỉ khi dự án có định hướng thẩm mỹ: có `DESIGN.md`, hoặc `.sdlc/design-system.md`, hoặc design system rõ
-trong codebase. Không có → bỏ qua, UI bám convention codebase.
+Only when the project has an aesthetic direction: a `DESIGN.md`, a `.sdlc/design-system.md`, or a clear
+design system in the codebase. Otherwise → skip it, and let the UI follow the codebase conventions.
 
-## Nguyên tắc build khớp thiết kế (execute)
+## Principles for building to the design (execute)
 
-- Mọi giá trị thị giác qua **design token**, KHÔNG hardcode màu/spacing/font/radius.
-- Reuse component có sẵn trước khi tạo mới.
-- Implement đủ MỌI state đã spec: default/hover/active/disabled/loading/empty/error.
-- Responsive theo breakpoint trong tokens; kiểm cả dark & light nếu dự án hỗ trợ.
+- Every visual value goes through a **design token**; do NOT hardcode colors/spacing/fonts/radii.
+- Reuse existing components before creating new ones.
+- Implement EVERY specified state: default/hover/active/disabled/loading/empty/error.
+- Responsive per the breakpoints in the tokens; check both dark & light if the project supports them.
 
-## Checklist đối chiếu (test / qa) — mỗi màn hình
+## Comparison checklist (test / qa) — per screen
 
-- [ ] **Token đúng**: màu/typography/spacing/radius/shadow khớp `design-system.md` (không giá trị lạ).
-- [ ] **Contrast / a11y**: tỉ lệ tương phản text/nền đạt ngưỡng (≥ 4.5:1 text thường); có focus state;
-      ảnh có alt; control có label/role.
-- [ ] **Responsive**: không vỡ layout ở breakpoint nhỏ nhất và lớn nhất đã định.
-- [ ] **Dark/Light**: cả hai chế độ đúng token, không chữ chìm/mất tương phản.
-- [ ] **State đầy đủ**: empty/loading/error hiển thị đúng, không màn hình trắng/khựng.
-- [ ] **Design AC**: mọi `DAC-xx` trong ui-design.md đã đạt.
+- [ ] **Correct tokens**: colors/typography/spacing/radii/shadows match `design-system.md` (no stray values).
+- [ ] **Contrast / a11y**: text/background contrast meets the threshold (≥ 4.5:1 for body text); focus states
+      exist; images have alt text; controls have labels/roles.
+- [ ] **Responsive**: layout doesn't break at the smallest or largest defined breakpoint.
+- [ ] **Dark/Light**: both modes use the correct tokens, with no washed-out text or lost contrast.
+- [ ] **Complete states**: empty/loading/error render correctly, no blank screens or freezes.
+- [ ] **Design AC**: every `DAC-xx` in ui-design.md is met.
 
-## Visual verification bằng Playwright
+## Visual verification with Playwright
 
-- Chụp screenshot mỗi màn hình/state chính ở các breakpoint + dark/light.
-- Đối chiếu với Design AC (mã màu qua computed style, layout không tràn/overlap).
-- Nếu có baseline trước (`.sdlc/<version>/<sprint>/visual-baseline/`): so sánh phát hiện regression thị giác.
-  Lần đầu chưa có baseline → tạo baseline sau khi đã xác nhận khớp Design AC.
-- Playwright đã cài sẵn trong môi trường; KHÔNG chạy `playwright install`.
+- Screenshot each main screen/state at the defined breakpoints + dark/light.
+- Compare against the Design AC (color codes via computed style, layout not overflowing/overlapping).
+- If a baseline exists (`.sdlc/<version>/<sprint>/visual-baseline/`): compare to catch visual regressions.
+  With no baseline yet → create one after confirming it matches the Design AC.
+- Playwright is pre-installed in the environment; do NOT run `playwright install`.
 
-## Ranh giới với NFR-accessibility
+## Boundary with NFR-accessibility
 
-Nếu requirements đã có NFR về a11y, phần contrast/focus/label ở đây chính là cách kiểm NFR đó — không làm
-trùng, coi design-fidelity là nơi thực thi kiểm a11y cho UI.
+If the requirements already include an a11y NFR, the contrast/focus/label checks here ARE how that NFR is
+verified — don't duplicate the work; treat design-fidelity as where a11y checking happens for the UI.

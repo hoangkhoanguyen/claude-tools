@@ -1,126 +1,132 @@
 ---
-description: Chạy phần thực thi ĐẾN HẾT cho một sprint — pre-flight, implement toàn bộ tasks, rồi Test + QA gate + bàn giao. Dùng sau khi đã có tasks (vd sau khi /sdlc:run dừng ở gate Tasks).
+description: Run execution TO COMPLETION for one sprint — pre-flight, implement every task, then Test + QA gate + handoff. Use it once tasks exist (e.g. after /sdlc:run stopped at the Tasks gate).
 argument-hint: <version-slug> <sprint-slug>
 ---
 
 # /sdlc:execute
 
-Chạy phần thực thi ĐẾN HẾT cho sprint `$2` thuộc version `$1`
-(nếu trống, lấy từ `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
+Run execution TO COMPLETION for sprint `$2` in version `$1`
+(if empty, read from `.sdlc/versions.md` + `.sdlc/<version>/state.md`).
 
-Gồm 3 chặng: **Implement → Test → QA gate + bàn giao**. Đây là "execute đến hết" — chạy trọn từ
-tasks đã lên cho tới lúc bàn giao sạch. Muốn chạy lẻ đúng 1 task → dùng `/sdlc:task`.
+Three legs: **Implement → Test → QA gate + handoff**. This is "execute to completion" — it runs from the
+planned tasks all the way to a clean handoff. To run exactly one task → use `/sdlc:task`.
 
-Yêu cầu `.sdlc/<version>/<sprint>/tasks.md` đã tồn tại (chạy `/sdlc:tasks` trước nếu chưa).
-Resume: bỏ qua chặng/task đã `done`, tiếp tục đúng chỗ đang dở.
+Requires `.sdlc/<version>/<sprint>/tasks.md` to exist (run `/sdlc:tasks` first if not).
+Resume: skip legs/tasks already `done`, continue exactly where it left off.
 
-## Context của lệnh này — cố tình đọc rất ít
+## This command's context — deliberately reads very little
 
-Lệnh này **không viết code, không viết design, không chia task** — nó chỉ điều phối 3 subagent và nói
-chuyện với user. Mọi agent thực thi (`implement-coordinator`, `feature-builder`, `test-strategist`,
-`qa-guard`) đều tự Glob `CLAUDE.md` liên quan, tự đọc `architecture.md`/`design.md`, tự quét skill của
-repo khi khởi động. Bạn đọc lại những thứ đó là trả tiền hai lần, lần thứ hai vào đúng context phải
-sống suốt cả 3 chặng.
+This command **writes no code, no design, and no task breakdown** — it only orchestrates 3 subagents and
+talks to the user. Every execution agent (`implement-coordinator`, `feature-builder`, `test-strategist`,
+`qa-guard`) globs the relevant `CLAUDE.md` itself, reads `architecture.md`/`design.md` itself, and scans
+the repo's skills itself at startup. Reading those again means paying twice, the second time out of a
+context that has to survive all 3 legs.
 
-Bạn CHỈ đọc: `.sdlc/<version>/state.md` (resume), `.sdlc/<version>/sprints.md` (bàn giao), và **Grep có
-đích** vào `.sdlc/<version>/<sprint>/tasks.md` để lấy ID + dòng mô tả của các task chưa done.
-KHÔNG Read trọn `tasks.md` — mỗi task có 7 field mà bạn chỉ cần 2.
+You ONLY read: `.sdlc/<version>/state.md` (resume), `.sdlc/<version>/sprints.md` (handoff), and a
+**targeted Grep** into `.sdlc/<version>/<sprint>/tasks.md` for the IDs + description lines of unfinished
+tasks. Do NOT Read all of `tasks.md` — each task has 7 fields and you need 2.
 
-## Chính sách model
+## Model policy
 
-Lệnh này nên chạy bằng **Opus** — nó giữ quyết định (xử lý `DESIGN_GAP`, chốt bàn giao) suốt cả 3 chặng.
+This command should run on **Opus** — it holds the decisions (handling `DESIGN_GAP`, approving handoff)
+across all 3 legs.
 
-Model của từng subagent **đã khai trong frontmatter của agent đó** — cả 4 agent trong lệnh này
-(`preflight-scout`, `implement-coordinator`, `test-strategist`, `qa-guard`) chạy **Sonnet**. Bạn KHÔNG
-truyền tham số `model` khi spawn, để khỏi ghi đè chính sách.
+Each subagent's model is **already declared in that agent's frontmatter** — all 4 agents in this command
+(`preflight-scout`, `implement-coordinator`, `test-strategist`, `qa-guard`) run on **Sonnet**. Do NOT
+pass a `model` parameter when spawning, so you don't override the policy.
 
-**Leo thang lên Opus là việc của agent thực thi, không phải của bạn**: coordinator / test-strategist /
-qa-guard tự nâng `feature-builder` lên Opus khi Sonnet đã thất bại đủ 5 lượt ở cùng một chỗ. Khi status
-`BLOCKED` tới tay bạn thì hạn mức đó đã dùng hết — đừng spawn lại bằng Opus, `BLOCKED` nghĩa là cần
-người quyết định chứ không phải cần model to hơn.
+**Escalating to Opus is the execution agent's job, not yours**: coordinator / test-strategist / qa-guard
+promote `feature-builder` to Opus once Sonnet has failed 5 rounds at the same spot. By the time a
+`BLOCKED` status reaches you that budget is spent — do not respawn with Opus. `BLOCKED` means a human
+decision is needed, not a bigger model.
 
-Ngoại lệ: user nói rõ muốn chạy khác đi thì làm theo user.
+Exception: if the user explicitly asks to run it differently, follow the user.
 
-## Pre-flight (BẮT BUỘC trước khi code)
+## Pre-flight (REQUIRED before writing code)
 
-1. **Spawn `preflight-scout`** (read-only). Nó đọc `docker-compose.yml`, `.env.example`, `package.json`
-   scripts, `Procfile`, `Makefile`, README giúp bạn, tự ping port, và trả về bảng gọn:
-   service + port + trạng thái + lệnh bật + lệnh migrate. Bạn không tự đọc đống config đó.
-2. **Chốt service cho CẢ 3 chặng một lượt.** Bảng của scout đã gồm cả dev server/sandbox mà Test và QA
-   cần, không chỉ service lúc implement. Hỏi user bật một lần cho hết — hỏi thiếu ở đây thì Chặng 2/3
-   sẽ trả `NEEDS_SERVICE`, và mỗi lần spawn lại là một agent cold-start đọc lại context từ đầu.
-3. CHỈ hỏi user bật cái scout báo "chưa chạy", kèm lệnh bật nó đưa ra. ĐỢI user xác nhận "ok".
-   Ghi `services_up` vào `.sdlc/<version>/state.md`.
-4. **Migration**: scout báo sprint có đổi schema → chạy lệnh migrate nó đưa ra (sau khi DB đã lên).
-   Ghi vào state.
+1. **Spawn `preflight-scout`** (read-only). It reads `docker-compose.yml`, `.env.example`, `package.json`
+   scripts, `Procfile`, `Makefile`, and the README for you, pings ports itself, and returns a compact
+   table: service + port + status + start command + migrate command. You do not read that pile of config.
+2. **Confirm services for ALL 3 LEGS in one pass.** The scout's table already includes the dev
+   server/sandbox that Test and QA need, not just the services needed during implement. Ask the user to
+   start everything at once — asking incompletely here means legs 2/3 return `NEEDS_SERVICE`, and every
+   respawn is a cold-start agent re-reading context from scratch.
+3. ONLY ask the user to start what the scout reports as "not running", with the start command it
+   provided. WAIT for the user to confirm "ok". Write `services_up` into `.sdlc/<version>/state.md`.
+4. **Migration**: if the scout reports the sprint changes the schema → run the migrate command it provided
+   (after the DB is up). Record it in state.
 
-Đây là **lần duy nhất** bạn ghi `state.md` trong lệnh này — từ Chặng 1 trở đi, agent sở hữu file đó.
+This is the **only time** you write `state.md` in this command — from leg 1 onward, the agent owns that file.
 
-## Chặng 1 — Implement (giao trọn cho `implement-coordinator`)
+## Leg 1 — Implement (hand off entirely to `implement-coordinator`)
 
-Chặng này ồn nhất (report từng task + commit + ghi state). Đừng chạy trong conversation này —
-**spawn subagent `implement-coordinator`** để cô lập context, giữ chỗ cho Chặng 2 + 3.
+This leg is the noisiest (per-task reports + commits + state writes). Don't run it in this conversation —
+**spawn subagent `implement-coordinator`** to isolate the context and save room for legs 2 + 3.
 
-Trước khi spawn: đồng bộ TodoWrite một lần (một item cho mỗi task chưa done) để user thấy phạm vi —
-lấy ID + mô tả bằng Grep có đích như trên, không Read trọn `tasks.md`.
+Before spawning: sync TodoWrite once (one item per unfinished task) so the user sees the scope — get the
+IDs + descriptions with the targeted Grep described above, don't Read all of `tasks.md`.
 
-Truyền cho coordinator: `version`, `sprint`, tên **sprint branch**, và `services_up` đã xác nhận ở
-pre-flight. Coordinator sẽ tự: chia wave theo phụ thuộc → giao từng task cho `feature-builder`
-(task độc lập chạy song song) → commit từng task → cập nhật `tasks.md` + `state.md`.
+Pass the coordinator: `version`, `sprint`, the **sprint branch** name, and the `services_up` confirmed at
+pre-flight. The coordinator will: split into waves by dependency → assign each task to `feature-builder`
+(independent tasks in parallel) → commit each task → update `tasks.md` + `state.md`.
 
-**Trong lúc coordinator chạy, bạn KHÔNG chạm vào `tasks.md`, `state.md`, hay git index** — nó là
-người ghi duy nhất của chặng này. Hai bên cùng ghi là nguồn hỏng state kinh điển.
+**While the coordinator runs, do NOT touch `tasks.md`, `state.md`, or the git index** — it is the sole
+writer for this leg. Two concurrent writers is the classic source of corrupted state.
 
-Coordinator trả về status ở dòng đầu; xử lý theo bảng:
+The coordinator returns a status on its first line; handle it per this table:
 
-| Status | Bạn làm gì |
+| Status | What you do |
 |---|---|
-| `DONE` | Refresh TodoWrite, sang Chặng 2 |
-| `BLOCKED` | DỪNG, báo blocker cho user. Không sang Test |
-| `DESIGN_GAP` | **Bạn quyết định, `architect` viết.** Gap nhỏ & rõ → spawn `architect` kèm mô tả gap để nó vá `design.md` (đừng tự đọc `design.md` để sửa — đó là file to nhất sprint). Gap lớn/đụng phạm vi → đề nghị user `/sdlc:replan`. Xong → spawn coordinator mới |
-| `NEEDS_SERVICE` | Hỏi user bật service (kèm lệnh gợi ý), ghi vào `services_up`, đợi "ok" → spawn coordinator mới |
-| `CONTEXT_LIMIT` | Spawn coordinator mới ngay — tiến độ đã nằm trên disk nên nó tiếp đúng chỗ |
+| `DONE` | Refresh TodoWrite, move to leg 2 |
+| `BLOCKED` | STOP, report the blocker to the user. Do not proceed to Test |
+| `DESIGN_GAP` | **You decide, `architect` writes.** Small & clear gap → spawn `architect` with the gap description to patch `design.md` (don't read `design.md` yourself to edit it — it's the largest file in the sprint). Large gap / scope change → suggest the user run `/sdlc:replan`. Done → spawn a fresh coordinator |
+| `NEEDS_SERVICE` | Ask the user to start the service (with the suggested command), record it in `services_up`, wait for "ok" → spawn a fresh coordinator |
+| `CONTEXT_LIMIT` | Spawn a fresh coordinator immediately — progress is on disk, so it picks up exactly where it left off |
 
-Relay báo cáo của coordinator cho user dưới dạng tóm tắt ngắn (user không thấy output subagent).
+Relay the coordinator's report to the user as a short summary (the user doesn't see subagent output).
 
-Chỉ sang Chặng 2 khi status `DONE`.
+Only move to leg 2 on status `DONE`.
 
-## Chặng 2 — Test
+## Leg 2 — Test
 
-Spawn subagent `test-strategist` (skill `test-strategy`). Tự phát hiện stack & công cụ, chọn cách test
-theo loại feature (unit / API / Playwright UI / 3rd party sandbox / mock webhook). Nếu có UI design →
-visual verification (skill `design-fidelity`): screenshot đối chiếu Design AC + baseline trong
-`.sdlc/<version>/<sprint>/visual-baseline/`. Viết test và CHẠY thật đến khi xanh.
-Mọi AC/EC/NFR/DAC phải có test hoặc được liệt kê verify-tay. Ghi `.sdlc/<version>/<sprint>/test-report.md`.
+Spawn subagent `test-strategist` (skill `test-strategy`). It auto-detects the stack & tooling and picks
+the testing approach per feature type (unit / API / Playwright UI / 3rd party sandbox / mock webhook). If
+a UI design exists → visual verification (skill `design-fidelity`): screenshots compared against Design AC
++ the baseline in `.sdlc/<version>/<sprint>/visual-baseline/`. It writes tests and ACTUALLY RUNS them
+until green.
+Every AC/EC/NFR/DAC must have a test or be listed as manual-verify. Writes
+`.sdlc/<version>/<sprint>/test-report.md`.
 
-**Nó tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus) và tự commit test file + fix.** Bạn KHÔNG điều phối vòng fix,
-KHÔNG chạm git index khi nó đang chạy — đẩy vòng fix về đây là nguồn tốn context ở conversation chính.
-Xử lý status nó trả về theo cùng bảng như Chặng 1 (`DONE` → sang Chặng 3; `BLOCKED` → dừng báo user;
-`DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT` → xử lý rồi spawn lại). Relay tóm tắt ngắn cho user.
+**It closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits its own test
+files + fixes.** You do NOT orchestrate the fix loop and do NOT touch the git index while it runs —
+pushing the fix loop back here is a major context sink in the main conversation.
+Handle the status it returns using the same table as leg 1 (`DONE` → leg 3; `BLOCKED` → stop and report;
+`DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT` → resolve then respawn). Relay a short summary to the user.
 
-## Chặng 3 — QA gate + bàn giao
+## Leg 3 — QA gate + handoff
 
-Spawn subagent `qa-guard`: full test + happy path từng story + regression happy path feature cũ liên quan +
-NFR check + design fidelity (nếu có UI) + quét hardcode/TODO/unhandled error.
+Spawn subagent `qa-guard`: full test run + happy path per story + regression happy path for related
+existing features + NFR check + design fidelity (if UI) + scan for hardcoded values/TODOs/unhandled errors.
 
-**Nó cũng tự đóng vòng fix (tối đa 5 vòng Sonnet + 1 vòng escalate Opus) và tự commit** — mỗi vòng fix nó chạy lại checklist từ đầu.
-Bạn chỉ nhận status, không tự fix, không chạm git. Chỉ khi status `DONE` mới bàn giao:
+**It also closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits itself** —
+each fix round it re-runs the checklist from the top.
+You only receive the status; you don't fix anything and don't touch git. Only on status `DONE` do you hand off:
 
-- Cập nhật sprint = `done` trong `.sdlc/<version>/sprints.md`; nếu mọi sprint trong version đã `done` →
-  cập nhật `.sdlc/versions.md` version = `done`.
-- Trình bày Pre-manual Report: đã tự động cover / cần user verify tay / edge case chưa define.
-- Nhắc user: sprint tiếp theo `/sdlc:run <version> <sprint-slug>`; version mới `/sdlc:sprint-plan <version>`.
+- Set the sprint to `done` in `.sdlc/<version>/sprints.md`; if every sprint in the version is `done` →
+  set the version to `done` in `.sdlc/versions.md`.
+- Present the Pre-manual Report: automatically covered / needs manual verification / undefined edge cases.
+- Remind the user: next sprint `/sdlc:run <version> <sprint-slug>`; new version `/sdlc:sprint-plan <version>`.
 
-## Ranh giới của lệnh này (đọc lại nếu định "làm cho nhanh")
+## This command's boundaries (re-read this if you're tempted to "speed things up")
 
-Kết thúc mỗi chặng, bạn **KHÔNG** chạy skill `self-review` và **KHÔNG** cập nhật `state.md`:
+At the end of each leg you do **NOT** run the `self-review` skill and do **NOT** update `state.md`:
 
-- Mỗi agent đã có mục self-review BẮT BUỘC của riêng nó và tự chạy trước khi trả kết quả.
-- `state.md` từ Chặng 1 trở đi thuộc về agent đang chạy (coordinator / test-strategist / qa-guard).
-  Bạn ghi thêm vào đó là tạo ra hai writer trên cùng một file — đúng thứ mà cả thiết kế này tránh.
+- Every agent has its own REQUIRED self-review section and runs it before returning results.
+- From leg 1 onward `state.md` belongs to the running agent (coordinator / test-strategist / qa-guard).
+  Writing to it too creates two writers on one file — exactly what this design avoids.
 
-Việc của bạn sau mỗi chặng chỉ là: đọc status ở dòng đầu báo cáo → xử lý theo bảng → relay tóm tắt
-ngắn cho user. Ngoài ra, trong cả lệnh này bạn không `git add`/`commit`/`push`, không sửa `design.md`
-/ `requirements.md` / `tasks.md`.
+Your job after each leg is only: read the status on the report's first line → handle it per the table →
+relay a short summary to the user. Beyond that, throughout this command you do not `git add`/`commit`/
+`push`, and you do not edit `design.md` / `requirements.md` / `tasks.md`.
 
-Ngoại lệ duy nhất: pre-flight (ghi `services_up`) và bàn giao (`sprints.md`, `versions.md`).
+The only exceptions: pre-flight (writing `services_up`) and handoff (`sprints.md`, `versions.md`).
