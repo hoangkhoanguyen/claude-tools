@@ -55,6 +55,14 @@ Exception: if the user explicitly asks to run it differently, follow the user.
    provided. WAIT for the user to confirm "ok". Write `services_up` into `.sdlc/<version>/state.md`.
 4. **Migration**: if the scout reports the sprint changes the schema → run the migrate command it provided
    (after the DB is up). Record it in state.
+5. **Codex offload (optional, ask ONCE per sprint here — not per task)**: if the scout reports
+   `codex: found, authenticated`, ask the user in the SAME confirmation turn as the services check (don't
+   spend a separate round-trip):
+   > Codex CLI is available. Offload `Difficulty: normal` implement tasks to it (fallback to Claude on
+   > failure) to save your Claude usage? [yes/no]
+   Write the answer as `codex_enabled: true|false` into `.sdlc/<version>/state.md`. If the scout reports
+   `not found` or `not authenticated`, skip asking — just write `codex_enabled: false` silently (don't
+   nag the user to install something they haven't asked for).
 
 This is the **only time** you write `state.md` in this command — from leg 1 onward, the agent owns that file.
 
@@ -66,8 +74,9 @@ This leg is the noisiest (per-task reports + commits + state writes). Don't run 
 Before spawning: sync TodoWrite once (one item per unfinished task) so the user sees the scope — get the
 IDs + descriptions with the targeted Grep described above, don't Read all of `tasks.md`.
 
-Pass the coordinator: `version`, `sprint`, the **sprint branch** name, and the `services_up` confirmed at
-pre-flight. The coordinator will: split into waves by dependency → assign each task to `feature-builder`
+Pass the coordinator: `version`, `sprint`, the **sprint branch** name, the `services_up` confirmed at
+pre-flight, and `codex_enabled` (from state). The coordinator will: split into waves by dependency →
+assign each task to `feature-builder` or, if `codex_enabled` and the task qualifies, to Codex CLI
 (independent tasks in parallel) → commit each task → update `tasks.md` + `state.md`.
 
 **While the coordinator runs, do NOT touch `tasks.md`, `state.md`, or the git index** — it is the sole

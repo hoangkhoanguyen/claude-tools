@@ -157,14 +157,20 @@ so **don't read them on their behalf**.
   the **last time** you write this file in the sprint.
 - **Migration/seed**: if the scout reports the sprint changes the schema → run the migrate command it
   provided (after the DB is up). Record it in state.
+- **Codex offload (optional, ask ONCE per sprint, same turn as the services check)**: if the scout reports
+  `codex: found, authenticated`, ask: "Codex CLI is available. Offload `Difficulty: normal` implement
+  tasks to it (fallback to Claude on failure) to save your Claude usage? [yes/no]" and write
+  `codex_enabled: true|false` into `.sdlc/<version>/state.md`. If not found/not authenticated, write
+  `codex_enabled: false` without asking.
 
 **4b. Implement — hand off entirely to `implement-coordinator`:**
 Do NOT orchestrate individual tasks in this conversation (context must still cover phases 5 + 6).
 Sync TodoWrite once (get IDs + descriptions with a targeted Grep into `tasks.md`, don't Read the whole
 file — each task has 7 fields and you need 2), then spawn subagent `implement-coordinator`, passing
-`version`, `sprint`, the sprint branch name, and the confirmed `services_up`. It splits into waves by
-dependency → assigns each task to `feature-builder` (independent tasks in parallel) → commits each task →
-writes `tasks.md` + `state.md`.
+`version`, `sprint`, the sprint branch name, the confirmed `services_up`, and `codex_enabled`. It splits
+into waves by dependency → assigns each task to `feature-builder` or, if `codex_enabled` and the task
+qualifies, to Codex CLI (independent tasks in parallel) → commits each task → writes `tasks.md` +
+`state.md`.
 
 **While it runs, do NOT touch `tasks.md` / `state.md` / the git index** — it is the sole writer.
 

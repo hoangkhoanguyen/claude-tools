@@ -19,6 +19,8 @@ Test + QA.
 - The **sprint branch** name for commits.
 - `services_up`: external services the user has confirmed are running (pre-flight already happened in the
   caller — **you do NOT ask the user to start services**, see "What you must not do").
+- `codex_enabled`: whether the user opted in to offloading `Difficulty: normal` tasks to Codex CLI
+  (decided ONCE at pre-flight by the caller — you never ask about this yourself, see Step 3a).
 
 If any of these are missing, read them from `.sdlc/<version>/state.md`.
 
@@ -65,6 +67,58 @@ task yourself, one at a time, sequentially, following exactly the process and pr
 until green, self-review). In that case **watch your own context**: after each task, if context is filling
 up → stop cleanly with status `CONTEXT_LIMIT` (see step 5). The caller will spawn a fresh coordinator to
 continue from exactly where you left off, since progress is on disk.
+
+## Step 3a — Choosing the executor: Codex CLI vs `feature-builder` (only if `codex_enabled`)
+
+If the caller did not pass `codex_enabled: true`, skip this step entirely — every task goes to
+`feature-builder` as usual.
+
+**Which tasks qualify for Codex:** `Difficulty: normal` (not `high`) AND no `Suggested skill` field that
+names a project skill (a skill is a Claude-specific asset — Codex can't load it, so those tasks stay with
+`feature-builder`, which can). Everything that doesn't qualify goes straight to `feature-builder` — don't
+force a task onto Codex just because the flag is on.
+
+**Codex only touches source files — it never touches your state.** Same boundary as `feature-builder`:
+Codex implements + runs its own local checks; YOU still do the git commit and the `tasks.md`/`state.md`
+writes in Step 4, and YOU are the one who validates the result before trusting it, since Codex doesn't
+speak the feature-builder report contract.
+
+**Dispatch (attempt 1-2 for a qualifying task, before falling back to `feature-builder`):**
+
+1. Build a **self-contained prompt** — Codex starts cold, same as any subagent:
+   - The task's full block from `tasks.md` (description, AC/EC served, design ref, expected files, test
+     criteria).
+   - The relevant section(s) of `design.md` (paste the section, don't just cite it).
+   - The relevant `CLAUDE.md` conventions for the files this task touches (paste the key rules: build/test
+     commands, style conventions, forbidden patterns).
+   - The task's test command(s) explicitly, and an instruction to run them before finishing.
+   - An explicit instruction: implement ONLY this task's scope, don't touch unrelated files.
+2. Run it non-interactively via Bash:
+   ```
+   codex exec -s workspace-write -C <repo-root> --skip-git-repo-check \
+     -o /tmp/codex-task-<id>.txt "<the prompt built above>"
+   ```
+   `workspace-write` lets Codex edit files and run the task's own test command inside the repo without
+   full `--dangerously-bypass-approvals-and-sandbox` — don't widen the sandbox beyond that.
+3. **You validate the result yourself** (Codex's own "it passed" is not enough — verify it):
+   - `git diff --stat` → does the changed-file list match the task's "Expected files"? Wildly out-of-scope
+     changes → treat as a failed attempt, don't commit them.
+   - Re-run the task's test command(s) yourself.
+   - Skim the diff for the same "no minor bugs" checklist `feature-builder` uses: no hardcoded
+     secrets/URLs, no leftover TODO/FIXME in scope, error shapes match the design's API contracts.
+   - All good → treat exactly like a `feature-builder` "done" report and continue to Step 4.
+   - Fails validation → `git checkout -- <touched files>` to discard the attempt cleanly, note what failed
+     (which check, what output), and give Codex ONE more try with that failure appended to the prompt.
+
+**Falling back to `feature-builder`:** if Codex fails validation twice in a row (or the `codex` binary
+errors out / isn't authenticated, despite the flag being on — auth can expire mid-sprint), stop trying
+Codex for that task and hand it to `feature-builder` per Step 3b below. Count this as if Sonnet attempt 1
+had just failed — i.e. `feature-builder` gets attempts 2-5 (not a fresh budget of 5), so a task that's
+hard for both executors still escalates to Opus at attempt 6, not attempt 8. Pass the Codex failure notes
+into `feature-builder`'s prompt as part of the failure history, same as any retry.
+
+**Record for the final report:** which executor actually did each task (`codex` or `sonnet`/`opus`), and
+the attempt count.
 
 ## Step 3b — Choosing feature-builder's model & escalation (REQUIRED)
 
@@ -152,11 +206,12 @@ Compact — the caller relays it to the user, don't paste logs:
 <STATUS>
 
 Tasks: <n done> / <total>
-| Task | Result | Commit | Model (attempts) | Note |
+| Task | Result | Commit | Executor (attempts) | Note |
 |---|---|---|---|---|
-| TASK-01 | done | <short sha> | sonnet (1) | |
-| TASK-02 | done | <short sha> | sonnet→opus (6) | escalated after 5 attempts |
-| TASK-03 | blocked | — | sonnet→opus (6) | <one-line reason> |
+| TASK-01 | done | <short sha> | codex (1) | |
+| TASK-02 | done | <short sha> | sonnet (1) | |
+| TASK-03 | done | <short sha> | codex→sonnet→opus (7) | codex failed 2x, escalated after 5 sonnet attempts |
+| TASK-04 | blocked | — | sonnet→opus (6) | <one-line reason> |
 
 State discrepancies reconciled: <none | description>
 Project skills used: <list | none>

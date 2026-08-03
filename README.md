@@ -201,6 +201,17 @@ The orchestrating agent promotes `feature-builder` to Opus autonomously, counted
 
 Edit the `model:` line in the relevant agent's frontmatter under `.claude/agents/`. The installer detects files you've modified (via checksums in `.sdlc-install.json`) and will ask before overwriting on a future install, so manual edits are safe.
 
+### Optional: Offloading Implement Tasks to Codex CLI
+
+If [OpenAI Codex CLI](https://github.com/openai/codex) is installed and authenticated on your machine,
+`/sdlc:execute` and `/sdlc:run` detect it at pre-flight (`preflight-scout`) and ask **once per sprint**
+whether to offload `Difficulty: normal` implement tasks to it — reducing Claude usage on the implement leg
+without a manual step per task. `Difficulty: high` tasks and tasks with a `Suggested skill` always stay on
+Claude. `implement-coordinator` dispatches qualifying tasks to `codex exec`, validates the diff + re-runs
+the task's tests itself, and falls back to `feature-builder` (counted against the same Sonnet→Opus
+escalation budget) if Codex fails validation twice. Answer "no" at pre-flight (or don't install Codex) to
+keep the whole leg on Claude as before — this is opt-in, off by default.
+
 ---
 
 ## Projects With UI — Any Design Source Works
