@@ -95,11 +95,12 @@ speak the feature-builder report contract.
    - An explicit instruction: implement ONLY this task's scope, don't touch unrelated files.
 2. Run it non-interactively via Bash:
    ```
-   codex exec -s workspace-write -C <repo-root> --skip-git-repo-check \
+   npx @openai/codex --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
      -o /tmp/codex-task-<id>.txt "<the prompt built above>"
    ```
-   `workspace-write` lets Codex edit files and run the task's own test command inside the repo without
-   full `--dangerously-bypass-approvals-and-sandbox` — don't widen the sandbox beyond that.
+   Run from `<repo-root>` so Codex resolves relative paths correctly. The
+   `--dangerously-bypass-approvals-and-sandbox` flag is required for non-interactive use; `-s workspace-write`
+   and `--approve-for-me` are mutually exclusive with it and must NOT be combined.
 3. **You validate the result yourself** (Codex's own "it passed" is not enough — verify it):
    - `git diff --stat` → does the changed-file list match the task's "Expected files"? Wildly out-of-scope
      changes → treat as a failed attempt, don't commit them.
@@ -110,7 +111,7 @@ speak the feature-builder report contract.
    - Fails validation → `git checkout -- <touched files>` to discard the attempt cleanly, note what failed
      (which check, what output), and give Codex ONE more try with that failure appended to the prompt.
 
-**Falling back to `feature-builder`:** if Codex fails validation twice in a row (or the `codex` binary
+**Falling back to `feature-builder`:** if Codex fails validation twice in a row (or `npx @openai/codex`
 errors out / isn't authenticated, despite the flag being on — auth can expire mid-sprint), stop trying
 Codex for that task and hand it to `feature-builder` per Step 3b below. Count this as if Sonnet attempt 1
 had just failed — i.e. `feature-builder` gets attempts 2-5 (not a fresh budget of 5), so a task that's
