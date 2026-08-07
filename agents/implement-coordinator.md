@@ -95,12 +95,13 @@ speak the feature-builder report contract.
    - An explicit instruction: implement ONLY this task's scope, don't touch unrelated files.
 2. Run it non-interactively via Bash:
    ```
-   npx @openai/codex --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-     -o /tmp/codex-task-<id>.txt "<the prompt built above>"
+   npx @openai/codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
+     "<the prompt built above>"
    ```
-   Run from `<repo-root>` so Codex resolves relative paths correctly. The
-   `--dangerously-bypass-approvals-and-sandbox` flag is required for non-interactive use; `-s workspace-write`
-   and `--approve-for-me` are mutually exclusive with it and must NOT be combined.
+   Run from `<repo-root>` so Codex resolves relative paths correctly. The `exec` subcommand is
+   required for non-interactive use — flags like `--skip-git-repo-check` are not available on the
+   root `codex` command. `-s workspace-write` and `--approve-for-me` are mutually exclusive with
+   `--dangerously-bypass-approvals-and-sandbox` and must NOT be combined with it.
 3. **You validate the result yourself** (Codex's own "it passed" is not enough — verify it):
    - `git diff --stat` → does the changed-file list match the task's "Expected files"? Wildly out-of-scope
      changes → treat as a failed attempt, don't commit them.
