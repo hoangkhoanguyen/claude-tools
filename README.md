@@ -174,6 +174,39 @@ The plugin writes everything to the `.sdlc/` directory in your project (committa
 
 ---
 
+## `/fix` — Standalone Bug-Fix Pipeline
+
+A separate, generic tool bundled in this same install — does not depend on `.sdlc/` or any SDLC state.
+Report a bug in any form (text, screenshot path, log file, stack trace) and it drives investigate → fix →
+verify → commit until resolved, without you babysitting each step.
+
+```bash
+/fix "clicking Save on the profile form throws a 500" server.log
+```
+
+**Pipeline:**
+
+1. `bug-investigator` reproduces the bug and pins down the root cause. Fixes it directly if trivial
+   (1-2 lines, obviously safe); otherwise hands a confirmed root cause to the next step. Asks for more
+   info instead of guessing when it can't reproduce the bug.
+2. `bug-fixer` writes the patch and closes its own fix→test loop (up to 5 attempts, one continuous run —
+   no cold-start between attempts). If still not fixed, the pipeline retries once with Opus, carrying the
+   full attempt history so it doesn't repeat what already failed.
+3. `bug-reporter` independently re-verifies the fix (doesn't trust the previous agent's word), commits it
+   **locally only**, and gives you a short root-cause + diff + test summary.
+
+The pipeline never pushes and never opens a PR — the local commit is the handoff point; you push when
+you're ready.
+
+| Type | Name | Role |
+|------|------|------|
+| Command | `fix` | Entry point — orchestrates the 3 agents below, branches on their status, relays the final report |
+| Agent | `bug-investigator` | Reproduce → root cause; fixes trivial bugs itself |
+| Agent | `bug-fixer` | Patch + self-contained fix→test loop; escalated to Opus by the caller if it gets stuck |
+| Agent | `bug-reporter` | Independent verification + local commit + user-facing summary |
+
+---
+
 ## Models: Opus Orchestrates, Sonnet Executes
 
 Sprints are designed to run in one continuous pass without pausing for approval at each step — so models are allocated by **where mistakes are most expensive**. A wrong decision in an early phase cascades into every subsequent phase; wrong code in the execute phase gets caught and fixed by tests.
