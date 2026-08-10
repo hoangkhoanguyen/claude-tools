@@ -1,12 +1,23 @@
 ---
-description: Take a prepared tech stack file → init the missing apps in the monorepo → write CLAUDE.md for the root and each app.
+description: Take a prepared tech stack file → research the current official docs for each technology → scaffold the missing apps the way those docs recommend → write CLAUDE.md for the root and each app.
 argument-hint: [path to tech stack file]
 ---
 
 # /init-project
 
-Take a prepared tech stack file → init the missing apps in the monorepo → write CLAUDE.md for the root and each app.
-Runs both steps automatically, asking nothing further once started.
+Take a prepared tech stack file, then for EVERY technology in it, **look up the current official
+documentation yourself, decide the correct way to scaffold, and do it** — so the later `/sdlc:run`
+sprints build on a clean, correctly-initialized codebase.
+
+**This command is framework-agnostic on purpose.** It does NOT assume Next.js/NestJS/anything. The tech
+stack file is the single source of truth for *what* to build; the *how* (which CLI, which flags, which
+project layout) is something you research from each tool's own current docs at run time — never from
+memory or from a hardcoded table. Your training data goes stale; `create-next-app`, framework CLIs, and
+their recommended flags/layouts change between versions. Reading the live docs is the whole point of this
+command.
+
+Runs both steps automatically, asking nothing further once started (the only pause is if a tech choice is
+genuinely ambiguous — see Step 1).
 
 ## Step 0 — Find the tech stack file
 
@@ -20,67 +31,95 @@ If no path is given, search in priority order:
 5. Root `CLAUDE.md` if it has a tech stack section
 
 Extract from whichever file you find:
-- List of apps/services (name, type, framework, port)
-- Main packages/libraries per app
-- Monorepo tooling (pnpm workspaces, turborepo…)
+- List of apps/services (name, type, framework, **exact version if pinned**, port)
+- Main packages/libraries per app (with pinned versions where given)
+- Monorepo tooling (pnpm workspaces, turborepo, nx…)
 - Database, external services
 
 If no file can be found → tell the user and stop.
 
-## Step 1 — Init the codebase
+## Step 1 — Research, then init the codebase
 
-### Check current state
+### Check current state first
 
 For each app in the tech stack:
-- Has a `package.json` → skip
+- Has a `package.json` (or equivalent manifest) → skip
 - Missing or empty directory → needs init
 
 For the monorepo root:
-- Do `pnpm-workspace.yaml`, the root `package.json`, and `turbo.json` already exist?
+- Do the workspace manifest (e.g. `pnpm-workspace.yaml`), the root `package.json`, and the task-runner
+  config (`turbo.json` / `nx.json`) already exist?
+
+### Research the correct scaffold — the core of this command
+
+For EACH thing you need to create (the monorepo root tooling, each shared package, each app), before
+running any command:
+
+1. **Find the official, current source.** Use WebSearch + WebFetch against the technology's OWN docs
+   (its official site / official CLI docs / official monorepo guide), not blog posts or Q&A sites.
+   Prefer, in order: the framework's own "getting started / installation" page → the official CLI
+   reference → the official monorepo/workspace guide.
+2. **Match the version.** If the tech stack pins a version, read the docs FOR THAT VERSION (many docs
+   sites have a version switcher). If it says `latest`/unpinned, read the current stable docs and note
+   what version `@latest` currently resolves to.
+3. **Extract the actual scaffold recipe:**
+   - The exact create/init command the docs recommend today, and each flag's current meaning (flags get
+     renamed, split, or removed between majors — confirm, don't assume).
+   - The project layout the tool generates now (e.g. does it use a `src/` dir, an app-dir, a specific
+     config filename) so your CLAUDE.md later matches reality.
+   - How that tool is meant to live INSIDE a monorepo workspace (many CLIs have a dedicated monorepo
+     path or flags to skip git/install).
+   - Any recent breaking change or migration note that affects init for the pinned version.
+4. **Decide from what you read** — the command you run must be justified by the docs you just fetched,
+   not by what you remember. If the docs contradict your prior assumption, the docs win.
+
+If two reasonable tools/approaches exist and the tech stack doesn't disambiguate (e.g. it just says
+"React app" without saying Vite vs. Next vs. RSC), briefly ask the user which one — this is the one
+allowed pause.
 
 ### Init in the correct order
 
-**Order:** root setup → shared packages → apps
+**Order:** root workspace setup → shared packages → apps (an app may depend on a shared package, so
+packages come first).
 
 **Root (if missing):**
-- Create the root `package.json` with `pnpm init`
-- Create `pnpm-workspace.yaml` with the globs `apps/*` and `packages/*`
-- Create `turbo.json` if the tech stack specifies Turborepo
+- Initialize the root manifest and the workspace/task-runner config the way the tech stack's chosen
+  tooling documents it today (globs for `apps/*` and `packages/*`, or whatever that tool uses).
 
-**Init each app — use the right CLI:**
+**Each app / package:**
+- Run the create/init command you derived from the docs in the research step above.
+- After the CLI finishes: delete any `.git` folder the CLI created inside a sub-app; install the extra
+  main dependencies the tech stack lists (again, confirm current package names/install syntax from docs
+  if a package's install story is non-obvious); wire up workspace references so an app can import a
+  shared package (using the workspace-reference syntax the chosen tooling documents).
 
-| Framework | Command |
-|---|---|
-| Next.js | `pnpm create next-app@latest apps/[name] --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --no-git` |
-| NestJS | `pnpm dlx @nestjs/cli new apps/[name] --package-manager pnpm --skip-git` |
-| Vite + React | `pnpm create vite apps/[name] --template react-ts` |
-| Remix | `pnpm create remix apps/[name] --no-git-init` |
-| Express/Fastify | Create manually: `mkdir -p apps/[name]/src`, `pnpm init`, install deps |
-| Shared package | `mkdir -p packages/[name]/src`, `pnpm init`, install the appropriate deps |
-| Prisma package | `pnpm init` + `pnpm add prisma @prisma/client` + `pnpm dlx prisma init` |
+### Conserve main-conversation context (recommended)
 
-After init:
-- Delete the `.git` folder if the CLI created one inside a sub-app
-- Install the additional main dependencies specified in the tech stack
-- Add workspace references (`"@repo/[name]": "workspace:*"`) to any app using a shared package
+Doc research fetches a lot of pages. If the tech stack has several apps, spawn a subagent per app to do
+the *research-and-scaffold* leg and report back a short summary (what it read, what command it ran, the
+resulting layout). Do the root workspace setup and the dependency-install/lockfile steps in one place
+(not in parallel across subagents) so the lockfile doesn't race. If you keep it in the main conversation,
+fetch docs targeted and don't dump whole pages into context — extract the recipe and move on.
 
 ### LIMITS — what NOT to do
 
-Step 1 ONLY scaffolds empty projects via CLI. Do NOT do any of the following:
-- Create/edit pages, components, providers, layouts, hooks, services, controllers, or any business logic file
-- Write custom App.tsx/App.vue, wire up providers, register resources/routes
+Step 1 ONLY scaffolds empty projects the way the docs prescribe. Do NOT do any of the following:
+- Create/edit pages, components, providers, layouts, hooks, services, controllers, or any business logic
+- Write custom entrypoints, wire up providers, register resources/routes
 - Run typecheck, build, or verify the build
 - Boot the server/backend, curl endpoints, probe health checks
 - Delete/replace the CLI's default files (keep the original scaffold intact)
 
-Step 1's output = a project that runs `pnpm dev` showing the **framework's default page** (Hello World).
-All customization belongs to the `/sdlc:run` execute phase.
+Step 1's output = a project that runs its dev command showing the **framework's default page**
+(Hello World). All customization belongs to the `/sdlc:run` execute phase.
 
 ### Step 1 report
+
+Report what you researched alongside what you did, so the user can see the decisions were doc-driven:
 ```
-✓ Init: apps/web (Next.js 14)
-✓ Init: apps/api (NestJS 10)
-✓ Init: packages/ui
+✓ Init: apps/web    — Next.js 15 (per nextjs.org/docs, App Router + src dir)  · cmd: create-next-app ...
+✓ Init: apps/api    — NestJS 11 (per docs.nestjs.com CLI monorepo guide)      · cmd: nest new ...
+✓ Init: packages/ui — manual TS package (per pnpm workspaces docs)
 → Skip: packages/db (already exists)
 ```
 
@@ -88,17 +127,18 @@ All customization belongs to the `/sdlc:run` execute phase.
 
 ### Read the actual structure before writing
 
-Re-read after init completes:
+Re-read after init completes — combine what the CLI actually produced with what the docs told you:
 - Each app's actual folder structure
-- The actual `package.json` (the CLI may add/remove packages)
+- The actual `package.json` (the CLI may add/remove packages vs. what you expected)
 - Config files (`tsconfig.json`, framework config, `.env.example`)
 - Path aliases that were set up
 
 ### Persona
 
-Act as a **senior developer** with deep knowledge of this project's entire tech stack.
-Write rules based on real framework knowledge — not generic advice; specific enough that an agent reading
-them immediately knows what to do and what not to do.
+Act as a **senior developer** with deep, CURRENT knowledge of this project's tech stack — informed by the
+docs you just read in Step 1. Write rules based on the real, version-correct framework behavior you
+confirmed — not generic advice, and not stale conventions from a previous major version. Rules must be
+specific enough that an agent reading them immediately knows what to do and what not to do.
 
 ### Root CLAUDE.md
 
@@ -106,9 +146,9 @@ them immediately knows what to do and what not to do.
 # [Repo name]
 
 ## Workspace overview
-| App/Package | Role | Main tech | Port |
+| App/Package | Role | Main tech (with version) | Port |
 |---|---|---|---|
-[Fill from the actual tech stack]
+[Fill from the actual, initialized apps]
 
 ## Shared packages
 [List of packages/* with their purpose and how to import them]
@@ -139,16 +179,16 @@ For each app, write `[app-path]/CLAUDE.md`:
 [From the actual scripts — including how to run from the root and from the app directory]
 
 ## Tech stack
-[List of main tech with actual versions]
+[Main tech with the ACTUAL installed versions]
 
 ## Directory structure
-[Actual folder structure, role of each directory]
+[Actual folder structure the CLI produced, role of each directory]
 
 ## [Framework] — correct usage
-[Framework-specific rules — see the guidance below]
+[Framework-specific rules, version-correct per the docs you read — see the guidance below]
 
 ## Anti-patterns — don't do this
-[What agents commonly get wrong with this framework — must be specific, not generic]
+[What agents commonly get wrong with THIS version of the framework — specific, not generic]
 
 ## Shared packages in use
 [Which packages/*, actual import paths]
@@ -162,57 +202,32 @@ For each app, write `[app-path]/CLAUDE.md`:
 Every rule must answer: *"If I don't write this down, will the agent get it right on its own?"*
 If the answer is "not sure" → write it. If it's "definitely right" → skip it.
 
+Base these rules on the **version-correct** behavior you confirmed in Step 1's research — an idiom from an
+older major can be actively wrong in the version that got installed. When the current docs establish a
+recommended pattern (data fetching, routing, module wiring, state, migrations, etc.), encode THAT pattern
+as the rule, and spell out the corresponding anti-patterns.
+
 **Bad example** (too generic):
 ```
-Use React Query to fetch data
+Use the framework's recommended data-fetching approach
 ```
 
-**Good example** (specific, actionable):
+**Good example** (specific, actionable, version-correct):
 ```
 ## Data fetching — required flow
-src/api/[resource].ts      → plain API call functions (axios, no hooks)
-src/hooks/use[Resource].ts → wraps useQuery/useMutation
+src/api/[resource].ts      → plain API call functions (no hooks)
+src/hooks/use[Resource].ts → wraps the fetching hook
 Component                  → only calls the hook, never fetches directly
 
 Anti-pattern:
 - useEffect + fetch inside a component
-- Calling axios directly in a component
-- Creating a new axios instance outside src/api/
+- Calling the HTTP client directly in a component
+- Creating a new client instance outside src/api/
 ```
 
-**Rules for common frameworks:**
-
-*React + TanStack Query:*
-- Flow: api function → useQuery hook → component (no shortcuts)
-- Mutations: useMutation + invalidateQueries, don't refetch manually
-- Server data vs UI state: React Query for server data, useState/Zustand for UI state
-
-*Next.js App Router:*
-- Server Components fetch directly (async/await), not useEffect
-- `use client` only when needed: event handlers, browser APIs, stateful UI
-- next/image instead of img, next/link instead of a, next/font instead of CDN fonts
-- Client-side env vars must have the NEXT_PUBLIC_ prefix
-
-*NestJS:*
-- Create modules/services/controllers via the CLI (`nest g module`, `nest g service`…), not by hand
-- Validate with class-validator + ValidationPipe, don't validate manually in the controller
-- Inject via the constructor, don't `new` a service manually
-- Auth → Guard, don't check tokens inside a service/controller
-
-*Prisma:*
-- Singleton PrismaClient, don't `new PrismaClient()` in every file
-- Use prisma migrate dev when changing the schema, don't edit committed migration files
-- Prisma.$transaction() for operations that need to be atomic
-
-*tRPC:*
-- Define routers centrally, export a single appRouter
-- Don't call procedures directly from another server — use the server-side caller
-- Input validation via Zod schemas in the procedure definition
-
-*Zustand:*
-- One store per domain, not one giant global store
-- Actions live in the store, don't define them outside
-- Don't store server data in Zustand — use React Query
+Write the rules from the real conventions of the exact stack that got installed. If you're unsure whether
+a convention still holds for this version, that's a signal to re-check the docs before writing the rule —
+don't ship a rule you're guessing at.
 
 ### Merge if the file already exists
 
@@ -222,9 +237,9 @@ outdated ones. Don't overwrite the whole file.
 ## Final report
 
 ```
-Step 1 — Codebase:
-  ✓ Init: apps/web (Next.js 14 App Router)
-  ✓ Init: apps/api (NestJS 10)
+Step 1 — Codebase (doc-driven):
+  ✓ Init: apps/web (Next.js 15 App Router — per official docs)
+  ✓ Init: apps/api (NestJS 11 — per official docs)
   ✓ Init: packages/ui
   → Skip: packages/db (already exists)
 
@@ -235,5 +250,5 @@ Step 2 — CLAUDE.md:
   ✓ packages/ui/CLAUDE.md
 
 Needs manual completion:
-  [List anything that couldn't be detected from config]
+  [List anything that couldn't be determined from docs or config]
 ```
