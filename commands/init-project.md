@@ -36,7 +36,10 @@ Extract from whichever file you find:
 - Monorepo tooling (pnpm workspaces, turborepo, nx…)
 - Database, external services
 
-If no file can be found → tell the user and stop.
+If no file can be found → the tech stack hasn't been decided yet. Don't guess it. Tell the user and
+suggest running **`/plan-stack`** first — it walks them through choosing the architecture + tech stack
+(grounded in their business docs) and writes `.sdlc/architecture.md`, which this command then reads. Offer
+to run it now; otherwise stop.
 
 ## Step 1 — Research, then init the codebase
 
