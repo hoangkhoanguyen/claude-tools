@@ -37,7 +37,12 @@ Adjust the sprint plan within a version when business logic changes mid-flight, 
    already done/in progress. Update dependencies if the order changed.
 
 4. **Do NOT touch** `.sdlc/<version>/<sprint>/` for sprints already done/in progress, unless the user
-   explicitly asks.
+   explicitly asks. That includes their `tasks.md` (Batch / `Tests:` / `Done when:` fields, Test Plan) and
+   `state.md` fields (`sprint_branch`, `test_layers_done`, `required_layers`, `migration_done`, `reviewer_passed`). If the user does ask to
+   regenerate tasks for an in-progress sprint, use `/sdlc:tasks` (done tasks keep their ID, Batch, `Tests:`).
+   Sprints planned before these fields existed (legacy: no Batch/Test Plan) keep working — the Test leg falls
+   back to `layer: all`. New and change-request sprints are planned normally by `/sdlc:run` and get the
+   full task format.
 
 5. **Self-review** (skill self-review): does every feature in the new docs have an owning sprint?
    Does the order respect dependencies? Is any in-progress sprint's state corrupted?

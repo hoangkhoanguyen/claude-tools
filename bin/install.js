@@ -607,6 +607,13 @@ function printSummary(counts, opts, base, target) {
   if (counts.skipped) parts.push(c.yellow(`${counts.skipped} skipped`));
   if (counts['up-to-date']) parts.push(c.dim(`${counts['up-to-date']} already up to date`));
   console.log(c.bold('Result: ') + (parts.length ? parts.join(c.dim(' · ')) : c.dim('nothing changed')));
+  if (counts.skipped && !opts.dryRun) {
+    console.log(c.yellow(
+      `\n⚠ ${counts.skipped} file(s) were skipped. agents/, commands/, skills/ and templates/ form ONE coupled workflow\n` +
+      '  (e.g. /sdlc:run passes `layer` to test-strategist, which an old copy does not understand).\n' +
+      '  Mixing old and new copies can break a sprint. Re-run with `--on-conflict backup` (or overwrite) so the whole\n' +
+      '  set is updated together, and merge your own edits from the .bak files.'));
+  }
 
   if (opts.dryRun) {
     console.log(c.yellow('\nThis was a DRY-RUN — nothing was written. Drop --dry-run to install for real.'));

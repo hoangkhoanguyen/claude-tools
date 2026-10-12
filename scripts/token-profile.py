@@ -38,6 +38,7 @@ def weight(u):
 def parse(path):
     """Stats for one transcript; assistant messages are de-duplicated by message id."""
     seen, times = {}, []
+    models = C.Counter()
     reads, images, edits, commits = C.Counter(), 0, C.Counter(), C.Counter()
     for line in open(path, errors='ignore'):
         try:
@@ -50,6 +51,8 @@ def parse(path):
         if d.get('type') == 'assistant':
             if msg.get('id') and msg.get('usage'):
                 seen[msg['id']] = msg['usage']
+                fam = re.search(r'(opus|sonnet|haiku)', msg.get('model') or '')
+                models[msg['id']] = fam.group(1) if fam else 'other'
             for c in msg.get('content') or []:
                 if not (isinstance(c, dict) and c.get('type') == 'tool_use'):
                     continue
@@ -79,8 +82,12 @@ def parse(path):
                              ('input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')))
     times.sort()
     dur = (ts(times[-1]) - ts(times[0])).total_seconds() if len(times) > 1 else 0
+    by_model = C.Counter()
+    for mid, u in seen.items():
+        by_model[models.get(mid, 'other')] += weight(u)
     return dict(turns=len(seen), w=weight(usage), peak=peak, dur=dur, reads=reads, images=images,
-                edits=edits, commits=commits, start=times[0] if times else None)
+                edits=edits, commits=commits, start=times[0] if times else None,
+                cr=usage['cache_read_input_tokens'], by_model=by_model)
 
 
 def main():
@@ -93,6 +100,9 @@ def main():
     by_type = C.defaultdict(lambda: dict(n=0, w=0.0, turns=0, dur=0.0, peaks=[], images=0,
                                          reads=C.Counter(), edits=C.Counter(), commits=C.Counter()))
     spawns = C.Counter()   # (session, parent, task) -> feature-builder spawns
+    model_w = C.Counter()
+    batch = C.defaultdict(lambda: [0, 0.0, 0])   # tasks-per-builder -> [spawns, weighted, turns]
+    sess_hours = []
     main_w = main_turns = 0
     sessions = 0
     for f in glob.glob(os.path.join(a.project_dir, '*.jsonl')):
@@ -105,6 +115,8 @@ def main():
         sessions += 1
         main_w += st['w']
         main_turns += st['turns']
+        model_w.update(st['by_model'])
+        sess_hours.append(st['dur'] / 3600)
         for sf in glob.glob(os.path.join(a.project_dir, sid, 'subagents', '*.jsonl')):
             mf = sf[:-6] + '.meta.json'
             meta = json.load(open(mf)) if os.path.exists(mf) else {}
@@ -117,22 +129,44 @@ def main():
             g['dur'] += s['dur']
             g['peaks'].append(s['peak'])
             g['images'] += s['images']
+            g['cr'] = g.get('cr', 0) + s['cr']
+            model_w.update(s['by_model'])
             g['reads'].update(s['reads'])
             g['edits'].update(s['edits'])
             g['commits'].update(s['commits'])
             if t == 'feature-builder':
+                n_tasks = max(1, len(set(re.findall(r'TASK-?\d+', meta.get('description', '')))))
+                b = batch[min(n_tasks, 4)]
+                b[0] += 1
+                b[1] += s['w']
+                b[2] += s['turns']
                 key = re.sub(r'\s*\(.*?\)|retry|attempt \d+|escalat\w*|opus|sonnet', '',
                              meta.get('description', ''), flags=re.I).strip()[:50]
                 spawns[(sid, meta.get('parentAgentId'), key)] += 1
 
     total = main_w + sum(g['w'] for g in by_type.values()) or 1
     print(f'sessions analysed: {sessions}   total weighted tokens: {total / 1e6:.1f}M')
-    print(f'\n{"agent":24s} {"n":>5s} {"share":>6s} {"avg M":>7s} {"turns":>6s} {"peak ctx":>9s} {"avg min":>8s} {"img":>5s}')
+    print(f'\n{"agent":24s} {"n":>5s} {"share":>6s} {"avg M":>7s} {"turns":>6s} {"peak ctx":>9s} {"avg min":>8s} {"img":>5s} {"cache-rd":>8s}')
     print(f'{"(main conversation)":24s} {"":>5s} {main_w / total * 100:5.1f}% {"":>7s} {main_turns:6d}')
     for t, g in sorted(by_type.items(), key=lambda kv: -kv[1]['w']):
         peaks = sorted(g['peaks'])
         print(f'{t:24s} {g["n"]:5d} {g["w"] / total * 100:5.1f}% {g["w"] / g["n"] / 1e6:7.2f} '
-              f'{g["turns"] / g["n"]:6.0f} {peaks[len(peaks) // 2] // 1000:8d}k {g["dur"] / g["n"] / 60:8.1f} {g["images"]:5d}')
+              f'{g["turns"] / g["n"]:6.0f} {peaks[len(peaks) // 2] // 1000:8d}k {g["dur"] / g["n"] / 60:8.1f} {g["images"]:5d} '
+              f'{0.1 * g.get("cr", 0) / max(g["w"], 1) * 100:7.0f}%')
+
+    tw = sum(model_w.values()) or 1
+    print('\nWeighted tokens by model: ' + ', '.join(f'{k} {v / tw * 100:.0f}%' for k, v in model_w.most_common()))
+    if sess_hours:
+        sh = sorted(sess_hours)
+        print(f'Session wall-clock hours: median {sh[len(sh) // 2]:.1f}, max {sh[-1]:.1f} '
+              f'(includes time spent waiting for you)')
+    fb = by_type.get('feature-builder')
+    if fb and batch:
+        print('\nfeature-builder by tasks-per-spawn (batch size, parsed from the spawn description):')
+        for k in sorted(batch):
+            n, w, tu = batch[k]
+            tasks = k * n
+            print(f'  {k}{"+" if k == 4 else " "} task(s): spawns={n:4d}  M/task={w / tasks / 1e6:5.2f}  turns/task={tu / tasks:5.1f}')
 
     print('\nSpec-file Reads per agent (avg per agent):')
     for t in ('feature-builder', 'test-strategist', 'implement-coordinator', 'qa-guard'):

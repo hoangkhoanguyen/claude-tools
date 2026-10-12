@@ -158,15 +158,18 @@ The plugin writes everything to the `.sdlc/` directory in your project (committa
 | Agent | `product-analyst` | Requirements → user stories, AC, business rules, edge cases, NFR, regression |
 | Agent | `architect` | System design: API, DB, architecture, UI flow, NFR, regression-safe |
 | Agent | `preflight-scout` | Reads config → service table with ports + status + startup commands + migrate commands (read-only) |
-| Agent | `implement-coordinator` | Runs the full implement leg of a sprint: splits waves, delegates **batches** of related tasks, commits per task, writes state — context-isolated from main conversation; runs no repo-wide checks (that is the Test leg's job) |
+| Agent | `implement-coordinator` | Runs the full implement leg of a sprint: splits waves, delegates **batches** of related tasks, commits per task, writes state — context-isolated from main conversation; runs no repo-wide tests/lint/build, only one cheap whole-repo typecheck per wave (the rest is the Test leg's job) |
 | Agent | `feature-builder` | Implements a batch of tasks (code + the unit/API tests each task owns) and reports per task, plus a code map for the next builder (state + commit written by caller) |
 | Agent | `test-strategist` | Runs per layer (`integration` → `ui`, or `all` for small sprints): owns integration/e2e/visual tests, fills coverage gaps against the Test Plan; self-closes fix loop + commits |
 | Agent | `qa-guard` | Final gate. **Lite** by default (clean-code scan, regression, Definition of Done, coverage check); **full** for auth/payment/PII sprints or when the Test leg changed source code; self-closes fix loop + commits |
 | Agent | `ui-designer` | Design source (external / DESIGN.md / existing app / ask user) → tokens, component spec, Design AC (when UI is involved) |
-| Agent | `reviewer` | Independent cross-check of analyze/design/ui-design output against input |
+| Agent | `task-breakdown` | Turns design (+ UI design) into `tasks.md` with batches, Test Plan and expected-value tests (the `architect` does this itself for sprints without screens) |
+| Agent | `reviewer` | Independent cross-check of analyze/design/ui-design/tasks output against input |
 | Skill | `requirements-analysis` | Output standard for the analyze phase |
 | Skill | `system-design` | Output standard for the design phase |
 | Skill | `task-breakdown` | How to break down tasks correctly without missing AC |
+| Skill | `failure-ladder` | The single retry/escalation ladder (5 Sonnet rounds + 1 Opus round) shared by implement, test and QA fix loops |
+| Skill | `codex-dispatch` | Optional Codex CLI offload for `Difficulty: normal` batches (loaded only when you opt in) |
 | Skill | `test-strategy` | Test decision table by feature type |
 | Skill | `design-fidelity` | Compares UI against DESIGN.md: tokens, contrast, responsive, dark/light |
 | Skill | `self-review` | Self-review checklist after each phase |
@@ -214,7 +217,7 @@ Sprints are designed to run in one continuous pass without pausing for approval 
 | Role | Model |
 |---|---|
 | Main session running `/sdlc:*` | **Opus** — you set this with `/model` |
-| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` → runs the exact Opus version you chose |
+| `product-analyst`, `architect`, `ui-designer`, `task-breakdown`, `reviewer` | `inherit` → runs the exact Opus version you chose |
 | `preflight-scout`, `implement-coordinator`, `feature-builder`, `test-strategist`, `qa-guard` | **Sonnet** (hard-pinned) |
 
 The subagent model is declared in each agent's `agents/*.md` frontmatter, so **this policy travels with the plugin when installed into another project** — no extra configuration needed. You just need to activate Opus for the main session with `/model` before running `/sdlc:sprint-plan`.
@@ -223,11 +226,11 @@ Phases 1-3 use `inherit` instead of pinning `opus` to respect the exact Opus ver
 
 ### When Opus Gets Called Into the Execute Leg
 
-The orchestrating agent promotes `feature-builder` to Opus autonomously, counted **per task / per failure point**:
+The orchestrating agent promotes `feature-builder` to Opus autonomously, counted **per batch / per failure point**:
 
 - Attempts 1-5 on Sonnet (each attempt respawns with the history of what was tried) → attempt 6 on Opus → still not done → `BLOCKED`.
 - **Early escalation** if three consecutive attempts fail identically — repeating the same wrong direction generates no new information.
-- **Opus from attempt 1** only for tasks marked `Difficulty: high` in `tasks.md` — now a narrow set: non-trivial algorithms, concurrency/idempotency/distributed transactions, cryptography/session-security design, and migrations that rewrite existing data. Ordinary CRUD/service/UI work is `normal`; if a `normal` task fails, the retry ladder escalates to Opus anyway.
+- **Opus from attempt 1** only for tasks marked `Difficulty: high` in `tasks.md` — now a narrow set: non-trivial algorithms, concurrency/idempotency/distributed transactions, cryptography/session-security design, migrations that rewrite existing data, permission/authorization logic, money/rounding/tax/currency math, timezone/calendar arithmetic, and rules an edge case marks as boundary-sensitive. Ordinary CRUD/service/UI work is `normal`; if a `normal` task fails, the retry ladder escalates to Opus anyway.
 - `DESIGN_GAP` / `NEEDS_SERVICE` **do not count** against the attempt limit — a bigger model can't guess missing intent, and switching models when a service is down is pointless.
 
 ### Changing the Policy for Your Project
@@ -274,14 +277,14 @@ If a sprint has no screens, this branch shuts off automatically.
 
 Measured on ~33 real sprints (see `scripts/token-profile.py`), the plugin keeps its quality gates but cuts duplicated work:
 
-- **Batches**: `task-breakdown` groups related tasks (same module, max 4) so one `feature-builder` handles them and commits per task — fewer cold starts. Builders pass a short code map forward so the next one doesn't re-explore.
+- **Batches**: `task-breakdown` groups related tasks (dependency-chained or sharing files, max 3 — 2 for UI tasks) so one `feature-builder` handles them and commits per task — fewer cold starts. Builders pass a short code map forward so the next one doesn't re-explore.
 - **Tests are planned up front**: the planning phase produces a **Test Plan** (AC/EC → unit/api/integration/e2e/visual/manual). Unit/API tests are written by the builder together with the code; the Test leg covers integration/e2e/visual and runs per layer with a smaller context.
 - **Lean QA**: `qa-guard` trusts a green full test run at the same commit instead of repeating it; the full checklist still runs for sensitive sprints or when tests had to fix source.
 - **Early service check**: `/sdlc:run` asks which services to start (and the Codex question) once, at the start, so you can walk away.
 - **Planning in one pass**: for sprints without screens the `architect` writes `design.md` and `tasks.md` together; sprints with screens keep a separate task pass so tasks carry the UI Design AC.
-- **Optional pipeline** (off by default): when several sprints are independent, the next sprint's analyze/design/tasks can run while the current one executes.
+- **Optional pipeline** (off by default): only when you explicitly say "pipeline" / "song song" and the sprints are independent, the next sprint's analyze/design/tasks run while the current one executes. A plain list like "sprint 22,23,24" runs strictly one after another.
 
-To measure the effect of any change: `python3 scripts/token-profile.py ~/.claude/projects/<encoded-project-path>` before and after, and watch the quality signals it prints (retries, source fixes made by the Test/QA legs).
+To measure the effect of any change: `python3 scripts/token-profile.py ~/.claude/projects/<encoded-project-path>` (run from a clone of this repo; it is not installed into projects) before and after, and watch the quality signals it prints (retries, source fixes made by the Test/QA legs).
 
 ## The "No Minor Bugs During Manual Test" Guarantee
 
@@ -291,6 +294,6 @@ Before declaring a sprint done, `qa-guard` ensures:
 - API endpoints have been smoke-tested (no 500s / failed calls)
 - No unhandled exceptions, no hardcoded credentials, no leftover TODOs
 - Every edge case defined in requirements has handling + a test
-- Walking through the happy path of each user story hits no errors
+- Each user story is either covered by an end-to-end/integration test or walked through by QA — no errors on the happy path
 
 → The final report clearly separates 3 groups: **automatically covered** / **needs your manual verification** / **undefined edge cases** (if any).

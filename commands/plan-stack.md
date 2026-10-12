@@ -114,7 +114,7 @@ into main context, and the plugin's rule is that `architect` owns writing this f
 choices, pinned versions, compatibility flags, integrations) and have it:
 - Create `.sdlc/` at the **repo root** if missing (never nested in a sub-app), write/**merge**
   `.sdlc/architecture.md` (keep settled decisions, update only what changed) in the structure below,
-- Apply the `.gitignore` convention on first `.sdlc/` creation (`.sdlc/*/*/visual-baseline/`) and commit,
+- Apply the `.gitignore` convention on first `.sdlc/` creation (`.sdlc/*/*/visual-baseline/` and `.sdlc/*/*/.coordinator/`) and commit,
 - Return a **short Human Review summary** (not the file body) for you to relay in Step 6.
 
 The file it writes is the single source of truth BOTH `/init-project` (to scaffold) and the SDLC design

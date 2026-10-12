@@ -16,14 +16,14 @@ real money, subjective UX judgment). Everything else must be tested automaticall
 ## Who owns which test
 
 The planning phase writes a **Test Plan** at the top of the Agent-Reference part of `tasks.md`:
-`AC/EC/NFR/DAC id → level (unit | api | integration | e2e | visual | manual) → owner`, following the table below.
+`AC/EC/NFR/DAC id → level (unit | api | integration | e2e | visual | manual) → owner`, following the table below
+(DAC-xx = Design Acceptance Criteria in `ui-design.md`; owner = `task:<TASK-id>` or `test-strategist`).
 
 - **unit and api tests are owned by the TASK** — the builder writes and runs them together with the code
-  (each task's `Tests:` field). The Test leg does NOT re-write them; it verifies they exist and cover the plan,
-  and fills only genuine gaps.
-- **integration / e2e / visual / manual are owned by the Test leg** (`test-leg`). The Test leg runs by layer:
-  `integration` (api/integration/3rd-party/webhook/DB side effects + gap-filling), `ui` (Playwright e2e +
-  visual fidelity, only if the sprint has UI), or `all` (single pass for small sprints).
+  (each task's `Tests:` field). The `test-strategist` agent verifies them and fills only genuine gaps.
+- **integration / e2e / visual / manual are owned by `test-strategist`**, which runs by layer (`integration`,
+  `ui`, `all`) as defined in `agents/test-strategist.md` — that file also holds the ownership reconciliation,
+  commit, green-run-sha and mutation-check rules.
 
 ## Decision table by feature type
 
@@ -34,7 +34,7 @@ The planning phase writes a **Test Plan** at the top of the Agent-Reference part
 | UI flow (no 3rd party) | Drive the browser: navigate/fill/click/assert | Playwright (pre-installed) |
 | Flow with a 3rd party (OAuth, payment) | Browser + sandbox/test mode | Playwright + Stripe test keys / OAuth sandbox |
 | Webhook / async | Trigger + mock callback + verify the side effect | test runner + DB/state checks |
-| UI with a design (DESIGN.md/ui-design.md) | Visual verification: screenshots checked against Design AC + baseline | Playwright + skill `design-fidelity` |
+| UI with a design (DESIGN.md/ui-design.md) | Visual verification: Playwright screenshots per DAC-xx (tokens, contrast, responsive, dark/light) checked against the baseline | Playwright + skill `design-fidelity` |
 | Requires a real human (SMS OTP, Face ID, real money) | Can't be automated → list for manual verification | — |
 
 ## Environment coordination
@@ -54,8 +54,8 @@ requirements include Regression Impact → add tests / re-walk the happy path of
 ## Actually run them, don't assume
 
 Once tests are written they MUST be run. Fail → fix → re-run until green. Smoke test the main endpoints: no 500s.
-Record the HEAD sha of the green full run (suite + typecheck + lint) in `test-report.md` so QA can skip
-re-running it.
+Mark each AC/EC row `verified: run|read`. Expected values in a test come from the spec, not from what the code
+currently outputs. Triage any red result against commit history before spawning a fix.
 
 ## Self-review checklist before finalizing
 

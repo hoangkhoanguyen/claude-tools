@@ -40,32 +40,34 @@ You are a subagent — you start cold and inherit no context from the parent. Yo
 1. **Sprint Goal & Scope** — what this sprint delivers, and for whom. List ✅ In scope / ❌ Out of scope clearly.
 2. **Open Questions** — ambiguities the user must decide. If the user doesn't answer, state the assumption you'll use.
 3. **Key Assumptions** — decisions you made yourself from the business logic to move forward. The user can override.
+4. **`has_ui: yes|no`** — one line: does this sprint have any screens / visual states (UI scope)? It decides the
+   planning path (UI branch or not) and the test layers, so answer it from the stories, not from a guess.
 
 ### PART 2 — Agent Reference (the rest)
 
-4. **User Stories + Acceptance Criteria** — each story as "As [role], I want [action], so that [value]".
+5. **User Stories + Acceptance Criteria** — each story as "As [role], I want [action], so that [value]".
    Each AC written testably as: `GIVEN [state] WHEN [action] THEN [result]`. Numbered (Story-01, AC-01.1…).
-5. **Business Rules** — exhaustive, as numbered rules, NOT prose:
+6. **Business Rules** — exhaustive, as numbered rules, NOT prose:
    ```
    RULE-01: <explicit constraint/condition/formula>
    ```
-6. **Data Entities & Constraints** — per entity: name, important fields, constraints (required/unique/format),
+7. **Data Entities & Constraints** — per entity: name, important fields, constraints (required/unique/format),
    relationships. Described in natural language, not yet a DB schema.
-7. **Edge Cases Registry** — tied to specific rules/stories:
+8. **Edge Cases Registry** — tied to specific rules/stories:
    ```
    EC-01 [RULE-03]: <abnormal situation> → <expected behavior>
    ```
-8. **Integration Touchpoints** — external APIs/services/other modules this sprint depends on: what's needed,
+9. **Integration Touchpoints** — external APIs/services/other modules this sprint depends on: what's needed,
    who calls whom, error cases to handle.
-9. **Non-functional Requirements (NFR)** — non-functional requirements applying to this sprint: performance
+10. **Non-functional Requirements (NFR)** — non-functional requirements applying to this sprint: performance
    (thresholds if any), security (authz/authn, sensitive data, validation), accessibility (if UI), i18n,
    load limits. Only record what's TRULY relevant to the sprint; number them `NFR-01`… so design/test can
    reference them.
-10. **Regression Impact** (ONLY when adding a feature to an existing codebase) — list EXISTING
+11. **Regression Impact** (ONLY when adding a feature to an existing codebase) — list EXISTING
    features/modules this sprint might affect (shared DB tables, shared endpoints, shared components,
    changes to shared logic). For each, state clearly what "must not break" so qa-guard can run the
    regression happy path. Read the codebase to find these, don't guess.
-11. **Definition of Done** — sprint-level conditions for being complete (distinct from per-story AC),
+12. **Definition of Done** — sprint-level conditions for being complete (distinct from per-story AC),
    including NFRs + no regression of existing features.
 
 ## Self-review before writing the file (REQUIRED)
@@ -77,4 +79,5 @@ Ask yourself and fix BEFORE finishing:
 - "Which Open Questions could I actually resolve safely myself?" → move them to Key Assumptions.
 
 Only write the file once you've passed the checklist above. Finish with a short summary: the number of
-stories/rules/ECs, and the Open Questions the user should look at.
+stories/rules/ECs, and the Open Questions the user should look at. The block you return to the caller
+MUST include the `has_ui: yes|no` line (the orchestrator reads it from there and never opens requirements.md).

@@ -66,7 +66,10 @@ repeat the reminder in later commands.
    add to the project's `.gitignore`:
    ```
    .sdlc/*/*/visual-baseline/
+   .sdlc/*/*/.coordinator/
    ```
+   (`.coordinator/` holds the implement-coordinator's working notes: code maps, attempt history, builder
+   checkpoints.)
    Everything else in `.sdlc/` is committed — it's the project's living documentation, tracked by the
    whole team through git.
 

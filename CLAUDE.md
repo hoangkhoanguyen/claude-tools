@@ -46,6 +46,7 @@ apply the principles below to EVERY `/sdlc:*` command.
     (`/sdlc:sprint-plan`), add this line to the project's `.gitignore` to exclude the heavy/unnecessary part:
     ```
     .sdlc/*/*/visual-baseline/
+    .sdlc/*/*/.coordinator/
     ```
     Everything else (`versions.md`, `sprints.md`, `state.md`, `architecture.md`, `design-system.md`, and
     every `requirements.md`, `design.md`, `ui-design.md`, `tasks.md`, `test-report.md`) gets committed —
@@ -74,7 +75,7 @@ apply the principles below to EVERY `/sdlc:*` command.
 - **Subagents (Agent tool)**: each phase should spawn its corresponding specialized agent
   (product-analyst, architect, implement-coordinator → feature-builder, test-strategist, qa-guard).
   The implement leg is handed off ENTIRELY to `implement-coordinator` — it is the sole writer (commits,
-  `tasks.md`, `state.md`) and assigns each task to `feature-builder` itself, so the main conversation
+  `tasks.md`, `state.md`) and assigns each batch of tasks to `feature-builder` itself, so the main conversation
   spends no context on the report-commit-write-state loop. By the same principle, `test-strategist` and
   `qa-guard` close their OWN fix loops (max 5 Sonnet rounds + 1 Opus escalation round, then stop) and
   commit THEMSELVES — the main conversation never orchestrates a fix loop or touches the git index while
@@ -104,7 +105,7 @@ pass a `model` parameter when spawning, so it never overrides the policy.
 | Role | Model | Why |
 |---|---|---|
 | Main conversation (`/sdlc:*`) | user's choice — should be **Opus** | Holds every decision + approval gate, lives across all 6 phases |
-| `product-analyst`, `architect`, `ui-designer`, `reviewer` | `inherit` | Phases 1-3: one mistake here is inherited by every later phase → run the exact model the user chose |
+| `product-analyst`, `architect`, `ui-designer`, `task-breakdown`, `reviewer` | `inherit` | Phases 1-3: one mistake here is inherited by every later phase → run the exact model the user chose |
 | `preflight-scout` | sonnet | Reading config, pinging ports — mechanical work |
 | `implement-coordinator` | sonnet | Splitting waves + committing + writing state, following an existing process |
 | `feature-builder` | sonnet | Has the design + a clear task spec in hand |
@@ -124,7 +125,7 @@ the entire execution leg up to Opus and erase the speed/cost benefit this design
 
 The orchestrating agents (`implement-coordinator`, `test-strategist`, `qa-guard`) promote
 `feature-builder` to Opus themselves via the `model` parameter of the `Agent` tool. The budget is counted
-**per task / per failure point**, not pooled across the sprint:
+**per batch (per failure point)**, not pooled across the sprint:
 
 - **Attempts 1-5: Sonnet.** On each failure, respawn including the **history of what was tried** — the
   agent cold-starts every time, and without the history it repeats the same mistakes and burns the entire
@@ -134,7 +135,8 @@ The orchestrating agents (`implement-coordinator`, `test-strategist`, `qa-guard`
   Opus immediately, don't wait for all 5. Repeating a wrong approach produces no new information.
 - **Use Opus from the first attempt** only when a task is marked `Difficulty: high` — a narrow rating set by
   `task-breakdown` (non-trivial algorithms, concurrency/idempotency/distributed transactions, cryptography /
-  session-security design, data-rewriting migrations): work where being slightly wrong fails silently and
+  session-security design, data-rewriting migrations, permission/authorization decision logic, money/rounding/
+  tax/currency math, timezone/calendar arithmetic, boundary-sensitive rules): work where being slightly wrong fails silently and
   tests struggle to catch it. Everything else starts on Sonnet; the ladder escalates on failure.
 - **`DESIGN_GAP` and `NEEDS_SERVICE` do NOT count against the budget.** A bigger model can't guess intent
   from a missing design, and switching models is meaningless when a service isn't running. Stop and fix
@@ -203,7 +205,9 @@ conversation only passes paths + slugs + the Human Review blocks it receives bac
   Need to patch `design.md` after a `DESIGN_GAP`? → the decision belongs to the main conversation, but
   **`architect` does the writing**.
 
-Permitted exceptions to writing: pre-flight (`services_up`) and handoff (`sprints.md`, `versions.md`).
+Permitted exceptions to writing: pre-flight (`services_up` / `services_up_sprint`, `sprint_branch`, `migration_done`,
+`required_layers`, and the `NEEDS_SERVICE` recovery write — only while no execution agent is running), the
+`docs(<sprint>): planning artifacts` commit before Execute, and handoff (`sprints.md`, `versions.md`).
 
 ## Choosing a test strategy (auto-detected)
 
@@ -218,13 +222,14 @@ sensitive sprints or when the Test leg had to fix source code.
 
 ## Cost discipline (measured, keep it that way)
 
-Profile with `scripts/token-profile.py` before/after any workflow change. Measured on ~33 sprints:
-`feature-builder` 48% of tokens, `test-strategist` 13%, `implement-coordinator` 13%, `qa-guard` 4%, retries ≈ 0.
-Principles: fewer cold starts (batches of ≤ 4 related tasks, code map relayed between builders), shorter
-contexts (Test leg by layer), no duplicated checks (the coordinator runs no repo-wide checks; QA trusts a
-green full run at the same HEAD sha), `Difficulty: high` only for genuinely hard work. Never trade away a gate
-that catches real bugs: quality signals (retries, source fixes in Test/QA legs, bugs found in manual test)
-must not get worse.
+Measured on ~33 real sprints: `feature-builder` 48% of tokens, `test-strategist` 13%, `implement-coordinator` 13%,
+`qa-guard` 4%, retries ≈ 0. Principles: fewer cold starts (batches of ≤ 3 related tasks — dependency-chained or
+sharing files — with the code map relayed between builders), shorter contexts (Test leg by layer when there is UI),
+no duplicated checks (the coordinator runs one cheap typecheck per wave and no repo-wide tests/lint/build; QA
+trusts a green full run while no source changed since its recorded sha), `Difficulty: high` only for genuinely hard
+work. Never trade away a gate that catches real bugs: quality signals (retries, source fixes in Test/QA legs, bugs
+found in manual test) must not get worse. Maintainers can profile a real project with
+`scripts/token-profile.py` from a clone of the plugin repo (it is not installed into projects).
 
 ## When to ask the user
 

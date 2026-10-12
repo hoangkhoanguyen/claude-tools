@@ -10,26 +10,30 @@ Run the task breakdown phase alone for sprint `$2` in version `$1`
 
 Requires `.sdlc/<version>/<sprint>/design.md` to exist (run `/sdlc:design` first if not).
 
-**Do NOT Glob CLAUDE.md / Read design.md / architecture.md yourself.** Spawn a subagent (with skill
-`task-breakdown`) — it loads the relevant CLAUDE.md files per the File Change Plan in `design.md`, reads
-`architecture.md`, and runs `self-review` itself before returning the file.
+**Do NOT Glob CLAUDE.md / Read design.md / architecture.md yourself.** Spawn the subagent
+`task-breakdown` (it uses the skill of the same name) — it loads the relevant CLAUDE.md files per the File
+Change Plan in `design.md`, reads `architecture.md`, `ui-design.md` (if present) and `requirements.md`, and runs
+its self-review itself before returning the file.
 
 ## Documentation only — NO execution
 
 This phase **only breaks down tasks and writes documentation**. No code implementation, no service
 pre-flight. Execution starts with `/sdlc:task` (one task at a time, manually) or `/sdlc:execute`
-(the whole sprint, sequentially).
+(the whole sprint to completion).
 
 ## Process
 
-The subagent writes `.sdlc/<version>/<sprint>/tasks.md` with a Test Plan (AC/EC/NFR/DAC → level → owner),
-the tasks (status `todo`, each with `Batch` and `Tests:`), dependencies, markers for tasks that can run in
+The `task-breakdown` subagent writes `.sdlc/<version>/<sprint>/tasks.md` with a Test Plan (AC/EC/NFR/DAC → level → owner, where DAC = Design Acceptance Criteria from `ui-design.md`),
+the tasks (status `todo`, each with `Batch`, `Tests:` carrying concrete expected values, and `Done when:`), dependencies, markers for tasks that can run in
 parallel, and an AC/EC → task table. (Within `/sdlc:run`, `architect` writes tasks.md together with
-design.md in one pass; this command is for regeneration / replan or standalone use.) It returns a Human Review block
-to relay + a short list of IDs/descriptions for the main conversation to sync into TodoWrite (do not
-Read all of `tasks.md`).
+design.md in one pass on no-UI sprints, and the `task-breakdown` agent writes it on UI sprints; this command is
+for regeneration / replan or standalone use. If it runs on a sprint whose gates were already approved, tasks.md
+changed, so remove `tasks` from `reviewer_passed` in state.md.) **Regeneration when done tasks exist:** keep each done task's
+ID, `Batch`, and `Tests:` untouched; amend only the unfinished tasks. It returns a status line (`DONE` / `DESIGN_GAP`), a
+Human Review block to relay, and a short list of IDs/descriptions for the main conversation to sync into
+TodoWrite (do not Read all of `tasks.md`). On `DESIGN_GAP`, have `architect` patch `design.md`, then re-run.
 
-Update `.sdlc/<version>/state.md`.
+Update `.sdlc/<version>/state.md` (`tasks: done`, `current_phase`).
 
 ## Generating command shortcuts
 

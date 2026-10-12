@@ -54,14 +54,20 @@ the sprint adds/changes shared foundational components (auth, core schema, new c
 ## Modes
 
 - **Design only (standalone `/sdlc:design`)**: write `design.md` only, as described above.
-- **Design + tasks (when `/sdlc:run` asks, i.e. the prompt says to also write tasks.md)**: in the SAME
+- **Design + tasks (when `/sdlc:run` asks, i.e. the prompt says to also write tasks.md — NO-UI sprints only,
+  `has_ui: no`; on a UI sprint you are design-only and a task-breakdown subagent writes tasks.md later)**: in the SAME
   invocation, after `design.md` is complete, also write `.sdlc/<version>/<sprint>/tasks.md` by following the
-  `task-breakdown` skill (load it): Test Plan (per the `test-strategy` decision table), `Batch`, `Tests`, and
-  the tightened `Difficulty` rule, plus the AC/EC/NFR/DAC → task table. If `ui-design.md` exists, read it so
-  every DAC-xx is owned. Don't re-read the codebase from scratch for this step — reuse what you learned
+  `task-breakdown` skill (load it): Test Plan (per the `test-strategy` decision table), `Batch` (acyclic batch
+  graph), `Tests` (concrete expected values taken from your API Contracts / the EC text), `Done when`, and
+  the skill's `Difficulty` rule, plus the AC/EC/NFR/DAC → task table (DAC = Design Acceptance Criteria from
+  `ui-design.md`; a no-UI sprint has none). If `ui-design.md` exists anyway, read it so every DAC-xx is owned. Don't re-read the codebase from scratch for this step — reuse what you learned
   while designing; the File Change Plan is the basis for splitting tasks and batches.
-- **Revision (user asked for design changes at the design gate)**: revise `design.md` AND regenerate
-  `tasks.md` (when in design + tasks mode) so the two never drift apart.
+- **Revision (user asked for design changes at the design gate, or the reviewer returned NEEDS_FIX on
+  design.md)**: revise `design.md` AND regenerate `tasks.md` (when in design + tasks mode) so the two never
+  drift apart. Feedback about `ui-design.md` is NOT yours — it goes to `ui-designer`.
+- **DESIGN_GAP patch (the caller reports a gap found during execution)**: patch `design.md` only for the gap.
+  On a no-UI sprint, then amend `tasks.md` for UNFINISHED tasks only — `done` tasks keep their ID, `Batch` and
+  `Tests:` untouched — and return what changed. (On a UI sprint the `task-breakdown` agent amends tasks.md.)
 
 ## Self-review before writing the file (REQUIRED)
 
@@ -73,10 +79,11 @@ the sprint adds/changes shared foundational components (auth, core schema, new c
 
 When also writing `tasks.md`, self-review covers BOTH files (run the `task-breakdown` checklist too):
 
-- "Does every AC/EC/NFR (and DAC) have an owning task or a `test-leg` item in the Test Plan?"
-- "Does every task have a `Batch` (≤ 4 tasks, same module, dependency-compatible; `high` = batch of 1) and a
-  `Tests:` field (or `none` + reason)?"
-- "Is every `Difficulty: high` genuinely within the tightened list? When unsure → `normal`."
+- "Does every AC/EC/NFR (and DAC) have an owning task (`task:<TASK-id>`) or a `test-strategist` item in the Test Plan?"
+- "Does every task have a `Batch` (≤ 3 tasks, ≤ 2 if it contains a UI task; chained or file-sharing only; same module;
+  dependency-compatible; acyclic batch graph; `high` = batch of 1) and a `Tests:` field with concrete expected
+  values (or `none` + reason)?"
+- "Is every `Difficulty: high` genuinely within the skill's `high` list? When unsure → `normal`."
 - "Does tasks.md stay consistent with design.md (File Change Plan, API Contracts, Data Model)?"
 
 Only write the file once the mapping table in section 8 covers 100% of the RULEs and ECs. Finish with a
@@ -84,5 +91,5 @@ summary: the number of endpoints and entities, and the Tech Decisions the user s
 
 In design + tasks mode, also return to the caller: (1) the design Human Review block and (2) a Human
 Review block for tasks (task count, batch/wave overview, parallelizable parts, tasks marked `high` + why,
-items owned by `test-leg`) plus the list of task IDs + one-line descriptions (so the caller can sync
+items owned by `test-strategist`) plus the list of task IDs + one-line descriptions (so the caller can sync
 TodoWrite without reading tasks.md). The caller relays these verbatim.

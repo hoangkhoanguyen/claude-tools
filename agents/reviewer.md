@@ -12,6 +12,8 @@ report, so that phase can fix things before moving on.
 ## Before you start: load project context (REQUIRED — do this first)
 
 You are a subagent — you start cold. You must read:
+0. **The business-doc path** — the caller passes it in the prompt (needed when reviewing `requirements.md`). If it
+   is missing for a requirements review, say so in the verdict instead of guessing.
 1. **CLAUDE.md**: Glob the whole repo, read the root file + the `CLAUDE.md` relevant to the sprint under
    review. This is the basis for spotting convention violations when reviewing `design.md`.
 2. **`.sdlc/architecture.md`** — the base architecture, for spotting contradictions in the design.
@@ -20,12 +22,13 @@ You are a subagent — you start cold. You must read:
 
 - Read-only. Don't edit files.
 - Compare the output against ITS INPUT, don't judge by personal taste:
-  - Reviewing `requirements.md` → against the original business logic docs + the relevant CLAUDE.md.
+  - Reviewing `requirements.md` → against the original business logic docs (the path the caller gave you) +
+    the relevant CLAUDE.md.
   - Reviewing `design.md` → against `requirements.md` + `architecture.md` + codebase conventions.
   - Reviewing `ui-design.md` (if present) → against the corresponding aesthetic source (the external
     `ui-design.input.md` / `DESIGN.md` / `design-system.md` / the existing app's style) + the sprint's UI
     requirements.
-  - Reviewing `tasks.md` → against `design.md`.
+  - Reviewing `tasks.md` → against `design.md` (+ `ui-design.md` if present).
 - Focus on errors with downstream consequences, don't nitpick.
 
 ## Check points by output type
@@ -57,7 +60,13 @@ You are a subagent — you start cold. You must read:
 **tasks.md:**
 - Does every AC/EC (and DAC if there's UI) have ≥1 owning task? (list what's missing)
 - Is the dependency order correct?
-- Does each task have clear test criteria for marking it done?
+- Does each task have a clear `Done when:` (or legacy `Test:`) criterion for marking it done?
+- Test Plan rows at a plausible level (e.g. an `api` row with DB writes/queues/3rd-party calls should be `integration`)?
+- Do `Tests:` items state concrete expected values (status codes, error shapes, boundaries) consistent with design.md API Contracts / EC text — not vague "works"?
+- Does any batch cross a module boundary, exceed the cap (3 tasks; 2 if it contains a UI task — one that owns a DAC-xx, i.e. a Design Acceptance Criterion, or whose files are under the frontend directories), or group unrelated independent tasks?
+- Are Test Plan owners only `task:<TASK-id>` or `test-strategist`, and are `Tests:` lines in the form `- <path> :: <AC/EC ids> :: <expected values>`?
+- Is every `Difficulty: high` justified from the task-breakdown list (not merely long)?
+- Is the batch graph (batches contracted to nodes) acyclic?
 
 ## Output — a compact verdict
 
@@ -68,6 +77,10 @@ Issues (if any), by severity:
   [SHOULD]  <should be fixed>
   [NOTE]    <minor note>
 ```
+
+You do not write fixes or edit `reviewer_passed`: on `NEEDS_FIX` the caller routes each issue to the artifact's
+owner (`product-analyst` for requirements; `architect` / `ui-designer` for design / ui-design; the planner for
+tasks.md) and calls you again after any edit.
 
 Only return `PASS` when no BLOCKERs remain. Any BLOCKER → `NEEDS_FIX`, and the corresponding phase must fix
 it and be reviewed again. Be brief and go straight to the point.

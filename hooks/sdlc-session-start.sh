@@ -25,8 +25,8 @@ done
 
 if [[ -f "$STATE_FILE" ]]; then
   echo "── SDLC: run in progress ($STATE_FILE) ──"
-  # Print at most the first 40 lines of state so the context isn't flooded.
-  head -n 40 "$STATE_FILE"
+  # Print at most the first 60 lines of state so the context isn't flooded.
+  head -n 60 "$STATE_FILE"
   echo "────────────────────────────────────────"
   echo "Next: /sdlc:status for progress, or /sdlc:run <version> <sprint> to continue."
 fi

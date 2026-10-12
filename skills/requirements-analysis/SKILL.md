@@ -15,16 +15,18 @@ downstream agents never have to guess.
 1. Sprint Goal & Scope (✅ in scope / ❌ out of scope)
 2. Open Questions (ambiguities the user must decide)
 3. Key Assumptions (decisions made independently, overridable by the user)
+4. `has_ui: yes|no` (does the sprint have screens / visual states — decides the planning path and test layers;
+   also repeated in the Human Review block returned to the caller)
 
 **PART 2 — Agent Reference (the details):**
-4. User Stories + AC
-5. Business Rules
-6. Data Entities & Constraints
-7. Edge Cases Registry
-8. Integration Touchpoints
-9. Non-functional Requirements (NFR-xx): performance / security / a11y / i18n — only what's relevant to the sprint
-10. Regression Impact (only when adding to an existing codebase): existing features/modules that may be affected
-11. Definition of Done (including NFRs + no regressions)
+5. User Stories + AC
+6. Business Rules
+7. Data Entities & Constraints
+8. Edge Cases Registry
+9. Integration Touchpoints
+10. Non-functional Requirements (NFR-xx): performance / security / a11y / i18n — only what's relevant to the sprint
+11. Regression Impact (only when adding to an existing codebase): existing features/modules that may be affected
+12. Definition of Done (including NFRs + no regressions)
 
 ## Quality rules
 
@@ -51,3 +53,4 @@ Assumptions recorded                 → the user catches wrong inferences
 - [ ] Does every story have testable AC? Does every rule have related edge cases?
 - [ ] Any requirement invented beyond the source? (delete it)
 - [ ] Any Open Question that could be resolved safely? (move to Assumptions)
+- [ ] Is `has_ui: yes|no` stated in the Human Review block?
