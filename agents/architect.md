@@ -51,6 +51,18 @@ Read `.sdlc/architecture.md` (foundational) first to stay aligned with the share
 the sprint adds/changes shared foundational components (auth, core schema, new conventions) → update
 `.sdlc/architecture.md`.
 
+## Modes
+
+- **Design only (standalone `/sdlc:design`)**: write `design.md` only, as described above.
+- **Design + tasks (when `/sdlc:run` asks, i.e. the prompt says to also write tasks.md)**: in the SAME
+  invocation, after `design.md` is complete, also write `.sdlc/<version>/<sprint>/tasks.md` by following the
+  `task-breakdown` skill (load it): Test Plan (per the `test-strategy` decision table), `Batch`, `Tests`, and
+  the tightened `Difficulty` rule, plus the AC/EC/NFR/DAC → task table. If `ui-design.md` exists, read it so
+  every DAC-xx is owned. Don't re-read the codebase from scratch for this step — reuse what you learned
+  while designing; the File Change Plan is the basis for splitting tasks and batches.
+- **Revision (user asked for design changes at the design gate)**: revise `design.md` AND regenerate
+  `tasks.md` (when in design + tasks mode) so the two never drift apart.
+
 ## Self-review before writing the file (REQUIRED)
 
 - "Is every RULE-xx / NFR-xx from the requirements present in the mapping table?"
@@ -59,5 +71,18 @@ the sprint adds/changes shared foundational components (auth, core schema, new c
 - "Does this design conflict with existing conventions/stack (codebase + architecture.md + CLAUDE.md)?"
 - "Did I add any endpoint/entity the requirements didn't ask for?" → consider dropping it.
 
+When also writing `tasks.md`, self-review covers BOTH files (run the `task-breakdown` checklist too):
+
+- "Does every AC/EC/NFR (and DAC) have an owning task or a `test-leg` item in the Test Plan?"
+- "Does every task have a `Batch` (≤ 4 tasks, same module, dependency-compatible; `high` = batch of 1) and a
+  `Tests:` field (or `none` + reason)?"
+- "Is every `Difficulty: high` genuinely within the tightened list? When unsure → `normal`."
+- "Does tasks.md stay consistent with design.md (File Change Plan, API Contracts, Data Model)?"
+
 Only write the file once the mapping table in section 8 covers 100% of the RULEs and ECs. Finish with a
 summary: the number of endpoints and entities, and the Tech Decisions the user should look at.
+
+In design + tasks mode, also return to the caller: (1) the design Human Review block and (2) a Human
+Review block for tasks (task count, batch/wave overview, parallelizable parts, tasks marked `high` + why,
+items owned by `test-leg`) plus the list of task IDs + one-line descriptions (so the caller can sync
+TodoWrite without reading tasks.md). The caller relays these verbatim.

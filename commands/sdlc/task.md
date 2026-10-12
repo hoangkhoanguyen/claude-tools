@@ -47,11 +47,17 @@ Before coding: set the chosen task to `doing` in `tasks.md`; in state set
 `current_phase: execute`, `current_task: <task-id>`, `execute: doing`.
 
 Spawn `feature-builder` (it declares `model: sonnet` in its frontmatter — **do not pass a `model`
-parameter** on the first attempt):
+parameter** on the first attempt). A single task is treated as a **batch of 1** (same contract as the
+batch dispatch in `/sdlc:execute`, report per task):
 - Implement exactly the task's scope — don't do other tasks.
-- Run local tests until they pass.
+- Write the unit/api tests listed in the task's `Tests:` field (from the Test Plan in `tasks.md`) together
+  with the code, and run them (scoped) until they pass. The task is not `done` without them unless
+  `Tests:` says `none` with a reason. Integration/e2e/visual/manual items stay with the Test leg
+  (`/sdlc:test`), not this command.
+- Include in the prompt the Code map of finished tasks touching the same module, if any (marked "verify
+  before trusting").
 - Self-review (skill `self-review`): all EC handled? no TODOs/hardcoded values left? tests actually green?
-- Report back: files touched, tests run, suggested commit message.
+- Report back: files touched, tests written + run, a `Code map` (3-8 lines), suggested commit message.
 
 **Escalating when the task doesn't finish** (in this command you are the orchestrator, so you hold the budget):
 
@@ -62,8 +68,8 @@ parameter** on the first attempt):
   in `tasks.md` with the reason, and report to the user.
 - **Escalate early** if three consecutive attempts fail identically (same red test, same error) — don't
   wait for all 5.
-- If `tasks.md` marks the task `Difficulty: high`, or it touches algorithms / concurrency / transactions /
-  cryptography → spawn with `model: "opus"` directly on the first attempt.
+- If `tasks.md` marks the task `Difficulty: high` (the only trigger; don't re-judge from the task text) →
+  spawn with `model: "opus"` directly on the first attempt.
 - Reports a `design gap` → **does not count against the budget**, and changing models won't help: stop,
   have `architect` patch `design.md` (it runs on Opus), then re-run the task.
 

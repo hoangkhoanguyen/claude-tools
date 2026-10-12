@@ -36,9 +36,15 @@ Writes `.sdlc/<version>/<sprint>/ui-design.md`; updates `.sdlc/design-system.md`
 **Important — the 2 branches are independent:** the system branch does NOT wait for the UI design.
 Only LATER phases (Tasks onward) need a complete `ui-design.md`.
 
+Standalone, `architect` produces only `design.md`. When invoked by `/sdlc:run`, the prompt asks it to also
+write `tasks.md` (task-breakdown skill: Test Plan, Batch, Tests) in the same invocation, and to return the
+design Human Review block plus a task id/description list; if the user requests design changes it revises
+`design.md` AND regenerates `tasks.md`.
+
 Self-review: architect and ui-designer run `self-review` THEMSELVES before returning the file (you do
 not run it for them). Then spawn `reviewer` to cross-check `design.md` (and `ui-design.md` if present)
-against `requirements.md` — only `PASS` counts as done.
+against `requirements.md` — only `PASS` counts as done. When `tasks.md` exists, also pass it to `reviewer`
+to check that every AC/EC has an owning task or `test-leg` item.
 Update `.sdlc/<version>/state.md` per the schema.
 
 This is a sub-phase of `/sdlc:run`; use it when you want to run or redo the design phase alone.

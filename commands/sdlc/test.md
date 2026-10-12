@@ -20,13 +20,20 @@ spent, and `BLOCKED` means a human decision is needed.
 
 ## Test
 
-Spawn subagent `test-strategist` with skill `test-strategy`. It auto-detects the stack & tooling and
-picks the testing approach per feature type (unit / API / Playwright UI / 3rd party sandbox / mock
-webhook). If a UI design exists → add visual verification (skill `design-fidelity`): screenshots compared
-against Design AC + the baseline in `.sdlc/<version>/<sprint>/visual-baseline/`. It writes tests and
-ACTUALLY RUNS them until green.
+Spawn subagent `test-strategist` with skill `test-strategy`, **passing the `layer` input**:
+- the sprint has UI (ui-design.md exists) AND more than 5 tasks → spawn it twice, sequentially:
+  `layer: integration` first, then (once it returns `DONE`) `layer: ui`, each with fresh context;
+- otherwise (no UI, or ≤ 5 tasks) → one spawn with `layer: all`.
+
+It consumes the **Test Plan** at the top of `tasks.md`: unit/api tests are owned by the tasks (builders
+already wrote and ran them) so it verifies them and fills gaps only; it owns integration / e2e / visual /
+manual items. It auto-detects the stack & tooling and picks the testing approach per feature type (API /
+Playwright UI / 3rd party sandbox / mock webhook). If a UI design exists → visual verification (skill
+`design-fidelity`): screenshots compared against Design AC + the baseline in
+`.sdlc/<version>/<sprint>/visual-baseline/`. It writes tests and ACTUALLY RUNS them until green.
 Every AC/EC/NFR/DAC must have a test or be listed as manual-verify.
-Writes `.sdlc/<version>/<sprint>/test-report.md`.
+Writes its layer's section of `.sdlc/<version>/<sprint>/test-report.md` (plus the HEAD sha of the green full
+run) and records `test_layers_done` in state; `test: done` is set only when every required layer is done.
 
 **It closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits its own test
 files + fixes.** You do NOT orchestrate the fix loop and do NOT touch the git index while it runs.
@@ -37,11 +44,14 @@ user; `DESIGN_GAP` → patch the design if small and clear, otherwise suggest `/
 
 ## QA Gate
 
-Spawn subagent `qa-guard`: full test run + happy path per story + regression happy path for related
-existing features + NFR check + design fidelity check (if UI) + scan for hardcoded values/TODOs/unhandled
-errors.
-**It also closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round, re-running the full
-checklist each round) and commits itself** — you only receive the status, you do not fix anything and do
+Spawn subagent `qa-guard` (it picks its own mode and states it in the report): **lite by default** — clean-code
+scan on the sprint diff + regression happy path for related existing features + Definition-of-Done check +
+verification that `test-report.md` covers every AC/EC/NFR/DAC (with spot-checks), skipping the full-suite
+re-run when test-report records a green full run at the current HEAD. **Full mode** (full suite + happy path
+per story + NFR + design fidelity + security review) when the sprint touches auth/permissions/payments/PII,
+the Test leg made source fix commits, there is no green full run at HEAD, or the user asked for full QA.
+**It also closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round; re-running affected items +
+the full suite in lite mode, the whole checklist in full mode) and commits itself** — you only receive the status, you do not fix anything and do
 not touch git. Only on status `DONE` do you present the Pre-manual Report:
 - Automatically covered (no user check needed)
 - Needs manual verification (business behavior only)

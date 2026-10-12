@@ -13,6 +13,18 @@ ONLY verify business behavior and hit NO minor bugs.
 Only push something to "needs manual verification" when it TRULY can't be automated (real SMS OTP, Face ID,
 real money, subjective UX judgment). Everything else must be tested automatically.
 
+## Who owns which test
+
+The planning phase writes a **Test Plan** at the top of the Agent-Reference part of `tasks.md`:
+`AC/EC/NFR/DAC id → level (unit | api | integration | e2e | visual | manual) → owner`, following the table below.
+
+- **unit and api tests are owned by the TASK** — the builder writes and runs them together with the code
+  (each task's `Tests:` field). The Test leg does NOT re-write them; it verifies they exist and cover the plan,
+  and fills only genuine gaps.
+- **integration / e2e / visual / manual are owned by the Test leg** (`test-leg`). The Test leg runs by layer:
+  `integration` (api/integration/3rd-party/webhook/DB side effects + gap-filling), `ui` (Playwright e2e +
+  visual fidelity, only if the sprint has UI), or `all` (single pass for small sprints).
+
 ## Decision table by feature type
 
 | Feature type | How to test | Tooling |
@@ -42,6 +54,8 @@ requirements include Regression Impact → add tests / re-walk the happy path of
 ## Actually run them, don't assume
 
 Once tests are written they MUST be run. Fail → fix → re-run until green. Smoke test the main endpoints: no 500s.
+Record the HEAD sha of the green full run (suite + typecheck + lint) in `test-report.md` so QA can skip
+re-running it.
 
 ## Self-review checklist before finalizing
 

@@ -132,9 +132,10 @@ The orchestrating agents (`implement-coordinator`, `test-strategist`, `qa-guard`
 - **Attempt 6: Opus**, the final attempt. Still not done → `BLOCKED`, a human decision is needed.
 - **Escalate early**: three consecutive identical failures (same red test, same error, same file) → go to
   Opus immediately, don't wait for all 5. Repeating a wrong approach produces no new information.
-- **Use Opus from the first attempt** when a task is marked `Difficulty: high`, or touches algorithms /
-  concurrency / distributed transactions / cryptography — work where being slightly wrong fails silently
-  and tests struggle to catch it.
+- **Use Opus from the first attempt** only when a task is marked `Difficulty: high` — a narrow rating set by
+  `task-breakdown` (non-trivial algorithms, concurrency/idempotency/distributed transactions, cryptography /
+  session-security design, data-rewriting migrations): work where being slightly wrong fails silently and
+  tests struggle to catch it. Everything else starts on Sonnet; the ladder escalates on failure.
 - **`DESIGN_GAP` and `NEEDS_SERVICE` do NOT count against the budget.** A bigger model can't guess intent
   from a missing design, and switching models is meaningless when a service isn't running. Stop and fix
   the actual root cause.
@@ -161,7 +162,11 @@ Before writing the first line of code in execute:
 3. Confirm services for the **whole execution stretch** (implement + test + qa) in one pass — the dev
    server and sandboxes that Test/QA need must be on the list too, not just the services needed during
    implement.
-4. ONLY ask the user to start what the scout reports as "not running", with the suggested commands it provided.
+4. **Timing**: in `/sdlc:run` the services check (scout `services` mode) happens at the START of the sprint,
+   in the same turn as the first analyze agent — the user answers once and can walk away; design/tasks
+   don't exist yet so migration detection waits. Just before Execute, a cheap scout `migration` run reads
+   the File Change Plan to detect schema changes. `/sdlc:execute` (standalone) runs scout in `full` mode.
+   ONLY ask the user to start what the scout reports as "not running", with the suggested commands it provided.
 5. Wait for the user to confirm ("ok"/"done") BEFORE continuing. Never assume services are ready. Record
    the confirmed services in `.sdlc/<version>/state.md`.
 6. **DB migration/seed**: if the sprint changes the schema (new models/migrations), determine the
@@ -183,7 +188,8 @@ conversation only passes paths + slugs + the Human Review blocks it receives bac
 
 - Do **not** Glob/read the project's `CLAUDE.md`, `architecture.md`, `requirements.md`, `design.md`, or the
   user's business docs; do not scan the repo's skills; do not survey the codebase. Every agent
-  (product-analyst, architect, ui-designer, the task-breakdown agent, implement-coordinator,
+  (product-analyst, architect (which also writes tasks.md when there is no UI), ui-designer, the
+  task-breakdown agent (UI sprints), implement-coordinator,
   test-strategist, qa-guard, reviewer) starts cold and loads it all itself. Reading it again means paying
   twice.
 - Do **not** Read all of `tasks.md` just to sync TodoWrite — use the ID+description list the agent
@@ -203,6 +209,22 @@ Permitted exceptions to writing: pre-flight (`services_up`) and handoff (`sprint
 
 See the `test-strategy` skill. The principle: automate as much as possible. Only flag something as
 "needs manual user verification" when it truly can't be automated (real SMS OTP, Face ID, real money…).
+
+**Tests are planned up front, owned by whoever has the context.** The planning phase writes a Test Plan into
+`tasks.md` (AC/EC/NFR/DAC → level → owner). Unit/API tests belong to the task: `feature-builder` writes them
+with the code. The Test leg (`test-strategist`, per layer `integration` → `ui`, or `all` for small sprints)
+owns integration/e2e/visual/manual items and gap-filling. `qa-guard` is lite by default and full for
+sensitive sprints or when the Test leg had to fix source code.
+
+## Cost discipline (measured, keep it that way)
+
+Profile with `scripts/token-profile.py` before/after any workflow change. Measured on ~33 sprints:
+`feature-builder` 48% of tokens, `test-strategist` 13%, `implement-coordinator` 13%, `qa-guard` 4%, retries ≈ 0.
+Principles: fewer cold starts (batches of ≤ 4 related tasks, code map relayed between builders), shorter
+contexts (Test leg by layer), no duplicated checks (the coordinator runs no repo-wide checks; QA trusts a
+green full run at the same HEAD sha), `Difficulty: high` only for genuinely hard work. Never trade away a gate
+that catches real bugs: quality signals (retries, source fixes in Test/QA legs, bugs found in manual test)
+must not get worse.
 
 ## When to ask the user
 

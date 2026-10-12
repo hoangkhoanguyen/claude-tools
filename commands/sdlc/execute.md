@@ -44,7 +44,11 @@ Exception: if the user explicitly asks to run it differently, follow the user.
 
 ## Pre-flight (REQUIRED before writing code)
 
-1. **Spawn `preflight-scout`** (read-only). It reads `docker-compose.yml`, `.env.example`, `package.json`
+(Standalone command: runs the scout in `full` mode — services + migration + codex. If `/sdlc:run` already
+recorded `services_up` and `codex_enabled` in `state.md`, skip the service/Codex questions and run it in
+`migration` mode only.)
+
+1. **Spawn `preflight-scout`** with `mode: full` (read-only). It reads `docker-compose.yml`, `.env.example`, `package.json`
    scripts, `Procfile`, `Makefile`, and the README for you, pings ports itself, and returns a compact
    table: service + port + status + start command + migrate command. You do not read that pile of config.
 2. **Confirm services for ALL 3 LEGS in one pass.** The scout's table already includes the dev
@@ -76,8 +80,9 @@ IDs + descriptions with the targeted Grep described above, don't Read all of `ta
 
 Pass the coordinator: `version`, `sprint`, the **sprint branch** name, the `services_up` confirmed at
 pre-flight, and `codex_enabled` (from state). The coordinator will: split into waves by dependency →
-assign each task to `feature-builder` or, if `codex_enabled` and the task qualifies, to Codex CLI
-(independent tasks in parallel) → commit each task → update `tasks.md` + `state.md`.
+assign work to `feature-builder` per **batch** (`Batch: B<n>` in `tasks.md`, max 4 tasks; a `Difficulty: high`
+task is its own batch) or, if `codex_enabled` and the task qualifies, to Codex CLI (independent batches in
+parallel) → commit each task → update `tasks.md` + `state.md`. It runs no repo-wide test/typecheck/lint.
 
 **While the coordinator runs, do NOT touch `tasks.md`, `state.md`, or the git index** — it is the sole
 writer for this leg. Two concurrent writers is the classic source of corrupted state.
@@ -96,29 +101,38 @@ Relay the coordinator's report to the user as a short summary (the user doesn't 
 
 Only move to leg 2 on status `DONE`.
 
-## Leg 2 — Test
+## Leg 2 — Test (by layer)
 
-Spawn subagent `test-strategist` (skill `test-strategy`). It auto-detects the stack & tooling and picks
-the testing approach per feature type (unit / API / Playwright UI / 3rd party sandbox / mock webhook). If
-a UI design exists → visual verification (skill `design-fidelity`): screenshots compared against Design AC
-+ the baseline in `.sdlc/<version>/<sprint>/visual-baseline/`. It writes tests and ACTUALLY RUNS them
-until green.
-Every AC/EC/NFR/DAC must have a test or be listed as manual-verify. Writes
-`.sdlc/<version>/<sprint>/test-report.md`.
+Spawn subagent `test-strategist` (skill `test-strategy`) once **per layer**, sequentially, each with a fresh
+context — pass `layer`:
+- UI sprint with more than 5 tasks → `integration` then `ui`. Small sprint (no UI, or ≤ 5 tasks) → one `all`
+  pass.
+- `integration`: api/integration/3rd-party/webhook/DB-side-effect items + gap-filling (builders already wrote
+  the unit/api tests listed in each task's `Tests:`; it verifies coverage of the Test Plan, not rewrites).
+- `ui`: e2e (Playwright) + visual verification (skill `design-fidelity`): screenshots compared against
+  Design AC + the baseline in `.sdlc/<version>/<sprint>/visual-baseline/`.
+It writes tests and ACTUALLY RUNS them until green. Every AC/EC/NFR/DAC must have a test or be listed as
+manual-verify. Each layer updates its own section of `.sdlc/<version>/<sprint>/test-report.md`; the agent
+records `test_layers_done` and the last required layer sets `test: done`.
 
-**It closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits its own test
-files + fixes.** You do NOT orchestrate the fix loop and do NOT touch the git index while it runs —
+**Each layer closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits its own
+test files + fixes.** You do NOT orchestrate the fix loop and do NOT touch the git index while it runs —
 pushing the fix loop back here is a major context sink in the main conversation.
-Handle the status it returns using the same table as leg 1 (`DONE` → leg 3; `BLOCKED` → stop and report;
-`DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT` → resolve then respawn). Relay a short summary to the user.
+Handle the status it returns using the same table as leg 1 (`DONE` → next layer / leg 3; `BLOCKED` → stop
+and report; `DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT` → resolve then respawn that layer). Relay a
+short summary to the user.
 
 ## Leg 3 — QA gate + handoff
 
-Spawn subagent `qa-guard`: full test run + happy path per story + regression happy path for related
-existing features + NFR check + design fidelity (if UI) + scan for hardcoded values/TODOs/unhandled errors.
+Spawn subagent `qa-guard`. It picks its own mode and reports which ran and why:
+- **lite (default)**: clean-code scan of the sprint diff, regression happy path for "Regression Impact"
+  modules, Definition-of-Done check, verification that `test-report.md` covers every AC/EC/NFR/DAC (spot-
+  checking a few). Skips re-running the full suite if `test-report.md` records a green full run at HEAD.
+- **full**: when the sprint touches auth/permissions/payments/PII, OR the Test leg made source (non-test)
+  fix commits, OR there's no green full run at HEAD in `test-report.md`, OR the user asked for full QA —
+  full test run + happy path per story + regression + NFR + design fidelity + hardcode/TODO scan.
 
-**It also closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits itself** —
-each fix round it re-runs the checklist from the top.
+**It also closes its own fix loop (max 5 Sonnet rounds + 1 Opus escalation round) and commits itself.**
 You only receive the status; you don't fix anything and don't touch git. Only on status `DONE` do you hand off:
 
 - Set the sprint to `done` in `.sdlc/<version>/sprints.md`; if every sprint in the version is `done` →

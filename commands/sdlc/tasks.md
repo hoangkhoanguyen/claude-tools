@@ -22,8 +22,10 @@ pre-flight. Execution starts with `/sdlc:task` (one task at a time, manually) or
 
 ## Process
 
-The subagent writes `.sdlc/<version>/<sprint>/tasks.md` with the tasks (status `todo`), dependencies,
-markers for tasks that can run in parallel, and an AC/EC → task table. It returns a Human Review block
+The subagent writes `.sdlc/<version>/<sprint>/tasks.md` with a Test Plan (AC/EC/NFR/DAC → level → owner),
+the tasks (status `todo`, each with `Batch` and `Tests:`), dependencies, markers for tasks that can run in
+parallel, and an AC/EC → task table. (Within `/sdlc:run`, `architect` writes tasks.md together with
+design.md in one pass; this command is for regeneration / replan or standalone use.) It returns a Human Review block
 to relay + a short list of IDs/descriptions for the main conversation to sync into TodoWrite (do not
 Read all of `tasks.md`).
 
