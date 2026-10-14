@@ -86,6 +86,12 @@ repeat the reminder in later commands.
    - **Existing project, no DESIGN.md** → note it: UI follows the current app's style. Do NOT ask about style.
    - **New project, no aesthetic source** → the first sprint with screens will ask the user once, then
      generate `DESIGN.md`.
+   - **Claude Design.** Sprints with screens draw their UI draft on a Claude Design canvas the user can edit at
+     the design gate. Canvases look far more like the real app when the account has a design system built
+     from this project. If the version has UI and no design system link is recorded in
+     `.sdlc/design-system.md`, RECOMMEND (don't run — it is the user's command) running `/design-sync` once
+     to create one from the codebase, then record its link in `.sdlc/design-system.md`. Mention it in one
+     line with the sprint list; it is not a blocker.
 
 9. **Present the sprint list to the user** at a high level. Invite them to: reorder, merge/split, confirm
    the tech stack.

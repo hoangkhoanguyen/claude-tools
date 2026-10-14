@@ -71,9 +71,14 @@ Every AC (GIVEN/WHEN/THEN), EC-xx, and NFR-xx in the requirements, and every DAC
 present), MUST have at least one corresponding test/check, or be listed explicitly as needing manual
 verification. Miss nothing.
 
+**E2E flows (`ui` layer).** When `ux-map.md` exists, each `FLOW-xx` is one e2e scenario (including its error /
+cancel branches) — that is the ready-made e2e list.
+
 **Visual regression (when there's a UI design).** Use skill `design-fidelity`: screenshot each main screen/state
 at the smallest and largest breakpoints and in dark/light; check against the DAC-xx (color codes via computed
-style, layout not overflowing/overlapping, contrast meeting the threshold). Baselines live in
+style, layout not overflowing/overlapping, contrast meeting the threshold) and — when
+`.sdlc/<version>/<sprint>/design-source/` exists — against the approved canvas snapshot (see the skill's
+"Comparing against the approved canvas" section). Baselines live in
 `.sdlc/<version>/<sprint>/visual-baseline/`: write new screenshots to `visual-baseline/.pending/` first and
 promote them into `visual-baseline/` only after the DAC-xx pass; on later runs, compare against the promoted
 baseline to catch visual regressions.

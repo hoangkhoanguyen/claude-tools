@@ -1,6 +1,6 @@
 {
   "name": "sdlc-workflow",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "End-to-end SDLC plugin for Claude Code: split into sprints, analyze requirements, design, break down tasks, execute + test automatically, resumable, clean handoff for manual testing. Stack-agnostic.",
   "author": {
     "name": "hoangkhoanguyen"

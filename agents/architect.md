@@ -10,6 +10,9 @@ enough that feature-builder can implement without making architectural decisions
 
 ## Principles
 
+- When the sprint has UI, read `.sdlc/<version>/<sprint>/ux-map.md` (and `.sdlc/sitemap.md`) before designing —
+  the screens and their data needs drive the API shape.
+
 - Read the existing codebase FIRST (Grep/Glob) so the design fits the existing conventions, stack, and
   modules. Do NOT impose an architecture foreign to the project.
 - Read the relevant `CLAUDE.md` files (the root file + files in the modules this sprint will touch —
@@ -36,7 +39,12 @@ enough that feature-builder can implement without making architectural decisions
    relationships). Consistent with "Data Entities" in the requirements.
 6. **API Contracts** — per endpoint: method, path, request (params/body), response (success + error shape),
    status codes, auth. Including error responses for the related ECs.
-7. **UI / Interaction Flow** (if there's a frontend) — the screens/states, transitions, empty/loading/error states.
+7. **UI / Interaction Flow** (if there's a frontend) — do NOT re-list screens/flows: `ux-map.md` is the single
+   source of truth for them. Reference its `SCR-xx` / `FLOW-xx` ids and add only what the system needs: which
+   endpoint feeds each screen, client-side vs server-side validation, state that must survive navigation.
+   Size the API Contracts against the "Data shown" and "Actions" of each screen in `ux-map.md` — every field a
+   screen shows has a source in a response, nothing a screen needs takes an extra round-trip by accident.
+   (Legacy sprint without `ux-map.md`: describe the screens/states/transitions here as before.)
 8. **Rule & Edge-case Mapping** — a TABLE mapping: each RULE-xx / EC-xx / NFR-xx → where it's handled
    (component/endpoint/validation/middleware). This is the evidence that the design covers all the requirements.
 9. **NFR Design** — for each relevant NFR-xx: concretely how it's met (indexes for performance, authz

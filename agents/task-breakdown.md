@@ -21,6 +21,9 @@ You are a subagent — you start cold and inherit no context. Read:
    Criteria) that tasks must own.
 5. **`.sdlc/<version>/<sprint>/requirements.md`** — the AC / EC / NFR ids and EC text for expected values.
 6. **`.sdlc/design-system.md`** (if present) — tokens, so UI tasks name the right reuse targets.
+7. **`.sdlc/<version>/<sprint>/ux-map.md`** (if present) — `SCR-xx` for UI task scope; each `FLOW-xx` becomes an
+   `e2e` Test Plan row owned by `test-strategist`. If `ui-design.md` has a "Design source" header, UI tasks
+   point the builder at the matching artboard in `design-source/`.
 
 ## What you do
 

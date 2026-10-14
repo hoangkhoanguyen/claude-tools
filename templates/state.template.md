@@ -22,8 +22,11 @@
 
 - has_ui:        <yes | no>                          # written by the caller right after Phase 1 from product-analyst's Human Review block (as are `analyze: done` and `current_phase`); decides the planning path and the test layers. Consumers read it from here; only if absent: `design_ui` not `n/a`, else `ui-design.md` exists
 - analyze:       <todo | doing | done>
+- ux_map:        <todo | done | n/a>               # ux-map.md + sitemap update, written by product-analyst with requirements.md when has_ui: yes; n/a otherwise
 - design_system: <todo | doing | done>              # architect branch
-- design_ui:     <todo | doing | waiting-external | done | n/a>   # ui-designer branch; waiting-external = awaiting an external design; n/a if the SPRINT has no screens
+- design_ui:     <todo | doing | waiting-external | awaiting-review | done | n/a>   # ui-designer branch; waiting-external = awaiting an external design; awaiting-review = draft drawn on the Claude Design canvas, waiting for the design gate + ingest; done = ui-design.md final (ingested, or markdown-only when no canvas); n/a if the SPRINT has no screens
+- ui_canvas_url: <url | none>                       # the sprint's Claude Design canvas (one per sprint, revised in place); none when the Artifact tool was unavailable
+- ui_snapshot_hash: <sha256 | none>                 # hash of the canvas snapshot in <sprint>/design-source/ taken at ingest — what was approved and built
 - tasks:         <todo | doing | done>
 - execute:       <todo | doing | done>
 - test:          <todo | doing | done>              # `done` only when EVERY required test layer is done (the last layer sets it)
@@ -35,9 +38,9 @@
 ## Human approval gates
 
 - analyze_approved:  <pending | true>   # true once the user confirmed the requirements before Design
-- design_approved:   <pending | true>   # true once the user confirmed the design before Tasks
+- design_approved:   <pending | true>   # true once the user confirmed the design (and, on a UI sprint, the canvas) — UI sprints then ingest the canvas and write tasks
 - tasks_approved:    <pending | true>   # true once the user confirmed the task list before Execute
-- reviewer_passed:   <[] | [analyze, design, tasks]>   # reviewer checks that already returned PASS; a resume skips these and runs the missing ones before their gate; ANY edit to an artifact removes its entry
+- reviewer_passed:   <[] | [analyze, design, ui, tasks]>   # analyze = requirements (+ ux-map); design = design.md (+ draft ui-design.md); ui = final ui-design.md vs the canvas snapshot (UI sprints with a canvas); reviewer checks that already returned PASS; a resume skips these and runs the missing ones before their gate; ANY edit to an artifact removes its entry
 
 ## Context loaded this run (so the next run knows what to re-read)
 

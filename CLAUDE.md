@@ -37,7 +37,7 @@ apply the principles below to EVERY `/sdlc:*` command.
    If interrupted, the next run must continue in exactly the right place — never redoing finished work.
 
 4a. **`.sdlc/` location — always at the repo root.** Never nested inside a sub-package or sub-app.
-    Structure: `.sdlc/versions.md`, `.sdlc/architecture.md`, `.sdlc/design-system.md` at the root
+    Structure: `.sdlc/versions.md`, `.sdlc/architecture.md`, `.sdlc/design-system.md`, `.sdlc/sitemap.md` at the root
     (cross-version); everything else per version: `.sdlc/<version>/state.md`, `.sdlc/<version>/<sprint>/`.
     For a multi-app monorepo: still one single `.sdlc/` at the root; sprint slugs reflect the relevant app
     (e.g. `sprint-1-web-auth`, `sprint-2-api-orders`) to tell them apart.
@@ -48,8 +48,9 @@ apply the principles below to EVERY `/sdlc:*` command.
     .sdlc/*/*/visual-baseline/
     .sdlc/*/*/.coordinator/
     ```
-    Everything else (`versions.md`, `sprints.md`, `state.md`, `architecture.md`, `design-system.md`, and
-    every `requirements.md`, `design.md`, `ui-design.md`, `tasks.md`, `test-report.md`) gets committed —
+    Everything else (`versions.md`, `sprints.md`, `state.md`, `architecture.md`, `design-system.md`,
+    `sitemap.md`, and every `requirements.md`, `ux-map.md`, `design.md`, `ui-design.md`, `design-source/` (the
+    approved canvas snapshot), `tasks.md`, `test-report.md`) gets committed —
     this is the project's living documentation, reviewable by the team through PRs, with clear history.
 
 5. **Self-review — without the user asking.** After each phase, run the checklist in the `self-review`
@@ -82,10 +83,18 @@ apply the principles below to EVERY `/sdlc:*` command.
   an execution agent is running; it only receives the status on the report's first line
   (`DONE` / `BLOCKED` / `DESIGN_GAP` / `NEEDS_SERVICE` / `CONTEXT_LIMIT`) and acts accordingly;
   plus `ui-designer` for the interface branch when a sprint has screens (design source: external design /
-  DESIGN.md / the existing app's style / ask the user); and `reviewer` for an independent cross-check
-  after analyze/design. Run them in parallel when the parts are independent; isolate each phase's context.
+  Claude Design design system / DESIGN.md / the existing app's style / ask the user); and `reviewer` for an
+  independent cross-check after analyze/design. Run them in parallel when the parts are independent; isolate each phase's context.
 - **Built-in design skills**: `artifact-design` (interface principles), `dataviz` (charts/dashboards) —
   use these in the ui-designer branch.
+- **Claude Design (Artifact type "Design")**: the UI flow is UX map → draft → approve → ingest. In analyze,
+  `product-analyst` writes `ux-map.md` (skill `ux-map`: screens, flows, permissions, on-screen data/copy) so
+  flows are settled before anything is drawn. In design, `ui-designer` (mode `draft`) draws the draft on a
+  Claude Design canvas; the user edits it there at the design gate; then `ui-designer` (mode `ingest`) reads it
+  back, snapshots it to `design-source/` and finalizes `ui-design.md`. Visuals: the canvas wins; behavior and
+  content: the requirements win (conflicts go to the user). No `Artifact` tool (no claude.ai login) → markdown
+  spec only, never a blocker. The project's design system for Claude Design is created by the user with
+  `/design-sync` — recommend it, never run it yourself.
 - **Bash**: ping ports to detect running services; run test runners; smoke test APIs with curl.
 - **Playwright** (pre-installed in the environment): automate UI testing. Do NOT run `playwright install`.
 - **Skills**: load the appropriate skill per phase (included in this plugin).
@@ -239,6 +248,9 @@ found in manual test) must not get worse. Maintainers can profile a real project
   DESIGN.md? / describe the tone-color-reference app / let Claude decide) then settle it into `DESIGN.md`.
   For an existing project, do NOT ask — follow the current app. If a sprint expects an external design
   that hasn't arrived yet → ask/wait (`waiting-external`).
+- UI review happens at the EXISTING gates — no extra stop: the UX map (screens, flows) is shown at the
+  analyze gate, the Claude Design canvas link at the design gate (the user edits it there, then "ok").
+  Canvas edits that contradict an AC → ask which one is right.
 - Pre-flight: requesting that external services be started.
 - Beyond these points, in `/sdlc:run` run as automatically as possible; report briefly after each phase
   and continue.

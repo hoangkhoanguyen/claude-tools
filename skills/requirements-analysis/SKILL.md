@@ -28,6 +28,10 @@ downstream agents never have to guess.
 11. Regression Impact (only when adding to an existing codebase): existing features/modules that may be affected
 12. Definition of Done (including NFRs + no regressions)
 
+**When `has_ui: yes`:** also write `ux-map.md` + update `.sdlc/sitemap.md` in the same pass, following the
+skill `ux-map` (screen inventory, flows, permissions, on-screen data/copy/states, AC → screen coverage). It is
+the single source of truth for screens; later phases reference `SCR-xx` / `FLOW-xx` instead of re-listing them.
+
 ## Quality rules
 
 - **AC must be testable**: use `GIVEN <state> WHEN <action> THEN <result>`. Don't write vague AC
@@ -54,3 +58,4 @@ Assumptions recorded                 → the user catches wrong inferences
 - [ ] Any requirement invented beyond the source? (delete it)
 - [ ] Any Open Question that could be resolved safely? (move to Assumptions)
 - [ ] Is `has_ui: yes|no` stated in the Human Review block?
+- [ ] `has_ui: yes` → is `ux-map.md` written (and the sitemap updated), passing the `ux-map` checklist?

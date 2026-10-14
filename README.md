@@ -125,14 +125,17 @@ The plugin writes everything to the `.sdlc/` directory in your project (committa
 ├── versions.md              ← registry of versions (v1, v2…) + status
 ├── architecture.md          ← foundational architecture across versions (all sprints reference this)
 ├── design-system.md         ← design tokens across versions (when UI is involved — from DESIGN.md, external source, or derived)
+├── sitemap.md               ← the project's navigation tree across versions (each UI sprint adds its screens)
 └── <version>/               ← e.g. v1, v2
     ├── sprints.md           ← sprint list + tech stack + dependencies + status
     ├── state.md             ← resume pointer (fixed schema — see templates/state.template.md)
     └── <sprint-slug>/
         ├── requirements.md      ← analyze output (includes NFR + regression impact)
         ├── design.md            ← system design output (RULE/EC/NFR mapping table)
-        ├── ui-design.input.md   ← (optional) external design handed in — ui-designer ingests this into ui-design.md
-        ├── ui-design.md         ← UI design output (tokens, component spec, Design AC) — when UI is involved
+        ├── ux-map.md            ← screens (SCR-xx), flows (FLOW-xx), permissions, on-screen data/copy — when UI is involved
+        ├── ui-design.input.md   ← (optional) external design handed in (markdown or Claude Design links) — ui-designer ingests it
+        ├── ui-design.md         ← UI design output (tokens, component spec, Design AC, Design source header) — when UI is involved
+        ├── design-source/       ← snapshot of the Claude Design canvas you approved — the visual reference for code + tests
         ├── tasks.md             ← task list + status (todo/doing/done)
         ├── commands.md          ← commands to run individual tasks / run to completion (generated at Tasks phase)
         ├── test-report.md       ← test results + items you need to verify manually
@@ -162,10 +165,11 @@ The plugin writes everything to the `.sdlc/` directory in your project (committa
 | Agent | `feature-builder` | Implements a batch of tasks (code + the unit/API tests each task owns) and reports per task, plus a code map for the next builder (state + commit written by caller) |
 | Agent | `test-strategist` | Runs per layer (`integration` → `ui`, or `all` for small sprints): owns integration/e2e/visual tests, fills coverage gaps against the Test Plan; self-closes fix loop + commits |
 | Agent | `qa-guard` | Final gate. **Lite** by default (clean-code scan, regression, Definition of Done, coverage check); **full** for auth/payment/PII sprints or when the Test leg changed source code; self-closes fix loop + commits |
-| Agent | `ui-designer` | Design source (external / DESIGN.md / existing app / ask user) → tokens, component spec, Design AC (when UI is involved) |
+| Agent | `ui-designer` | `draft`: UX map + design source (external / design system / DESIGN.md / existing app / ask user) → tokens, component spec, Design AC + a draft on a **Claude Design canvas**; `ingest`: reads the approved canvas back, snapshots it, finalizes `ui-design.md` |
 | Agent | `task-breakdown` | Turns design (+ UI design) into `tasks.md` with batches, Test Plan and expected-value tests (the `architect` does this itself for sprints without screens) |
 | Agent | `reviewer` | Independent cross-check of analyze/design/ui-design/tasks output against input |
 | Skill | `requirements-analysis` | Output standard for the analyze phase |
+| Skill | `ux-map` | Screen inventory, flows, sitemap, permissions, on-screen data/copy — settled before any UI is drawn |
 | Skill | `system-design` | Output standard for the design phase |
 | Skill | `task-breakdown` | How to break down tasks correctly without missing AC |
 | Skill | `failure-ladder` | The single retry/escalation ladder (5 Sonnet rounds + 1 Opus round) shared by implement, test and QA fix loops |
@@ -262,6 +266,23 @@ When a sprint has screens, UI is a requirement on par with business logic. The d
 | `DESIGN.md` / design system exists | Generate spec from it. Source: `internal` |
 | **Existing project** (UI already running), no DESIGN.md | Follow the existing app's style — no asking, no style changes |
 | **New project**, no source at all | Ask you once (have a DESIGN.md? / describe the style / let Claude decide) → **generates `DESIGN.md`** as the cross-sprint source |
+
+### Claude Design in the loop
+
+```
+Analyze ─► UX map (screens, flows) ─► [analyze gate]
+        ─► System design ∥ UI draft drawn on a Claude Design canvas
+        ─► [design gate: open the canvas link, edit it in Claude Design, reply "ok"]
+        ─► Ingest: canvas read back + snapshot ─► Tasks ─► Code ─► Test (vs the snapshot) ─► QA
+```
+
+- **No extra stops**: the UX map is reviewed at the analyze gate, the canvas at the design gate. With
+  "no human gate" the draft is used as drawn and the sprint runs straight through.
+- **What you edit is what gets built**: for visuals the canvas wins; if an edit contradicts an acceptance
+  criterion, you're asked which one is right.
+- **Recommended once per project**: run `/design-sync` to create a Claude Design design system from your
+  codebase, so canvases use your real components and tokens.
+- No claude.ai login (no `Artifact` tool) → the markdown spec alone, as before.
 
 - **Design tokens normalized** into `.sdlc/design-system.md` (cross-sprint). Execute builds UI via tokens,
   NO hardcoded colors/spacing/fonts. Each screen is marked `[external]`/`[generated]` so you know which parts to compare against the original mockup.

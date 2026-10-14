@@ -41,20 +41,22 @@ the "context discipline" principle applies throughout, not just from phase 4.
 2. **Resume check**: read `.sdlc/<version>/state.md` (per the `templates/state.template.md` schema) +
    `.sdlc/<version>/<sprint>/`. Identify the in-progress phase & task. **Skip** every phase/task already
    done. First run → start from analyze.
-   - **Check `tasks` BEFORE the gates**: a UI sprint with `design_system` + `design_ui` done (and
-     `design_ui` not `waiting-external`) but `tasks: todo` → spawn the `task-breakdown` subagent first
-     (tasks.md doesn't exist yet), then run the reviewer and the gates.
-   - **Reviewer record**: state keeps `reviewer_passed: [analyze, design, tasks]` (the checks that already
+   - **UI sprint, after the design gate**: `design_approved: true` with `design_ui: awaiting-review` → run
+     the UI ingest (Phase 2, UI step 4) before anything else; `design_ui: done` but `tasks: todo` → spawn the
+     `task-breakdown` subagent (tasks.md doesn't exist yet), then the reviewer and the tasks gate.
+   - **Reviewer record**: state keeps `reviewer_passed: [analyze, design, ui, tasks]` (the checks that already
      returned `PASS`). On resume, skip a reviewer check listed there; run one that is missing before its
      gate — don't skip it and don't repeat it.
    - **Approval gate not yet passed**: a phase can be `done` while its approval is still `pending`
      (interrupted right at the gate). Before moving to the next phase, check: `analyze: done` with
-     `analyze_approved: pending`, `design_system` + `design_ui` complete with `design_approved: pending`,
-     or `tasks: done` with `tasks_approved: pending` → **re-present that exact gate and wait for user
+     `analyze_approved: pending`, `design_system` done + `design_ui` drafted (`awaiting-review` / `done` /
+     `n/a`) with `design_approved: pending` (re-present it with `ui_canvas_url` from state), or `tasks: done`
+     with `tasks_approved: pending` → **re-present that exact gate and wait for user
      approval**, do NOT jump ahead. Only proceed when approval is `true`. (Exception: under "no human
      gate", see below.)
    - **If `design_ui: waiting-external`**: check whether `.sdlc/<version>/<sprint>/ui-design.input.md` has
-     arrived. YES → ingest + normalize, set design_ui to done. NOT YET → restate the blocker and stop.
+     arrived. YES → respawn `ui-designer` mode `draft` (it ingests + normalizes the external part and draws the
+     rest), then continue Phase 2 from the reviewer. NOT YET → restate the blocker and stop.
 3. **Early services check (ONCE per sprint)**: skip it ONLY if `state.md` records `services_up`,
    `codex_enabled` AND `services_up_sprint` equal to THIS sprint's slug. On a different sprint (stale
    `services_up` from the previous one) → reset `services_up`, `test_layers_done`, `required_layers`
@@ -85,20 +87,26 @@ Spawn `product-analyst` (skill `requirements-analysis`). It loads CLAUDE.md + ar
 business docs itself, runs `self-review` itself, writes `.sdlc/<version>/<sprint>/requirements.md`
 (including NFR + Regression impact for an existing codebase), and returns a ready Human Review block to
 relay. That block carries a `has_ui: yes|no` line (does the sprint have screens/visual states). **Right
-after it returns, write `has_ui`, `analyze: done` and `current_phase` into `state.md`** — you never Read
-`requirements.md` for it, and later consumers read `has_ui` from state. (Fallback only if `has_ui` is absent
+after it returns, write `has_ui`, `analyze: done`, `ux_map` (`done` when `has_ui: yes` — the analyst also
+wrote `ux-map.md` + updated `.sdlc/sitemap.md` in the same invocation, skill `ux-map`; else `n/a`) and
+`current_phase` into `state.md`** — you never Read `requirements.md` for it, and later consumers read
+`has_ui` from state. (Fallback only if `has_ui` is absent
 from state, e.g. an old run: `design_ui` not `n/a`, else `ui-design.md` exists.) **You do not Read the file
 back** — use the block the agent returned. Open Questions you cannot resolve safely → ask the user.
-**→ Reviewer gate**: spawn `reviewer`, passing the business-doc path (it reads the files itself).
-`NEEDS_FIX` → `product-analyst` fixes, remove `analyze` from `reviewer_passed` (any edit to an artifact
+**→ Reviewer gate**: spawn `reviewer`, passing the business-doc path (it reads the files itself); on a UI
+sprint it reviews `ux-map.md` in the same pass. `NEEDS_FIX` → `product-analyst` fixes (requirements and/or
+ux-map), remove `analyze` from `reviewer_passed` (any edit to an artifact
 removes its entry), review again; only `PASS` moves on (then add `analyze` to `reviewer_passed`).
 
 **→ Human approval gate (REQUIRED)**: Present a summary of the "Human Review" section of
-`requirements.md` to the user, then **STOP and ask whether they approve** before running Design. Example:
+`requirements.md` — and, on a UI sprint, the UX map part of the returned block (screens, flows, UX open
+questions) — then **STOP and ask whether they approve** before running Design. This is the cheapest moment
+to fix a flow: nothing has been drawn yet. Example:
 
 > ✅ Analyze complete. Requirements summary:
 > - [short list of user stories / main scope]
 > - [number of AC, number of edge cases, notable NFRs]
+> - UX map: [screen table SCR-xx], flows [FLOW-xx names] — see `ux-map.md`
 >
 > Reply **"ok"** or **"approve"** to continue to Design, or give feedback to adjust the requirements first.
 
@@ -115,62 +123,86 @@ CLAUDE.md/architecture.md/requirements.md cold — you do NOT read for them.
   in the same invocation; `tasks.md` includes the Test Plan, `Batch`, `Tests:` and `Difficulty` fields. It updates `.sdlc/architecture.md` if foundational components change, and returns
   (a) the design Human Review block and (b) a task ID + short description list (+ batches). No separate
   task-breakdown spawn.
-- **`has_ui: yes` → architect runs design-only, in parallel with `ui-designer`**: the
-  `architect` (skill `system-design`) writes `design.md` only and does NOT wait for the UI design. Tasks
-  must see `ui-design.md` (so they carry the DAC-xx items), so they are written afterwards: once BOTH
-  branches are done and the sync condition below holds, spawn ONE `task-breakdown` subagent (skill
-  `task-breakdown`) that reads `design.md` + `ui-design.md` and writes `tasks.md` (Test Plan, Batch, Tests,
-  DAC = Design Acceptance Criteria from `ui-design.md`, Difficulty) and returns the ID/description list.
-- **UI** (only when `has_ui: yes`): spawn `ui-designer` (skill `design-fidelity` + `artifact-design`) in parallel. It examines the UI
-  scope in `requirements.md`, picking a design source per screen; `ui-design.md` must cover every screen/state:
-    - Screen present in the external design `.sdlc/<version>/<sprint>/ui-design.input.md` → ingest +
-      normalize as `[external]`.
-    - Screen not provided → generate as `[generated]`, source priority: external tokens →
-      `.sdlc/design-system.md` → DESIGN.md → existing project: the current app's style → new project with
-      no source: ask the user once.
-  Writes `.sdlc/<version>/<sprint>/ui-design.md`; updates `.sdlc/design-system.md`. Its first report line
-  is `DONE`, `NEEDS_INPUT <question>` or `WAITING_EXTERNAL`. **`NEEDS_INPUT`** (subagents cannot talk to the
-  user) → relay the question to the user, then respawn `ui-designer` with the answer. **`WAITING_EXTERNAL`**
-  → write `design_ui: waiting-external` and stop. On `DONE` it returns a Human Review block (screens, tokens,
-  counts of `[external]`/`[generated]`, notable states) to relay at the design gate.
-
-**Sync before Tasks (sprints with screens)**: only spawn the `task-breakdown` subagent once the UI branch
-has a complete `ui-design.md` (not `waiting-external`). No-UI sprints have nothing to wait for.
-
-Write `design_system: done`, `design_ui: ...`, `tasks: done` into `state.md` after the agents return.
-Also generate `.sdlc/<version>/<sprint>/commands.md` (same as `/sdlc:tasks`): listing the per-task command
-`/sdlc:task <version> <sprint> <task-id>` and the run-to-completion command
-`/sdlc:execute <version> <sprint>` (implement + test + qa) — so the user can run or redo them manually later.
-Sync TodoWrite from the returned ID list (do NOT Read all of `tasks.md`).
+- **`has_ui: yes` → the UI path below** (architect design-only ∥ `ui-designer` draft → design gate → UI
+  ingest → `task-breakdown` → tasks gate).
 
 Self-review: each agent runs it before returning the file (you don't run it for them).
-**→ Reviewer gate** (after `tasks.md` exists): spawn `reviewer` to check `design.md` (+ `ui-design.md`) against `requirements.md`,
-and `tasks.md` (every AC/EC/NFR/DAC has an owning task or a Test Plan item owned by `test-strategist`) — it
-reads them itself. Only `PASS` moves on (add `design` and `tasks` to `reviewer_passed`). On `NEEDS_FIX`, who
-fixes what: design.md → `architect`; ui-design.md → `ui-designer`; tasks.md → the `architect` in a no-UI
-sprint, the **`task-breakdown` agent** in a UI sprint. After a design or ui-design fix, **regenerate
-`tasks.md`** with the same planner (tasks derive from the design) and remove `design` and `tasks` from
-`reviewer_passed` (any edit to an artifact removes its entry); then review again.
+
+#### No-UI sprints
+
+**→ Reviewer gate** (after `tasks.md` exists): spawn `reviewer` to check `design.md` against
+`requirements.md`, and `tasks.md` (every AC/EC/NFR has an owning task or a Test Plan item owned by
+`test-strategist`) — it reads them itself. Only `PASS` moves on (add `design` and `tasks` to
+`reviewer_passed`). `NEEDS_FIX` → `architect` fixes and regenerates `tasks.md`; remove `design` and `tasks`
+from `reviewer_passed` (any edit to an artifact removes its entry); review again.
 
 **→ Human approval gates (REQUIRED, two gates presented back-to-back — no agent spawn between them).**
-
-*Design gate.* Present a summary of the "Human Review" section of `design.md` (and `ui-design.md` if
-present), then **STOP and ask whether they approve**. Example:
+*Design gate* (example below), then on "ok" (`design_approved: true`) immediately the *tasks gate*. On
+design feedback: reset `tasks: doing`, `design_approved: pending`, `tasks_approved: pending`, drop
+`design`/`tasks` from `reviewer_passed`, spawn `architect` (design + tasks mode) to revise both files, re-run
+the reviewer, re-present the design gate.
 
 > ✅ Design complete. Summary:
 > - [architecture, main data model, notable API contracts]
-> - [UI screens / design tokens if any]
 > - [Regression-safe plan / breaking changes if any]
 >
 > Reply **"ok"** or **"approve"** to continue to the task list, or give feedback to adjust the design first.
 
-On "ok": write `design_approved: true`, then immediately present the tasks gate (the architect already
-wrote `tasks.md`, or the task-breakdown subagent did; use the ID/description list returned). On design
-feedback: first reset `tasks: doing`, `design_approved: pending`, `tasks_approved: pending` (and drop
-`design`/`tasks` from `reviewer_passed`); then spawn `architect` to revise `design.md` (or `ui-designer`
-when the feedback concerns `ui-design.md`), then **regenerate `tasks.md`** (architect in design+tasks mode
-for no-UI sprints, a fresh `task-breakdown` agent for sprints with screens), then re-run the reviewer and
-re-present the design gate.
+#### UI sprints (`has_ui: yes`)
+
+1. **Spawn in parallel** `architect` (skill `system-design`, design-only: writes `design.md`, sizing the API
+   on `ux-map.md`) and `ui-designer` in **mode `draft`** (skills `design-fidelity` + `artifact-design`). The
+   ui-designer covers every `SCR-xx` of `ux-map.md`, picks the aesthetic source per screen (external
+   `ui-design.input.md` → `[external]`; otherwise generated from the design system / `DESIGN.md` / the
+   existing app's style; new project with no source → asks once), writes `ui-design.md`, updates
+   `.sdlc/design-system.md`, and **draws the draft on a Claude Design canvas**. Its first report line is
+   `DONE`, `NEEDS_INPUT <question>` or `WAITING_EXTERNAL`:
+   - `NEEDS_INPUT` (subagents cannot talk to the user) → relay the question, respawn it with the answer.
+   - `WAITING_EXTERNAL` → write `design_ui: waiting-external` and stop.
+   - `DONE` → its block carries `canvas: <url>` → write `ui_canvas_url: <url>`, `design_ui: awaiting-review`;
+     or `canvas: unavailable (<reason>)` → write `ui_canvas_url: none`, `design_ui: done` (markdown spec only,
+     no ingest needed). Write `design_system: done` when the architect returns.
+2. **→ Reviewer gate**: spawn `reviewer` on `design.md` + the draft `ui-design.md` (against `requirements.md`
+   + `ux-map.md`). `PASS` → add `design`. `NEEDS_FIX` → `architect` / `ui-designer` (mode `draft`, revising the
+   SAME canvas) fix their own file; drop `design`; review again.
+3. **→ Design gate (REQUIRED)**: present the design Human Review block and the UI block, with the canvas link:
+
+   > ✅ Design complete.
+   > - [architecture, main data model, notable API contracts, regression-safe plan]
+   > - UI: [screens SCR-xx, tokens, notable states] — **canvas: <ui_canvas_url>**
+   >
+   > Open the canvas to review or edit the UI directly in Claude Design (drag/resize, comments, chat) —
+   > what you leave on the canvas is what gets built. Reply **"ok"** when you're done (or right away if it
+   > looks right), or give feedback here in text.
+
+   Text feedback on the system → `architect` revises `design.md`; on the UI → `ui-designer` mode `draft`
+   revises `ui-design.md` and the same canvas. Either way drop `design` from `reviewer_passed`, re-run step 2,
+   re-present this gate. On "ok" → write `design_approved: true`.
+4. **UI ingest** (only when `design_ui: awaiting-review`): spawn `ui-designer` in **mode `ingest`**. It reads
+   the canvas back, snapshots it to `.sdlc/<version>/<sprint>/design-source/`, and makes `ui-design.md` match
+   what the user approved (visuals: canvas wins; behavior/content: requirements win).
+   - `DONE` → write `design_ui: done` and `ui_snapshot_hash: <hash>` from its block; relay the "what you
+     changed vs the draft" summary in one or two lines.
+   - `NEEDS_INPUT` with canvas-vs-AC conflicts → ask the user, per conflict, which is right. "Fix the canvas" →
+     they edit it, then re-run this step. "The canvas is right" → `product-analyst` updates
+     `requirements.md` / `ux-map.md` (drop `analyze` from `reviewer_passed`), then re-run this step.
+5. **Tasks**: spawn ONE `task-breakdown` subagent (skill `task-breakdown`): reads `design.md` + the final
+   `ui-design.md`, writes `tasks.md` (Test Plan, Batch, Tests, DAC, Difficulty), returns the ID/description list.
+6. **→ Reviewer gate**: spawn `reviewer` on `tasks.md` and — when step 4 ran — the final `ui-design.md`
+   against the snapshot. `PASS` → add `tasks` (and `ui`). `NEEDS_FIX` → `ui-designer` (mode `ingest`) /
+   `task-breakdown` fix; regenerate `tasks.md` after a `ui-design.md` fix; review again.
+7. Then the *tasks gate* below.
+
+Under **"no human gate"** the design gate auto-approves after the reviewer's `PASS`, so step 4 ingests the
+draft as drawn — the sprint runs straight through, and the canvas stays available to look at later.
+
+#### Both paths
+
+Write `design_system`, `design_ui`, `tasks: done` into `state.md` as the agents return.
+Also generate `.sdlc/<version>/<sprint>/commands.md` (same as `/sdlc:tasks`): listing the per-task command
+`/sdlc:task <version> <sprint> <task-id>` and the run-to-completion command
+`/sdlc:execute <version> <sprint>` (implement + test + qa) — so the user can run or redo them manually later.
+Sync TodoWrite from the returned ID list (do NOT Read all of `tasks.md`).
 
 *Tasks gate.* Present a summary of `tasks.md`, then **STOP and ask whether they approve** before running
 Execute. Example:
@@ -187,7 +219,7 @@ Only continue to phase 4 once the user confirms. Write `tasks_approved: true` in
 revises `tasks.md` only; remove `tasks` from `reviewer_passed` and re-run the reviewer's tasks check.
 
 (In no-UI sprints `/sdlc:run` never spawns `task-breakdown`; in sprints with screens it spawns it once,
-after design + UI design. Standalone `/sdlc:tasks` spawns it for regeneration/replan.)
+after the design gate and the UI ingest. Standalone `/sdlc:tasks` spawns it for regeneration/replan.)
 
 ### Phase 4 — Execute (the most important one)
 
@@ -253,8 +285,9 @@ sequentially, each with a fresh and smaller context — pass `version`, `sprint`
 - `has_ui: yes` → `integration` first, then `ui` (regardless of task count).
   - `integration`: api/integration/3rd-party/webhook/DB-side-effect items + gap-filling of unit/api coverage
     (builders already wrote the unit/api tests from each task's `Tests:`).
-  - `ui`: e2e (Playwright) + visual verification (skill `design-fidelity`) — screenshots of each
-    screen/state + dark/light, baseline in `.sdlc/<version>/<sprint>/visual-baseline/`.
+  - `ui`: e2e (Playwright, one scenario per `FLOW-xx` of `ux-map.md`) + visual verification (skill
+    `design-fidelity`) — screenshots of each screen/state + dark/light, compared against the approved canvas
+    snapshot in `design-source/` when it exists; baseline in `.sdlc/<version>/<sprint>/visual-baseline/`.
 - `has_ui: no` → one `all` pass.
 
 Each layer appends/updates ITS section of `.sdlc/<version>/<sprint>/test-report.md`, **closes its own fix
@@ -316,8 +349,9 @@ Execute/Test/QA. Rules:
 - If N+1 depends on N in any way → run strictly sequentially.
 - **Isolation**: N+1's planning writes ONLY under `.sdlc/<version>/<N+1>/`, including its own
   `.sdlc/<version>/<N+1>/plan-state.md` (the planning pointer; never write `state.md` while N's coordinator is the sole writer). Changes it
-  wants in `.sdlc/architecture.md` / `.sdlc/design-system.md` go to
-  `.sdlc/<version>/<N+1>/architecture.proposal.md` / `design-system.proposal.md`. Merge `plan-state.md` into
+  wants in `.sdlc/architecture.md` / `.sdlc/design-system.md` / `.sdlc/sitemap.md` go to
+  `.sdlc/<version>/<N+1>/architecture.proposal.md` / `design-system.proposal.md` / `sitemap.proposal.md`
+  (tell `product-analyst` the sprint is pipelined). Merge `plan-state.md` into
   `state.md` and the proposals into the shared files at N's handoff (same point). N+1's artifacts are committed by N+1's own execution
   start, never concurrently with N's coordinator.
 - Overlap only if N+1's File Change Plan does not overlap N's. If background subagents are unavailable, or

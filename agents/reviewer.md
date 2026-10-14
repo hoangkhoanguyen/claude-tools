@@ -23,11 +23,13 @@ You are a subagent — you start cold. You must read:
 - Read-only. Don't edit files.
 - Compare the output against ITS INPUT, don't judge by personal taste:
   - Reviewing `requirements.md` → against the original business logic docs (the path the caller gave you) +
-    the relevant CLAUDE.md.
+    the relevant CLAUDE.md. When `ux-map.md` exists (UI sprint), review it in the same pass against
+    `requirements.md` + `.sdlc/sitemap.md` + the existing app's navigation.
   - Reviewing `design.md` → against `requirements.md` + `architecture.md` + codebase conventions.
-  - Reviewing `ui-design.md` (if present) → against the corresponding aesthetic source (the external
-    `ui-design.input.md` / `DESIGN.md` / `design-system.md` / the existing app's style) + the sprint's UI
-    requirements.
+  - Reviewing `ui-design.md` (if present) → against `ux-map.md` (screen coverage) + the corresponding
+    aesthetic source (the external `ui-design.input.md` / `DESIGN.md` / `design-system.md` / the existing
+    app's style) + the sprint's UI requirements. After ingest, also against the canvas snapshot in
+    `design-source/` (the approved visuals).
   - Reviewing `tasks.md` → against `design.md` (+ `ui-design.md` if present).
 - Focus on errors with downstream consequences, don't nitpick.
 
@@ -40,15 +42,28 @@ You are a subagent — you start cold. You must read:
 - Are there requirements invented beyond the source?
 - Is any high-risk assumption being treated as certain?
 
+**ux-map.md (UI sprints, reviewed with requirements.md):**
+- Does every AC with a UI facet map to a `SCR-xx`, and every `SCR-xx` serve an AC? (list orphans)
+- Is every screen reachable from the sitemap, and does every flow reach an exit — including error / cancel /
+  no-permission branches? (list dead ends)
+- Does every data field on a screen have a source entity and a format?
+- Are permissions per role stated (multi-role apps), consistent with the authz rules?
+- Any screen or action invented beyond the stories (navigation glue excepted)?
+- Any visual decision (colors, layout) that belongs to ui-designer instead?
+
 **design.md:**
 - Does the Rule & Edge-case Mapping table cover 100% of the RULEs/ECs in the requirements? (list what's missing)
 - Are there extra endpoints/entities not in the requirements?
 - Does the design contradict conventions/stack in the codebase & CLAUDE.md?
 - Are API error shapes defined for the ECs?
+- (UI sprint) Does every field shown on a `SCR-xx` in `ux-map.md` come from some response? Does design.md
+  re-list screens instead of referencing `ux-map.md`?
 
 **ui-design.md (if present):**
-- Does every screen/UI state in the requirements have a spec + Design AC? (full coverage, whether the
-  source is external or generated)
+- Does every `SCR-xx` in `ux-map.md` (legacy: every screen/UI state in the requirements) have a spec +
+  Design AC? (full coverage, whether the source is external, generated or canvas) Were screens added/dropped?
+- (after ingest) Does `ui-design.md` match the canvas snapshot for visuals, and does it record the Design
+  source header (canvas URL, snapshot path, hash)? Did a canvas edit silently override an AC?
 - Do visual values go through tokens, or are they hardcoded?
 - Was a style invented beyond the aesthetic source? (must follow: the external design / DESIGN.md / the
   existing app's style)

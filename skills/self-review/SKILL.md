@@ -25,11 +25,13 @@ your own work before handing off to the next step.
 
 **After analyze:** can the architect design from this? does every story have testable AC? does every rule
 have ECs? are the NFRs recorded? is Regression Impact listed (for an existing codebase)? was anything invented?
+If there's UI: does `ux-map.md` map every UI-facing AC to a screen, every screen to a sitemap entry, every flow
+to an exit (error/cancel branches included)?
 
 **After design:** is every RULE-xx / EC-xx / NFR-xx in the mapping table? do existing modules have a
 Regression-safe Plan? does it fit the codebase + architecture.md + CLAUDE.md? are there extra
 endpoints/entities?
-If there's UI: does every screen/state have a spec + Design AC (full coverage, whether the source is external
+If there's UI: does every `SCR-xx` of `ux-map.md` have a spec + Design AC (full coverage, whether the source is external
 or generated)? do visual values go through tokens rather than being hardcoded? does it follow the aesthetic
 source (external design / DESIGN.md / the existing app's style) without invention? are the `[generated]`
 screens visually consistent with the `[external]` ones?
