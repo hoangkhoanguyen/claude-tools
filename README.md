@@ -241,6 +241,8 @@ The orchestrating agent promotes `feature-builder` to Opus autonomously, counted
 
 Edit the `model:` line in the relevant agent's frontmatter under `.claude/agents/`. The installer detects files you've modified (via checksums in `.sdlc-install.json`) and will ask before overwriting on a future install, so manual edits are safe.
 
+**Experimental — cheaper `reviewer`.** `reviewer` mostly reads and cross-checks, so a project may set its `model:` to a smaller one to cut cost. This has not been measured against the number of defects it catches: try it on one sprint, compare with `scripts/token-profile.py` and with what slips through to later phases, and revert if the review gets weaker. Keep the default (`inherit`) for sensitive sprints (security, data, payments).
+
 ### Optional: Offloading Implement Tasks to Codex CLI
 
 If [OpenAI Codex CLI](https://github.com/openai/codex) is installed and authenticated on your machine,
