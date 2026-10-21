@@ -108,7 +108,7 @@ contract) — don't expect one, and don't invent one from its diff.
 once per batch and paste into its prompt, under **"Spec excerpt (from tasks.md / design.md)"**: each task's own
 block (fields as written), the Test Plan rows it owns, only the AC/EC/NFR/DAC it serves (by id, from `requirements.md`
 / the design's mapping table), the design sections its Expected files fall under (API contracts, data model rows),
-and the helpers/functions to reuse (from the code map and the task's `Reuse` hints). Use Grep with line ranges; never
+and the helpers/functions to reuse (from the code map and the task's Expected files / notes). Use Grep with line ranges; never
 paste a whole file. The excerpt is a convenience, not a boundary: the builder may read beyond it when something it
 needs is missing, and a gap in the excerpt is never by itself a `DESIGN_GAP`.
 
