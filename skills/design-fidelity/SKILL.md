@@ -36,10 +36,18 @@ in the codebase. Otherwise → skip it, and let the UI follow the codebase conve
 
 ## Visual verification with Playwright
 
-- Screenshot each main screen/state at the defined breakpoints + dark/light.
-- Compare against the Design AC (color codes via computed style, layout not overflowing/overlapping).
-- If a baseline exists (`.sdlc/<version>/<sprint>/visual-baseline/`): compare to catch visual regressions.
-  With no baseline yet → create one after confirming it matches the Design AC.
+Check by code, look at pictures only when something is red — each image read into context is re-billed every turn.
+
+- **One matrix spec** loops over screen/state × breakpoint (smallest and largest defined) × theme (if both
+  exist). Per cell it asserts the DAC-xx by code: token colors/sizes via computed style, no horizontal overflow
+  or overlapping boxes, contrast ≥ threshold, every specified state renders.
+- **Baseline by tool, not by eye.** Use `expect(page).toHaveScreenshot()` (with a small `maxDiffPixelRatio`)
+  against `.sdlc/<version>/<sprint>/visual-baseline/`; read only the diff images of cells that fail. With no
+  baseline yet → write to `visual-baseline/.pending/`, promote after the DAC-xx pass.
+- **Remove noise first**: animations off (`animations: 'disabled'`), time frozen, dynamic text/ids masked
+  (`mask:`), fonts loaded before the shot.
+- **Eyes-on budget**: at most one image looked at per screen (smallest breakpoint), plus any cell whose check
+  failed. Never view every cell.
 
 ## Comparing against the approved canvas (when `design-source/` exists)
 

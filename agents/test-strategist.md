@@ -92,9 +92,11 @@ verification. Miss nothing.
 
 **E2E flows (`ui` layer).** When `ux-map.md` exists, each `FLOW-xx` is one e2e scenario (including its error /
 cancel branches) — that is the ready-made e2e list.
+Write them as spec files run by the runner (login once via `storageState`, `webServer` in the config, stable
+locators) per skill `test-strategy` → "Playwright UI tests"; don't drive the browser command by command.
 
-**Visual regression (when there's a UI design).** Use skill `design-fidelity`: screenshot each main screen/state
-at the smallest and largest breakpoints and in dark/light; check against the DAC-xx (color codes via computed
+**Visual regression (when there's a UI design).** Use skill `design-fidelity`: one matrix spec over screen/state ×
+smallest/largest breakpoint × theme; check by code against the DAC-xx (color codes via computed
 style, layout not overflowing/overlapping, contrast meeting the threshold) and — when
 `.sdlc/<version>/<sprint>/design-source/` exists — against the approved canvas snapshot (see the skill's
 "Comparing against the approved canvas" section). Baselines live in
@@ -225,7 +227,7 @@ What the caller should do next: <1-2 lines>
 
 - Use Grep / offset+limit reads (or `sed -n 'a,bp'`) for large files; don't Read whole large files repeatedly or
   `cat` them. A large nested `CLAUDE.md` (> ~20 KB): headings first, then only the relevant sections (root: in full).
-- Screenshots: no more than needed per DAC-xx — prefer computed-style assertions, plus one screenshot per
-  screen/state.
+- Screenshots: assert by code (computed style, `toHaveScreenshot`), and look at an image only when a check is red
+  or for the one per-screen eyes-on shot (see design-fidelity).
 - If your context approaches ~150k with work remaining, stop with `CONTEXT_LIMIT` (progress recorded in
   `test-report.md`) rather than ballooning further.
