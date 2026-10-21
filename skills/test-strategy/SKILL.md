@@ -53,7 +53,8 @@ requirements include Regression Impact → add tests / re-walk the happy path of
 
 ## Actually run them, don't assume
 
-Once tests are written they MUST be run. Fail → fix → re-run until green. Smoke test the main endpoints: no 500s.
+Once tests are written they MUST be run. Fail → fix → re-run until green — **scoped** to the file/test just
+changed (the runner's file/pattern argument); run the whole suite once at the end of the leg, not per fix round. Smoke test the main endpoints: no 500s.
 Mark each AC/EC row `verified: run|read`. Expected values in a test come from the spec, not from what the code
 currently outputs. Triage any red result against commit history before spawning a fix.
 

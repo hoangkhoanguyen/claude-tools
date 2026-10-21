@@ -91,8 +91,9 @@ baseline to catch visual regressions.
 
 - **Commit the layer's new tests first** (`test(<sprint>): <description>`), so the tree is clean before any
   mutation check.
-- Run every test you wrote (and, in the `integration`/`all` layer, the full suite + typecheck + lint once,
-  recording the result). Red → **you close the fix loop yourself** (step 4); do NOT push it back to the caller —
+- Run every test you wrote **by file** (the runner's file/pattern argument, e.g. `<runner> <test file>`), not the
+  whole suite, while writing. In the `integration`/`all` layer, run the full suite + typecheck + lint ONCE at the
+  end, recording the result. Red → **you close the fix loop yourself** (step 4); do NOT push it back to the caller —
   that's a major context sink in the main conversation.
 - Smoke test the main endpoints: no 500s / failed calls.
 - **Mutation spot-check** (`integration`/`all` layer; clean tree required): pick ≥ 3 rule-heavy RULE/EC tests
@@ -104,7 +105,8 @@ baseline to catch visual regressions.
 
 ## Step 4 — The fix loop (you own it)
 
-Each round: diagnose the red test → fix → re-run. Ladder: 5 Sonnet rounds, then 1 Opus round with the full
+Each round: diagnose the red test → fix → re-run **only the red file/test** (scoped command); the full suite runs
+once after the loop is green, not per round. Ladder: 5 Sonnet rounds, then 1 Opus round with the full
 history, then `BLOCKED`; 3 identical failures → escalate early; `DESIGN_GAP` / `NEEDS_SERVICE` don't count. Load
 skill `failure-ladder` on the first retry.
 
