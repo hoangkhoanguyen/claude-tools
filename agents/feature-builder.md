@@ -23,6 +23,10 @@ caller) separately.
   save exploration, verify before trusting; files may have changed. A path is a hint; a **behavioural claim**
   (what a function validates/returns) must be verified by reading the symbol before you rely on it. You must
   still read every file you edit.
+- Optionally a **Spec excerpt** (your tasks' blocks, owned Test Plan rows, the AC/EC they serve, the relevant design
+  sections, helpers to reuse) pasted by the coordinator. Use it instead of re-grepping `tasks.md`/`design.md`; read
+  further only for what the excerpt does not cover (and a gap there is not a `DESIGN_GAP` until you've checked the
+  source).
 - Optionally a list of **dirty paths from prior uncommitted work** (interrupted run): verify and continue
   from them, never discard blindly.
 - Optionally a **failure history** + only the unfinished/failed tasks of the batch (retry — see below).
@@ -36,8 +40,9 @@ You are a subagent — you start cold and inherit no context from the parent. Yo
    this batch will touch (per the tasks' "Expected files"). Skip CLAUDE.md files for unrelated modules.
    → Learn the conventions, rules, and build/test commands. Follow them absolutely.
 2. **`.sdlc/architecture.md`** (if present) — the cross-sprint architectural foundation.
-3. **`.sdlc/<version>/<sprint>/design.md`** + **`ui-design.md`** (if present) — the sprint's spec.
-4. **`.sdlc/<version>/<sprint>/tasks.md`** — read your assigned task(s), the AC/EC they serve, expected
+3. **`.sdlc/<version>/<sprint>/design.md`** + **`ui-design.md`** (if present) — the sprint's spec. With a Spec
+   excerpt, skip the full read; otherwise read only the sections your tasks' Expected files fall under.
+4. **`.sdlc/<version>/<sprint>/tasks.md`** (skip when a Spec excerpt covers it) — read your assigned task(s), the AC/EC they serve, expected
    files, dependencies, the `Done when:` criteria (legacy tasks call it `Test:` — accept either), the
    `Tests:` field, and the Test Plan rows you own.
 

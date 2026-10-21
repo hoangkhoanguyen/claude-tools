@@ -54,6 +54,10 @@ that writes to the DB, a queue or a 3rd party is really `integration` and yours)
 
 ## Step 1 — Detect the stack & test tooling
 
+- **Start from the builders' notes, don't re-explore.** Read `.sdlc/<version>/<sprint>/.coordinator/code-map.md`
+  (if present) and each task's `Tests:` field first: they list the files, helpers and test support already
+  discovered. Read a source file only for the rows you own, and don't re-read ones a code-map entry already
+  covers unless you must assert on their behaviour.
 - **Read the relevant CLAUDE.md** (the root file + files in the module under test) to learn the project's
   test commands and test conventions. Judge which files are relevant, don't read blindly.
 - **Detect existing test skills in the repo** (`.claude/skills`, plugins, built-ins). If the project has

@@ -104,6 +104,14 @@ trusting, files may have changed"**. A path is a hint; a **behavioural claim** i
 The builder must still read every file it edits. Codex batches return no code map (Codex doesn't speak that
 contract) — don't expect one, and don't invent one from its diff.
 
+**Task excerpt relay.** Builders otherwise re-grep `tasks.md` and re-read `design.md` on every cold start. Extract
+once per batch and paste into its prompt, under **"Spec excerpt (from tasks.md / design.md)"**: each task's own
+block (fields as written), the Test Plan rows it owns, only the AC/EC/NFR/DAC it serves (by id, from `requirements.md`
+/ the design's mapping table), the design sections its Expected files fall under (API contracts, data model rows),
+and the helpers/functions to reuse (from the code map and the task's `Reuse` hints). Use Grep with line ranges; never
+paste a whole file. The excerpt is a convenience, not a boundary: the builder may read beyond it when something it
+needs is missing, and a gap in the excerpt is never by itself a `DESIGN_GAP`.
+
 **Parallel batches share one working tree.** A red scoped check in one batch can be caused by another batch's
 in-flight edits. Before counting a red as that batch's failure, attribute it: if the failing file/symbol is
 outside the batch's own Expected files, it is NOT that batch's failure (re-run once the other batch has
