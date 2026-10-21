@@ -37,6 +37,22 @@ The planning phase writes a **Test Plan** at the top of the Agent-Reference part
 | UI with a design (DESIGN.md/ui-design.md) | Visual verification: Playwright screenshots per DAC-xx (tokens, contrast, responsive, dark/light) checked against the baseline | Playwright + skill `design-fidelity` |
 | Requires a real human (SMS OTP, Face ID, real money) | Can't be automated → list for manual verification | — |
 
+## Playwright UI tests: write specs, don't drive the browser step by step
+
+Every interactive browser command is a turn whose result is re-read on all later turns. So the UI layer is
+**spec files run by the runner**, not a hand-driven session; open a browser by hand only to debug one red test.
+
+- **One spec per `FLOW-xx`** (including its error/cancel branches), run by file, results read from the runner
+  output. Reuse the project's existing Playwright config, fixtures and helpers before creating new ones.
+- **Log in once.** A global setup saves `storageState` per role; specs reuse it. Seed data through the API/DB,
+  never through the UI.
+- **Server via config.** Declare `webServer` in the Playwright config (command, url, `reuseExistingServer`) so the
+  runner starts and waits for the dev server; don't curl-poll it from the agent. Run headless.
+- **Stable by construction.** Locate by role / label / test-id; rely on auto-waiting and web-first assertions
+  (`expect(locator)...`); never `waitForTimeout`. Allow `retries: 1` at most, and report any test that only
+  passed on retry as flaky in `test-report.md` rather than counting it as a clean pass.
+- Parallel workers only when each test's data is isolated; otherwise `workers: 1` (shared DB).
+
 ## Environment coordination
 
 - Playwright is pre-installed in the Claude Code web environment. Do NOT run `playwright install`.
