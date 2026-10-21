@@ -37,7 +37,7 @@ def weight(u):
 
 def parse(path):
     """Stats for one transcript; assistant messages are de-duplicated by message id."""
-    seen, times = {}, []
+    seen, times, order = {}, [], {}
     models = C.Counter()
     reads, images, edits, commits = C.Counter(), 0, C.Counter(), C.Counter()
     for line in open(path, errors='ignore'):
@@ -51,6 +51,7 @@ def parse(path):
         if d.get('type') == 'assistant':
             if msg.get('id') and msg.get('usage'):
                 seen[msg['id']] = msg['usage']
+                order[msg['id']] = d.get('timestamp')
                 fam = re.search(r'(opus|sonnet|haiku)', msg.get('model') or '')
                 models[msg['id']] = fam.group(1) if fam else 'other'
             for c in msg.get('content') or []:
@@ -73,6 +74,15 @@ def parse(path):
             for c in msg['content']:
                 if isinstance(c, dict) and c.get('type') == 'tool_result' and isinstance(c.get('content'), list):
                     images += sum(1 for s in c['content'] if isinstance(s, dict) and s.get('type') == 'image')
+    # cache rebuilds: a turn that re-writes a large prompt after an idle gap (prompt cache expired)
+    rebuilds, rebuilt, prev_t = 0, 0, None
+    for mid in order:
+        t, u = order[mid], seen[mid]
+        cc = u.get('cache_creation_input_tokens', 0) or 0
+        if prev_t and t and cc > 50000 and (ts(t) - ts(prev_t)).total_seconds() > 240:
+            rebuilds += 1
+            rebuilt += cc
+        prev_t = t or prev_t
     usage = C.Counter()
     peak = 0
     for u in seen.values():
@@ -87,7 +97,8 @@ def parse(path):
         by_model[models.get(mid, 'other')] += weight(u)
     return dict(turns=len(seen), w=weight(usage), peak=peak, dur=dur, reads=reads, images=images,
                 edits=edits, commits=commits, start=times[0] if times else None,
-                cr=usage['cache_read_input_tokens'], by_model=by_model)
+                cr=usage['cache_read_input_tokens'], by_model=by_model,
+                rebuilds=rebuilds, rebuilt=rebuilt)
 
 
 def main():
@@ -130,6 +141,8 @@ def main():
             g['peaks'].append(s['peak'])
             g['images'] += s['images']
             g['cr'] = g.get('cr', 0) + s['cr']
+            g['rebuilds'] = g.get('rebuilds', 0) + s['rebuilds']
+            g['rebuilt'] = g.get('rebuilt', 0) + s['rebuilt']
             model_w.update(s['by_model'])
             g['reads'].update(s['reads'])
             g['edits'].update(s['edits'])
@@ -167,6 +180,11 @@ def main():
             n, w, tu = batch[k]
             tasks = k * n
             print(f'  {k}{"+" if k == 4 else " "} task(s): spawns={n:4d}  M/task={w / tasks / 1e6:5.2f}  turns/task={tu / tasks:5.1f}')
+
+    print('\nPrompt-cache rebuilds (turn after an idle gap > 4 min re-writing > 50k tokens; check what the agent was waiting on):')
+    for t, g in sorted(by_type.items(), key=lambda kv: -kv[1].get('rebuilt', 0)):
+        if g.get('rebuilds'):
+            print(f'  {t:24s} rebuilds={g["rebuilds"]:3d}  re-written={g["rebuilt"] / 1e6:5.2f}M tokens')
 
     print('\nSpec-file Reads per agent (avg per agent):')
     for t in ('feature-builder', 'test-strategist', 'implement-coordinator', 'qa-guard'):
