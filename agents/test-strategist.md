@@ -52,6 +52,21 @@ that writes to the DB, a queue or a 3rd party is really `integration` and yours)
 - No Test Plan in tasks.md (older sprint) → fall back to the decision table in skill `test-strategy` for
   everything, and treat the layer as `all` (legacy: a `test-report.md` with no layer sections is also `all`).
 
+## Step 0b — Split a big layer into groups (fresh context per group)
+
+One long session carries every file it has read into every later turn. When your layer owns many independent
+items, work it in **groups** instead:
+
+- **Threshold.** `group_size` from the caller's prompt, default **12 owned Test Plan rows** (AC/EC/NFR/DAC for
+  your layer, after reconciliation). At or below it → no grouping, one pass.
+- **Grouping.** Above it, cluster the rows by module/endpoint (integration) or by screen/`FLOW-xx` (ui) into
+  groups of ≤ `group_size`, and list them as `Group k/m: <rows>` at the top of your layer section.
+- **Per group.** Write + run (scoped) the group's tests, commit them, and record the group as done in the layer
+  section. If groups remain, stop with `CONTEXT_LIMIT` ("group k/m done") — the caller already respawns a fresh
+  agent, which resumes from the partial section (step 0). Groups run **sequentially**: they share the DB/dev server.
+- **Only the last group** runs the full suite + typecheck + lint, the mutation spot-check, the green-run line and
+  appends the layer to `test_layers_done`. Earlier groups never do.
+
 ## Step 1 — Detect the stack & test tooling
 
 - **Start from the builders' notes, don't re-explore.** Read `.sdlc/<version>/<sprint>/.coordinator/code-map.md`
