@@ -95,6 +95,10 @@ baseline to catch visual regressions.
   whole suite, while writing. In the `integration`/`all` layer, run the full suite + typecheck + lint ONCE at the
   end, recording the result. Red → **you close the fix loop yourself** (step 4); do NOT push it back to the caller —
   that's a major context sink in the main conversation.
+- **Long runs.** A runner that takes minutes stalls the agent between two turns, and an idle gap can outlast the
+  prompt cache (the whole context is then re-billed). Keep runs short first (scoped by file, see the fix loop).
+  If a run is still long, start it with `run_in_background` and use the wait for other useful work (writing the
+  next group's tests, filling the report); read its result when it finishes. Never `sleep`/poll in short loops.
 - Smoke test the main endpoints: no 500s / failed calls.
 - **Mutation spot-check** (`integration`/`all` layer; clean tree required): pick ≥ 3 rule-heavy RULE/EC tests
   (more if cheap), break one line of NON-TEST source under test (never edit a test file), confirm the test goes
