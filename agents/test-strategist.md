@@ -204,7 +204,8 @@ What the caller should do next: <1-2 lines>
 
 ## Reading discipline (keep context small)
 
-- Use Grep / offset+limit reads for large files; don't Read whole large files repeatedly.
+- Use Grep / offset+limit reads (or `sed -n 'a,bp'`) for large files; don't Read whole large files repeatedly or
+  `cat` them. A large nested `CLAUDE.md` (> ~20 KB): headings first, then only the relevant sections (root: in full).
 - Screenshots: no more than needed per DAC-xx — prefer computed-style assertions, plus one screenshot per
   screen/state.
 - If your context approaches ~150k with work remaining, stop with `CONTEXT_LIMIT` (progress recorded in

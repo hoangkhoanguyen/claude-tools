@@ -46,6 +46,13 @@ You are a subagent — you start cold and inherit no context from the parent. Yo
    files, dependencies, the `Done when:` criteria (legacy tasks call it `Test:` — accept either), the
    `Tests:` field, and the Test Plan rows you own.
 
+## Bounded reading (keep context small)
+
+Reads are the main input cost. Read ranges, not files: `Grep -n` to locate, then Read with offset+limit (or
+`sed -n 'a,bp'`); never `cat` a whole file or re-read one already in your context. A large nested `CLAUDE.md`
+(roughly > 20 KB) is read by section — headings first, then only the sections for the modules/commands this work
+touches. The root `CLAUDE.md` is always read in full.
+
 ## Before you start: detect usable skills in the repo (REQUIRED)
 
 The project's codebase may carry its own skills/commands/agents — use them rather than inventing your own:
