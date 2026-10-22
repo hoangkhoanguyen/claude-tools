@@ -218,6 +218,22 @@ Permitted exceptions to writing: pre-flight (`services_up` / `services_up_sprint
 `required_layers`, and the `NEEDS_SERVICE` recovery write — only while no execution agent is running), the
 `docs(<sprint>): planning artifacts` commit before Execute, and handoff (`sprints.md`, `versions.md`).
 
+### Running many sprints without filling the conversation (`/sdlc:run-all`)
+
+Even with perfect context discipline, a SINGLE conversation can only chain ~2-3 sprints: each subagent's
+final report returns into the main conversation, so ~8 agents/sprint + gate summaries + Pre-manual Reports
+accumulate and eventually hit the 1M ceiling. `/sdlc:run` deliberately stops and tells the user to re-run
+in a new session when context fills — the state on disk makes that lossless.
+
+To run a whole version in one sitting, use `/sdlc:run-all <version>`. It is the orchestrator-of-orchestrators:
+it spawns a **fresh child session per sprint** (via the `claude-code-remote` tools), each child runs the
+ordinary `/sdlc:run <version> <sprint>` in its own clean 1M context, and the orchestrator tracks progress
+from **git** (`state.md` + `sprints.md`), never from child transcripts — so its own context stays tiny
+across the whole version. Same philosophy as subagents (sole-writer children, context isolation), one level
+up. It runs autonomously (no human gate), strictly sequential (never two sprints' Execute at once), and
+pauses only on a real blocker. Prefer it over a long comma-list `/sdlc:run` invocation whenever the version
+has more than ~2 sprints.
+
 ## Choosing a test strategy (auto-detected)
 
 See the `test-strategy` skill. The principle: automate as much as possible. Only flag something as

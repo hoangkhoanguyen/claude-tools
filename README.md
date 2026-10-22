@@ -112,6 +112,26 @@ From there you have two execution options:
 - **Task by task manually**: type `/sdlc:task` (no args) to pick an unfinished task from the list, or explicitly `/sdlc:task <version> <sprint> <task-id>`.
 - **Run to completion**: `/sdlc:execute <version> <sprint>` — implements all tasks then immediately runs tests + QA gate + handoff.
 
+### Run a whole version in one session — `/sdlc:run-all`
+
+`/sdlc:run <version> <sprint>` runs **one** sprint. Chaining many sprints in a single conversation
+eventually fills the 1M-token context (each subagent's final report lands back in the main conversation),
+so in practice one session only clears ~2-3 sprints before you have to open a new one.
+
+`/sdlc:run-all <version>` removes that ceiling. It is the orchestrator ("nhạc trưởng"): it does not run the
+phases itself — it **spawns a fresh child session per sprint** (via the `claude-code-remote` tools), each
+child runs the ordinary `/sdlc:run` in its own clean 1M context, commits everything to git, and reports a
+one-line status. The orchestrator reads progress from **git** (`.sdlc/<version>/state.md` + `sprints.md`),
+never from child transcripts, so it holds only sprint slugs + pass/fail and can drive an entire version
+start-to-finish in a single session you watch.
+
+It runs **autonomously (no human gate)** — settle services + branch once up front, confirm the sprint
+list, then it chains every remaining sprint strictly sequentially (never two Executes at once), pausing
+only on a real blocker (`BLOCKED` / `DESIGN_GAP` / `NEEDS_SERVICE`). It is resumable: re-running it skips
+sprints already `done` and continues from the first unfinished one. Requires an environment with the
+`claude-code-remote` child-session tools; without them it falls back to running sprints in the current
+session until context fills.
+
 `/sdlc:status` shows progress at any time. `/sdlc:replan` updates the sprint when business logic changes mid-flight without losing state.
 
 ---
@@ -153,6 +173,7 @@ The plugin writes everything to the `.sdlc/` directory in your project (committa
 |------|------|------|
 | Command | `sprint-plan` | Split into sprints + create foundational architecture.md |
 | Command | `run` | Run a full sprint, resumable |
+| Command | `run-all` | Run every remaining sprint of a version autonomously, one fresh child session per sprint — orchestrator context never fills; resumable |
 | Command | `analyze` / `design` / `tasks` / `test` | Run individual phases (`tasks` only creates documentation) |
 | Command | `task` | Execute a single task (no args → pick from list) |
 | Command | `execute` | Run to completion: implement all tasks + test + QA + handoff |
