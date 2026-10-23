@@ -56,6 +56,26 @@ spawning anything:
    current status and dependencies) and the one services answer you got. One "ok" starts the whole run.
    After that, do not stop except for a blocker.
 
+## Model & cost
+
+There are TWO models in play, and conflating them is the easy mistake:
+
+- **The orchestrator session** (where `/sdlc:run-all` runs) does almost no work per sprint — spawn a
+  child, poll `get_session`, `git pull`, read a small `state.md`, relay one line. Its token use is
+  negligible next to the children, so its model barely moves total cost. **Sonnet is the sensible default
+  for it** — there is nothing here worth paying Opus for. (It is NOT holding the planning decisions; the
+  children's gates auto-approve under no-human-gate.)
+- **Each child session** consumes ~all the tokens, and its model sets the quality of phases 1-3 (which
+  `inherit`). **Default the child to Opus** (passed explicitly on `create_session`, per the run loop
+  below) so planning stays sharp; phases 4-6 are hard-pinned to Sonnet in frontmatter and stay cheap no
+  matter what. This split — Opus plans, Sonnet executes — is already the cost-optimized shape; the
+  expensive leg (execution) is the one that's cheap.
+
+So "which model saves money?" → run the **orchestrator on Sonnet**, keep the **children on Opus**. Making
+the orchestrator Opus wastes a little; making the children Sonnet saves real tokens but lowers planning
+quality (an early mistake cascades into every later phase) — offer that only as an explicit user choice,
+never as a silent default inherited from a cheap orchestrator.
+
 ## The run loop (strictly sequential)
 
 For each sprint in order, skipping those already `done`:
@@ -70,8 +90,16 @@ For each sprint in order, skipping those already `done`:
    - `permission_mode`: a non-interactive mode no more permissive than this session's (e.g. `acceptEdits`
      / `dontAsk`), so the child never stalls on a permission prompt. **Never `plan`** — it blocks forever
      waiting for a web approval no one will give.
-   - environment inherited (omit `environment_id`); model inherited (the child's own `/sdlc:run` applies
-     the Opus-orchestrates/Sonnet-executes policy from the agent frontmatter — do NOT pass `model`).
+   - environment inherited (omit `environment_id`).
+   - **`model`: pass the PLANNING model explicitly — default Opus** (`claude-opus-...`). This is the one
+     model choice that matters for the whole run, and it is NOT the orchestrator's own model (see "Model &
+     cost" below). The child's phase 1-3 agents (`product-analyst`, `architect`, `ui-designer`,
+     `task-breakdown`, `reviewer`) declare `inherit`, so they run on **the child session's** model; phases
+     4-6 are hard-pinned to Sonnet in frontmatter regardless. `create_session` defaults the child's model
+     to the CALLER's model, so **if you omit `model` and the orchestrator is on Sonnet, every sprint's
+     planning silently drops to Sonnet** — exactly the cascade the plugin's model policy exists to prevent.
+     Set it, don't inherit it. (The user may ask for Sonnet planning to cut cost further — then pass Sonnet;
+     that is their explicit trade, not a silent default.)
    - a `title` like `run-all <version>/<sprint>` and a `tags: ["sdlc-run-all", "<version>"]` so the
      children are easy to find.
    Record the returned `session_id` against this sprint slug. **Spawn only one sprint at a time** — never

@@ -132,6 +132,13 @@ sprints already `done` and continues from the first unfinished one. Requires an 
 `claude-code-remote` child-session tools; without them it falls back to running sprints in the current
 session until context fills.
 
+**Model & cost:** run the **orchestrator session on Sonnet** — it only coordinates (spawn, poll git, relay
+one line), so its tokens are negligible and Opus would be wasted on it. Each sprint's **child session
+defaults to Opus** (set explicitly when spawned) so planning phases stay sharp; execution phases are
+hard-pinned to Sonnet regardless. Do **not** let the child inherit a cheap orchestrator model — that
+silently drops every sprint's planning to Sonnet. Want it cheaper still? Ask for Sonnet planning in the
+children too, as an explicit quality/cost trade.
+
 `/sdlc:status` shows progress at any time. `/sdlc:replan` updates the sprint when business logic changes mid-flight without losing state.
 
 ---
