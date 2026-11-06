@@ -23,14 +23,15 @@ respawn with Opus — `BLOCKED` means a human decision is needed.
 
 **Setup.** An explicit `/sdlc:test` means the user wants a re-test: reset `test_layers_done: []` and
 `test: todo` in state. Then compute `required_layers` and write it to state. Read `has_ui` from state; only if it
-is absent, fall back to: `design_ui` is not `n/a`, else `ui-design.md` exists. `has_ui: yes` → `[integration, ui]`;
+is absent, fall back to: `design_ui` is not `n/a`, else `ui-design.md` exists. `has_ui: yes` → `[integration, e2e, visual]`;
 `has_ui: no` → `[all]`. Legacy sprint (no Test Plan in tasks.md, or an old test-report.md without layer
 sections) → `[all]`.
 
 Spawn subagent `test-strategist` with skill `test-strategy`, **passing the `layer` input**, ONLY for layers not
 already in `test_layers_done`:
-- `[integration, ui]` → spawn sequentially: `layer: integration` first, then (once it returns `DONE`)
-  `layer: ui`, each with fresh context — regardless of task count;
+- `[integration, e2e, visual]` → spawn sequentially: `layer: integration`, then `layer: e2e`, then
+  `layer: visual`, each only once the previous returns `DONE` and each with fresh context — regardless of task
+  count;
 - `[all]` → one spawn with `layer: all`.
 
 The agent defines its own work (Test Plan ownership, stack detection, visual verification against the

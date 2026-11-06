@@ -48,14 +48,33 @@ Check by code, look at pictures only when something is red — each image read i
   (`mask:`), fonts loaded before the shot.
 - **Eyes-on budget**: at most one image looked at per screen (smallest breakpoint), plus any cell whose check
   failed. Never view every cell.
+- **Matrix output stays quiet**: the run prints failing cells and one summary line, not a line per check (see
+  test-strategist → "Quiet output").
+
+## Eyes-on through a subagent
+
+An image read into context is re-billed on every later turn of that session, and an app-vs-design comparison
+reads two per screen. So whoever is running the test leg (`test-strategist`, `qa-guard`) never Reads a
+screenshot itself. It spawns one throwaway subagent (`Agent`, default type, `model: "sonnet"`) per batch of up to
+~10 images, passing:
+
+- the image paths (app shot, and the matching design render / baseline / diff image when comparing),
+- what to judge per image: the DAC-xx ids and the `SCR-xx` description from `ui-design.md`, quoted in the prompt,
+- the reply format: one line per image — `<file>: OK` or `<file>: MISMATCH <what, where>` — plus at most 3 lines
+  of overall notes. No image descriptions beyond that.
+
+The subagent's context (and every image in it) is discarded when it returns; only the short verdict comes
+back. Treat a `MISMATCH` like a red check: fix the code, re-shoot that cell, and send only that image for a
+re-check. If the `Agent` tool is unavailable, view the images yourself, staying inside the eyes-on budget.
 
 ## Comparing against the approved canvas (when `design-source/` exists)
 
 The snapshot is what the user approved on the Claude Design canvas.
 - Try to render it locally (Playwright `file://` on the saved page, same viewport as the app screenshot). If it
   renders, screenshot each `SCR-xx` artboard and the matching app screen side by side into
-  `visual-baseline/.pending/compare/`, and check: same elements present in the same order, same hierarchy,
-  same token values via computed style (colors, font sizes, spacing, radius). Layout must match in structure,
+  `visual-baseline/.pending/compare/`, and check: same token values via computed style (colors, font sizes,
+  spacing, radius) by code; same elements present in the same order and same hierarchy by DOM queries where
+  possible, and by eye only through the eyes-on subagent above. Layout must match in structure,
   not pixel-for-pixel — real data, fonts and browser rendering differ.
 - If it does not render standalone (the canvas may need the claude.ai runtime), fall back to the DAC-xx in
   `ui-design.md`, which ingest derived from the canvas, and note "canvas snapshot not renderable locally" in

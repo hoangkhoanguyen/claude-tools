@@ -277,18 +277,26 @@ spawn a fresh coordinator (progress is on disk). Relay the report to the user as
 
 ### Phase 5 — Test (by layer)
 First **compute `required_layers`** from `has_ui` in `state.md` (`has_ui: yes` →
-`[integration, ui]`; `has_ui: no` → `[all]`) and write it into `state.md` (you are the only writer at this
+`[integration, e2e, visual]`; `has_ui: no` → `[all]`) and write it into `state.md` (you are the only writer at this
 moment — no execution agent is running). Legacy sprint (no Test Plan in `tasks.md`, or an old
 `test-report.md` without layer sections) → `[all]`. Then spawn `test-strategist` (skill `test-strategy`)
 once per layer in `required_layers` that is **NOT already in `test_layers_done`** (absent field = `[]`),
 sequentially, each with a fresh and smaller context — pass `version`, `sprint`, `layer`:
-- `has_ui: yes` → `integration` first, then `ui` (regardless of task count).
+- `has_ui: yes` → `integration`, then `e2e`, then `visual` (regardless of task count) — three sessions, because
+  each one re-reads its whole context on every turn and browser logs/screenshots must not ride along with
+  unrelated work.
   - `integration`: api/integration/3rd-party/webhook/DB-side-effect items + gap-filling of unit/api coverage
     (builders already wrote the unit/api tests from each task's `Tests:`).
-  - `ui`: e2e (Playwright, one scenario per `FLOW-xx` of `ux-map.md`) + visual verification (skill
-    `design-fidelity`) — screenshots of each screen/state + dark/light, compared against the approved canvas
-    snapshot in `design-source/` when it exists; baseline in `.sdlc/<version>/<sprint>/visual-baseline/`.
+  - `e2e`: Playwright specs, one scenario per `FLOW-xx` of `ux-map.md` (+ regression replays).
+  - `visual`: visual verification (skill `design-fidelity`) — the screen/state × breakpoint × theme matrix,
+    compared against the approved canvas snapshot in `design-source/` when it exists; baseline in
+    `.sdlc/<version>/<sprint>/visual-baseline/`.
 - `has_ui: no` → one `all` pass.
+
+**Legacy `ui` layer:** a `ui` entry in `test_layers_done` counts as both `e2e` and `visual` done. If
+`test-report.md` already has a `## UI layer` section but `ui` isn't in `test_layers_done` (a run interrupted
+under the old layout), keep `required_layers: [integration, ui]` and spawn `layer: ui` for the remainder.
+A layer may return `CONTEXT_LIMIT` with "group k/m done" (it splits big layers itself) — respawn the same layer.
 
 Each layer appends/updates ITS section of `.sdlc/<version>/<sprint>/test-report.md`, **closes its own fix
 loop and commits its own test files + fixes** — you do NOT orchestrate the fix loop and do NOT touch the

@@ -30,8 +30,8 @@
 - tasks:         <todo | doing | done>
 - execute:       <todo | doing | done>
 - test:          <todo | doing | done>              # `done` only when EVERY required test layer is done (the last layer sets it)
-- required_layers: <[integration, ui] | [all]>      # written by the caller (run/execute/test) when entering the Test leg: has_ui -> [integration, ui]; no UI or legacy sprint -> [all]
-- test_layers_done: <[] | [integration] | [integration, ui] | [all]>   # Test leg runs per layer; each test-strategist run appends its layer after its final commit; callers spawn only layers in required_layers that are missing here (absent = [])
+- required_layers: <[integration, e2e, visual] | [all]>      # written by the caller (run/execute/test) when entering the Test leg: has_ui -> [integration, e2e, visual]; no UI or legacy sprint -> [all]
+- test_layers_done: <[] | [integration] | [integration, e2e] | [integration, e2e, visual] | [all]>   # Test leg runs per layer; each test-strategist run appends its layer after its final commit; callers spawn only layers in required_layers that are missing here (absent = []); a legacy `ui` entry counts as both e2e and visual
 - qa:            <todo | doing | done>
 - migration_done: <yes | no | n/a>                  # whether the migrate command was (re)run after the coordinator returned DONE, when the sprint added migrations; n/a if it added none
 

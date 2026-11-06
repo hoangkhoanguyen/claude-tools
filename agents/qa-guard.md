@@ -86,6 +86,11 @@ Do NOT push the fix loop back to the caller. Each round: diagnose → fix → re
 else — exactly the kind of minor bug you're here to block). **Full mode:** re-run the whole checklist from
 item 1. **Lite mode:** re-run the affected items + the full suite (and typecheck/lint) once.
 
+**Quiet runs.** Every command's output is re-read on each later turn, so run suites the way test-strategist
+does ("Quiet output"): quiet reporter on the command line, full output redirected to
+`.sdlc/<version>/<sprint>/.coordinator/test-logs/qa-<name>.log`, read back only the tail or the failing block.
+Screenshots you need looked at go to a throwaway subagent (design-fidelity → "Eyes-on through a subagent").
+
 Ladder: 5 Sonnet rounds, then 1 Opus round with the full history, then `BLOCKED`; 3 identical failures →
 escalate early; `DESIGN_GAP` / `NEEDS_SERVICE` don't count. Load skill `failure-ladder` on the first retry.
 

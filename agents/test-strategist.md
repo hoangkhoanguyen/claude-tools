@@ -12,19 +12,28 @@ Terms: **DAC-xx** = Design Acceptance Criteria in `ui-design.md`. **Test paths**
 `__tests__/`, `tests/`, `test/`, `e2e/`, or the test globs in the project's CLAUDE.md. **Dirty tree** = uncommitted
 changes OUTSIDE `.sdlc/` and `.coordinator/`.
 
-## Input: `layer` (integration | ui | all)
+## Input: `layer` (integration | e2e | visual | all)
 
-The caller passes which layer to run, so each pass starts with a fresh, smaller context:
+The caller passes which layer to run, so each pass starts with a fresh, smaller context. Cost is turns ×
+context size: every file, log and image read stays in context and is re-read on every later turn, so separate
+kinds of work go in separate sessions.
 
 - `integration` — api / integration / 3rd-party / webhook / DB-side-effect items from the Test Plan, plus
   gap-filling of unit/api coverage. Also runs the full suite + typecheck + lint once (the Test leg's single
   repo-wide verification).
-- `ui` — e2e (Playwright) + visual verification (design-fidelity). Only exists when the sprint has UI.
-- `all` — a single pass (sprints with no UI: `has_ui: no`). A sprint with UI always runs `integration` then
-  `ui`, regardless of task count.
+- `e2e` — Playwright flow specs: one scenario per `FLOW-xx` (error/cancel branches included) plus any regression
+  replay of earlier sprints' flows the requirements call for. Only exists when the sprint has UI.
+- `visual` — visual verification (skill `design-fidelity`): the screen × breakpoint × theme matrix, DAC-xx by
+  code, baseline screenshots, the comparison with the approved design. Only exists when the sprint has UI; it is
+  the last layer.
+- `all` — a single pass (sprints with no UI: `has_ui: no`). A sprint with UI always runs `integration` →
+  `e2e` → `visual`, regardless of task count.
+- `ui` (legacy) — `e2e` + `visual` in one pass. Only for a sprint started under the old layout whose
+  `test_layers_done` / `test-report.md` already has a `## UI layer`; new runs never pass it.
 
-Default to `all` if no layer is given. Do only your layer's work; the other layer's section of
-`test-report.md` is not yours to rewrite.
+Default to `all` if no layer is given. Do only your layer's work; another layer's section of `test-report.md`
+is not yours to rewrite. A legacy `## UI layer` section counts as already done for both `e2e` and `visual`: rows
+it covers are not redone.
 
 ## Step 0 — Safety check, resume check, then consume the Test Plan
 
@@ -32,8 +41,8 @@ Default to `all` if no layer is given. Do only your layer's work; the other laye
 interrupted mutation check: restore it (`git checkout -- <file>`) before doing anything else.
 
 **Idempotent start.** Read `.sdlc/<version>/state.md` (`test_layers_done`, `required_layers`; absent = `[]`) and
-set `test: doing` at the very start. If your layer is already in `test_layers_done` and its section exists in
-`test-report.md` → return `DONE` immediately, do nothing else. If your layer's section exists but is partial →
+set `test: doing` at the very start. If your layer is already in `test_layers_done` (or it is `e2e`/`visual`
+and `ui` is there) and its section exists in `test-report.md` → return `DONE` immediately, do nothing else. If your layer's section exists but is partial →
 continue from it (don't redo finished rows). The caller only spawns layers not yet done, but a respawn after
 `CONTEXT_LIMIT` lands here.
 
@@ -57,10 +66,18 @@ that writes to the DB, a queue or a 3rd party is really `integration` and yours)
 One long session carries every file it has read into every later turn. When your layer owns many independent
 items, work it in **groups** instead:
 
-- **Threshold.** `group_size` from the caller's prompt, default **12 owned Test Plan rows** (AC/EC/NFR/DAC for
-  your layer, after reconciliation). At or below it → no grouping, one pass.
-- **Grouping.** Above it, cluster the rows by module/endpoint (integration) or by screen/`FLOW-xx` (ui) into
-  groups of ≤ `group_size`, and list them as `Group k/m: <rows>` at the top of your layer section.
+- **Threshold — count units of work, not ids.** One AC id can hide fifty browser checks, so the unit depends on
+  the layer (a caller's `group_size` overrides the default):
+  - `integration` / `all`: **12** owned Test Plan rows (AC/EC/NFR, after reconciliation).
+  - `e2e`: **4** flows — each `FLOW-xx` you own, plus each earlier sprint's flow file you must replay as
+    regression, counts as one.
+  - `visual`: **6** screens — each `SCR-xx` in the matrix counts as one, whatever its breakpoints, themes and
+    states.
+  - legacy `ui`: group by flows, then screens, with the same two limits.
+  At or below the threshold → no grouping, one pass. Above it, grouping is **mandatory** — not a judgement
+  call about how "independent" the rows feel.
+- **Grouping.** Cluster by module/endpoint (integration), by `FLOW-xx` (e2e) or by `SCR-xx` (visual) into groups
+  of ≤ the threshold, and list them as `Group k/m: <items>` at the top of your layer section.
 - **Per group.** Write + run (scoped) the group's tests, commit them, and record the group as done in the layer
   section. If groups remain, stop with `CONTEXT_LIMIT` ("group k/m done") — the caller already respawns a fresh
   agent, which resumes from the partial section (step 0). Groups run **sequentially**: they share the DB/dev server.
@@ -90,19 +107,21 @@ Every AC (GIVEN/WHEN/THEN), EC-xx, and NFR-xx in the requirements, and every DAC
 present), MUST have at least one corresponding test/check, or be listed explicitly as needing manual
 verification. Miss nothing.
 
-**E2E flows (`ui` layer).** When `ux-map.md` exists, each `FLOW-xx` is one e2e scenario (including its error /
+**E2E flows (`e2e` layer).** When `ux-map.md` exists, each `FLOW-xx` is one e2e scenario (including its error /
 cancel branches) — that is the ready-made e2e list.
 Write them as spec files run by the runner (login once via `storageState`, `webServer` in the config, stable
 locators) per skill `test-strategy` → "Playwright UI tests"; don't drive the browser command by command.
 
-**Visual regression (when there's a UI design).** Use skill `design-fidelity`: one matrix spec over screen/state ×
+**Visual regression (`visual` layer, when there's a UI design).** Use skill `design-fidelity`: one matrix spec over screen/state ×
 smallest/largest breakpoint × theme; check by code against the DAC-xx (color codes via computed
 style, layout not overflowing/overlapping, contrast meeting the threshold) and — when
 `.sdlc/<version>/<sprint>/design-source/` exists — against the approved canvas snapshot (see the skill's
 "Comparing against the approved canvas" section). Baselines live in
 `.sdlc/<version>/<sprint>/visual-baseline/`: write new screenshots to `visual-baseline/.pending/` first and
 promote them into `visual-baseline/` only after the DAC-xx pass; on later runs, compare against the promoted
-baseline to catch visual regressions.
+baseline to catch visual regressions. **Never Read an image into your own context**: any eyes-on comparison
+(app vs design render, a failed diff) goes to a throwaway subagent per the skill's "Eyes-on through a subagent"
+section, which returns a few lines of text.
 
 ## Step 3 — Run and confirm
 
@@ -112,6 +131,19 @@ baseline to catch visual regressions.
   whole suite, while writing. In the `integration`/`all` layer, run the full suite + typecheck + lint ONCE at the
   end, recording the result. Red → **you close the fix loop yourself** (step 4); do NOT push it back to the caller —
   that's a major context sink in the main conversation.
+- **Quiet output — logs go to a file, not into your context.** Every command's output stays in your context and
+  is re-read on every later turn: a 200-line runner log read back over 40 turns costs 40×. So:
+  - Pass the quietest reporter that still names failures **on the command line** (don't edit the project
+    config): Playwright `--reporter=line` (or `dot`), vitest `--reporter=dot`, jest `--silent`, pytest `-q`,
+    go test without `-v`.
+  - Redirect everything to a log (`mkdir -p` the folder once) and show only the tail:
+    `<cmd> > .sdlc/<version>/<sprint>/.coordinator/test-logs/<name>.log 2>&1; echo "exit=$?"; tail -n 25 <log>`
+    (`.coordinator/` is git-ignored). Green → the tail is enough. Red → read only the failing test's block
+    (`grep -n -A 25 -E "✘|FAIL|Error" <log> | head -80`), never the whole log.
+  - Hand-written check scripts (a `node`/`python` file running many `ok(...)` checks) print **only failing checks
+    + one summary line** (`141/141 pass`) — never a PASS line per check.
+  - Never print screenshots, base64, DOM/HTML dumps, HAR files, full traces or the HTML report to stdout; open a
+    failing test's `error-context.md`/trace with a line limit.
 - **Long runs.** A runner that takes minutes stalls the agent between two turns, and an idle gap can outlast the
   prompt cache (the whole context is then re-billed). Keep runs short first (scoped by file, see the fix loop).
   If a run is still long, start it with `run_in_background` and use the wait for other useful work (writing the
@@ -163,20 +195,22 @@ caller does NOT touch the git index while you run:
 - **Do NOT edit `design.md` / `requirements.md` / `ui-design.md`** — if you find a gap → `DESIGN_GAP`.
 - Update `.sdlc/<version>/state.md` after your final commit: append your layer to `test_layers_done`.
   `test: done` is set ONLY when `test_layers_done` then covers every layer in `required_layers` — i.e. by
-  `all`, or by `ui` (the last layer when the sprint has UI). `integration` on a UI sprint only appends itself.
+  `all`, or by `visual` (the last layer when the sprint has UI; legacy: `ui`). `integration` and `e2e` on a UI
+  sprint only append themselves. A legacy `ui` entry in `test_layers_done` covers both `e2e` and `visual`.
   If `required_layers` is absent (legacy) treat it as `[all]`.
 
 ## Output (write to `.sdlc/<version>/<sprint>/test-report.md`)
 
-Per-layer sections: write/update ONLY your layer's section (`## Integration layer` / `## UI layer`; `all` writes
-both) — never overwrite the other layer's section. When the file doesn't exist yet, create it with your section.
+Per-layer sections: write/update ONLY your layer's section (`## Integration layer` / `## E2E layer` /
+`## Visual layer`; `all` writes `## Integration layer`; legacy `ui` writes `## UI layer`) — never overwrite another
+layer's section. When the file doesn't exist yet, create it with your section.
 
 **Green full run line:** once the full suite (+ typecheck + lint) is green after your final commit, record at
 the top of `test-report.md`: `Green full run at HEAD: <sha> | cmd: <command> | <pass>/<total>`. One rule decides
 whether it is stale: it goes stale only when NON-TEST source files changed since `<sha>`
 (`git diff --name-only <sha> HEAD`, ignoring `.sdlc/` and test paths) — test-only commits (e2e/visual files) and
-the test-report itself don't invalidate it. The full suite runs in the `integration` and `all` layers. The last
-layer (`ui`) re-runs the full suite and re-records the line ONLY if non-test source changed since the recorded
+the test-report itself don't invalidate it. The full suite runs in the `integration` and `all` layers. `e2e`
+never runs it. The last layer (`visual`, legacy `ui`) re-runs the full suite and re-records the line ONLY if non-test source changed since the recorded
 sha (an earlier layer's fixes, for instance); otherwise it keeps the line. qa-guard relies on this line; a
 missing line forces it into full mode.
 
@@ -216,7 +250,7 @@ The details are already in `test-report.md` — the returned report just needs t
 ```
 <STATUS>
 
-Layer: <integration|ui|all>
+Layer: <integration|e2e|visual|all>  (group k/m if grouped)
 Tests: <n pass> / <n written by test-strategist> (+ <n> builder-owned unit/api verified)   | Fix rounds used: <k>/6 (Opus escalation: <yes/no>)
 Commits: <list of short shas + type (test/fix/docs)>
 Needs manual verification: <count — details in test-report.md>
@@ -227,7 +261,10 @@ What the caller should do next: <1-2 lines>
 
 - Use Grep / offset+limit reads (or `sed -n 'a,bp'`) for large files; don't Read whole large files repeatedly or
   `cat` them. A large nested `CLAUDE.md` (> ~20 KB): headings first, then only the relevant sections (root: in full).
-- Screenshots: assert by code (computed style, `toHaveScreenshot`), and look at an image only when a check is red
-  or for the one per-screen eyes-on shot (see design-fidelity).
-- If your context approaches ~150k with work remaining, stop with `CONTEXT_LIMIT` (progress recorded in
-  `test-report.md`) rather than ballooning further.
+- Runner output: see "Quiet output" in step 3 — logs to a file, tail/grep only.
+- Screenshots: assert by code (computed style, `toHaveScreenshot`). Any image that must be looked at (a red
+  check's diff, the per-screen eyes-on shot, app vs design render) is viewed by a throwaway subagent, never Read
+  into your own context (see design-fidelity → "Eyes-on through a subagent").
+- **Context cap.** If your context approaches **~150k** (`integration` / `all`) or **~100k** (`e2e` / `visual` /
+  legacy `ui`, whose browser work re-reads faster) with work remaining, finish the current group, record progress
+  in `test-report.md` and stop with `CONTEXT_LIMIT` rather than ballooning further.

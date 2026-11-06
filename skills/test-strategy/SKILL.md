@@ -22,7 +22,7 @@ The planning phase writes a **Test Plan** at the top of the Agent-Reference part
 - **unit and api tests are owned by the TASK** — the builder writes and runs them together with the code
   (each task's `Tests:` field). The `test-strategist` agent verifies them and fills only genuine gaps.
 - **integration / e2e / visual / manual are owned by `test-strategist`**, which runs by layer (`integration`,
-  `ui`, `all`) as defined in `agents/test-strategist.md` — that file also holds the ownership reconciliation,
+  `e2e`, `visual`, `all`) as defined in `agents/test-strategist.md` — that file also holds the ownership reconciliation,
   commit, green-run-sha and mutation-check rules.
 
 ## Decision table by feature type
@@ -39,11 +39,13 @@ The planning phase writes a **Test Plan** at the top of the Agent-Reference part
 
 ## Playwright UI tests: write specs, don't drive the browser step by step
 
-Every interactive browser command is a turn whose result is re-read on all later turns. So the UI layer is
+Every interactive browser command is a turn whose result is re-read on all later turns. So the e2e layer is
 **spec files run by the runner**, not a hand-driven session; open a browser by hand only to debug one red test.
 
-- **One spec per `FLOW-xx`** (including its error/cancel branches), run by file, results read from the runner
-  output. Reuse the project's existing Playwright config, fixtures and helpers before creating new ones.
+- **One spec per `FLOW-xx`** (including its error/cancel branches), run by file with `--reporter=line`, output
+  redirected to a log under `.coordinator/test-logs/` and only its tail (or the failing block) read back — see
+  test-strategist → "Quiet output". A hand-written check script, if the project uses them, prints only failing
+  checks + one summary line. Reuse the project's existing Playwright config, fixtures and helpers before creating new ones.
 - **Log in once.** A global setup saves `storageState` per role; specs reuse it. Seed data through the API/DB,
   never through the UI.
 - **Server via config.** Declare `webServer` in the Playwright config (command, url, `reuseExistingServer`) so the

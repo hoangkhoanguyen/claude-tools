@@ -112,16 +112,20 @@ Only move to leg 2 on status `DONE`.
 ## Leg 2 — Test (by layer)
 
 First compute `required_layers` and write it into `state.md` (no execution agent is running): `has_ui: yes`
-→ `[integration, ui]`; no UI → `[all]`; legacy sprint (no Test Plan in `tasks.md`, or an old `test-report.md`
+→ `[integration, e2e, visual]`; no UI → `[all]`; legacy sprint (no Test Plan in `tasks.md`, or an old `test-report.md`
 without layer sections) → `[all]`. If `has_ui` isn't in state, derive it from whether `ui-design.md` exists
 (`design_ui` not `n/a`). Spawn subagent `test-strategist` (skill `test-strategy`) once per layer in
 `required_layers` **not already in `test_layers_done`** (absent = `[]`), sequentially, each with a fresh
 context — pass `layer`:
-- UI sprint → `integration` then `ui` (regardless of task count). No UI → one `all` pass.
+- UI sprint → `integration`, then `e2e`, then `visual` (regardless of task count). No UI → one `all` pass.
 - `integration`: api/integration/3rd-party/webhook/DB-side-effect items + gap-filling (builders already wrote
   the unit/api tests listed in each task's `Tests:`; it verifies coverage of the Test Plan, not rewrites).
-- `ui`: e2e (Playwright) + visual verification (skill `design-fidelity`): screenshots compared against
-  Design AC + the baseline in `.sdlc/<version>/<sprint>/visual-baseline/`.
+- `e2e`: Playwright specs, one scenario per `FLOW-xx`.
+- `visual`: visual verification (skill `design-fidelity`): the screen matrix checked against Design AC + the
+  baseline in `.sdlc/<version>/<sprint>/visual-baseline/`.
+**Legacy `ui` layer:** a `ui` entry in `test_layers_done` counts as both `e2e` and `visual` done. If
+`test-report.md` already has a `## UI layer` section but `ui` isn't in `test_layers_done` (a run interrupted
+under the old layout), keep `required_layers: [integration, ui]` and spawn `layer: ui` for the remainder.
 It writes tests and ACTUALLY RUNS them until green. Every AC/EC/NFR/DAC must have a test or be listed as
 manual-verify. Each layer updates its own section of `.sdlc/<version>/<sprint>/test-report.md`; the agent
 records `test_layers_done` and the last required layer sets `test: done`.

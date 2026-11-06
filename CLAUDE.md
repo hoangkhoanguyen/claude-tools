@@ -241,7 +241,7 @@ See the `test-strategy` skill. The principle: automate as much as possible. Only
 
 **Tests are planned up front, owned by whoever has the context.** The planning phase writes a Test Plan into
 `tasks.md` (AC/EC/NFR/DAC → level → owner). Unit/API tests belong to the task: `feature-builder` writes them
-with the code. The Test leg (`test-strategist`, per layer `integration` → `ui`, or `all` for small sprints)
+with the code. The Test leg (`test-strategist`, per layer `integration` → `e2e` → `visual`, or `all` for no-UI sprints)
 owns integration/e2e/visual/manual items and gap-filling. `qa-guard` is lite by default and full for
 sensitive sprints or when the Test leg had to fix source code.
 
@@ -249,7 +249,9 @@ sensitive sprints or when the Test leg had to fix source code.
 
 Measured on ~33 real sprints: `feature-builder` 48% of tokens, `test-strategist` 13%, `implement-coordinator` 13%,
 `qa-guard` 4%, retries ≈ 0. Principles: fewer cold starts (batches of ≤ 3 related tasks — dependency-chained or
-sharing files — with the code map relayed between builders), shorter contexts (Test leg by layer when there is UI),
+sharing files — with the code map relayed between builders), shorter contexts (Test leg by layer — `integration` / `e2e` / `visual` — with mandatory grouping by flows/screens,
+runner output to log files read by tail, screenshots judged by a throwaway subagent; in the Test leg cost is
+cache read = turns × context, so a log or image left in context is paid on every later turn),
 no duplicated checks (the coordinator runs one cheap typecheck per wave and no repo-wide tests/lint/build; QA
 trusts a green full run while no source changed since its recorded sha), `Difficulty: high` only for genuinely hard
 work. Never trade away a gate that catches real bugs: quality signals (retries, source fixes in Test/QA legs, bugs
